@@ -56,18 +56,15 @@ function MapController() {
 }
 
 export default function MapComponent() {
-  const apiIsLoaded = useApiIsLoaded()
   const allLocations = useAppStore((s) => s.locations)
   const activeCategories = useAppStore((s) => s.activeCategories)
   const locations = allLocations.filter((l) => activeCategories.includes(l.category))
   const position = useAppStore((s) => s.position)
   const selectedLocationId = useAppStore((s) => s.selectedLocationId)
-  const [userHasPanned, setUserHasPanned] = useState(false)
+  const [mapReady, setMapReady] = useState(false)
   const setSelection = useAppStore((s) => s.setSelection)
 
-  const handleRecenter = useCallback(() => {
-    setUserHasPanned(false)
-  }, [])
+  const handleRecenter = useCallback(() => {}, [])
 
   const initialCenter = position ?? { lat: 35.6762, lng: 139.6503 } // Tokyo default
 
@@ -81,9 +78,10 @@ export default function MapComponent() {
         gestureHandling="greedy"
         className="w-full h-full"
         onClick={() => setSelection(null, null)}
+        onIdle={() => setMapReady(true)}
       >
         <MapController />
-        {apiIsLoaded && (
+        {mapReady && (
           <MapMarkers locations={locations} selectedLocationId={selectedLocationId} />
         )}
       </Map>
