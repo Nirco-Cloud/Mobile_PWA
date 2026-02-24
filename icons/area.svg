@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40">
+  <!-- Area / landmark pin -->
+  <circle cx="20" cy="20" r="18" fill="#3b82f6" stroke="white" stroke-width="2"/>
+  <path d="M20 9 C14 9 10 13.5 10 18.5 C10 25 20 33 20 33 C20 33 30 25 30 18.5 C30 13.5 26 9 20 9 Z" fill="white"/>
+  <circle cx="20" cy="18" r="4" fill="#3b82f6"/>
+</svg>
