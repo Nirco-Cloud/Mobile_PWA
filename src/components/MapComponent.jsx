@@ -36,7 +36,10 @@ function MapController() {
       ({ id, source }) => {
         if (source !== 'list' || !id) return
         const loc = useAppStore.getState().locations.find((l) => l.id === id)
-        if (loc) map.panTo({ lat: loc.lat, lng: loc.lng })
+        if (loc) {
+          map.panTo({ lat: loc.lat, lng: loc.lng })
+          if (map.getZoom() < 17) map.setZoom(17)
+        }
       },
       { equalityFn: (a, b) => a.id === b.id && a.source === b.source },
     )
