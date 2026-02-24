@@ -1,4 +1,4 @@
-import splashPhoto from '/public/images/splash.png'
+const splashPhoto = import.meta.env.BASE_URL + 'images/splash.png'
 
 export default function SplashScreen({ visible }) {
   return (
