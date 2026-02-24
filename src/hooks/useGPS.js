@@ -26,6 +26,10 @@ export function useGPS() {
     if (demoMode || !navigator.geolocation) return
 
     function poll() {
+      if (document.visibilityState === 'hidden') {
+        timerRef.current = setTimeout(poll, pollIntervalRef.current)
+        return
+      }
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           setPosition({ lat: pos.coords.latitude, lng: pos.coords.longitude })
@@ -38,8 +42,18 @@ export function useGPS() {
 
     poll()
 
+    // Resume immediately when app comes back to foreground
+    function onVisible() {
+      if (document.visibilityState === 'visible') {
+        if (timerRef.current) clearTimeout(timerRef.current)
+        poll()
+      }
+    }
+    document.addEventListener('visibilitychange', onVisible)
+
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
+      document.removeEventListener('visibilitychange', onVisible)
     }
   }, [setPosition, demoMode])
 }
