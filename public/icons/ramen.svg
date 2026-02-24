@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40">
+  <!-- Ramen bowl -->
+  <circle cx="20" cy="20" r="18" fill="#f97316" stroke="white" stroke-width="2"/>
+  <path d="M9 19 Q9 30 20 30 Q31 30 31 19 Z" fill="white"/>
+  <!-- Steam lines -->
+  <path d="M14 12 Q15 15 14 17" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M20 10 Q21 13 20 15" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M26 12 Q27 15 26 17" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+</svg>
