@@ -37,7 +37,7 @@ export const useAppStore = create(
     setSyncStatus: (syncStatus) => set({ syncStatus }),
 
     // Demo mode (GPS locked to Tokyo)
-    demoMode: false,
+    demoMode: true,
     setDemoMode: (demoMode) => set({ demoMode }),
 
     // Category filter
