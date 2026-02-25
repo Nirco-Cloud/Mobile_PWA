@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useAppStore } from '../store/appStore.js'
 
-const TOKYO = { lat: 35.6762, lng: 139.6503 }
+const TOKYO = { lat: 35.6861, lng: 139.7530 }
 
 export function useGPS() {
   const setPosition = useAppStore((s) => s.setPosition)
