@@ -3,7 +3,7 @@ import { Map, useMap, useApiIsLoaded } from '@vis.gl/react-google-maps'
 import { useAppStore } from '../store/appStore.js'
 import MapMarker from './MapMarker.jsx'
 
-const DEFAULT_ZOOM = 15
+const DEFAULT_ZOOM = 12
 
 function MapMarkers({ locations, selectedLocationId }) {
   const map = useMap()
