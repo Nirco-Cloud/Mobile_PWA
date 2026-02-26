@@ -112,9 +112,16 @@ exports.handler = async (event) => {
     // Step 1: try to parse coordinates from the URL itself
     let coords = parseCoordinates(finalUrl)
 
-    // Step 2: fallback — read HTML body and try multiple patterns
+    // Step 2: fallback — read only first 4KB of HTML body (coords appear within first 500 bytes)
     if (!coords) {
-      const html = await response.text()
+      const reader = response.body.getReader()
+      let html = ''
+      while (html.length < 4096) {
+        const { done, value } = await reader.read()
+        if (done) break
+        html += new TextDecoder().decode(value)
+      }
+      reader.cancel()
 
       // %212d{lng}%213d{lat} — appears in static map URLs embedded in the HTML
       // (%21 = !, 2d = longitude marker, 3d = latitude marker)
