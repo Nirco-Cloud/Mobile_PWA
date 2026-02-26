@@ -1,11 +1,6 @@
 // Netlify serverless function: resolve Google Maps short/full links → coordinates
 // Deployed at: /.netlify/functions/resolve-maps-link?url=<encoded-maps-url>
 
-const ALLOWED_ORIGINS = [
-  'https://nirco-cloud.github.io',
-  'http://localhost:5173',
-  'http://localhost:4173',
-]
 
 const GOOGLE_MAPS_HOSTS = [
   'maps.app.goo.gl',
@@ -60,11 +55,8 @@ function parsePlaceName(url) {
 }
 
 exports.handler = async (event) => {
-  const origin = event.headers?.origin || ''
-  const corsOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
-
   const headers = {
-    'Access-Control-Allow-Origin': corsOrigin,
+    'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Content-Type': 'application/json',
