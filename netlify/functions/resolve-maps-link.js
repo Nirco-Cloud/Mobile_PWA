@@ -2,7 +2,7 @@
 // Deployed at: /.netlify/functions/resolve-maps-link?url=<encoded-maps-url>
 
 const ALLOWED_ORIGINS = [
-  'https://nirco.github.io',
+  'https://nirco-cloud.github.io',
   'http://localhost:5173',
   'http://localhost:4173',
 ]
