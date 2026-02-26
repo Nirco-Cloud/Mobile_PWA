@@ -108,7 +108,19 @@ exports.handler = async (event) => {
     })
 
     const finalUrl = response.url
-    const coords = parseCoordinates(finalUrl)
+
+    // Step 1: try to parse coordinates from the URL itself
+    let coords = parseCoordinates(finalUrl)
+
+    // Step 2: fallback — read HTML body and search for coordinates embedded in page source
+    if (!coords) {
+      const html = await response.text()
+      // @lat,lng,zoom appears in canonical URLs and script data — require 4+ decimal places
+      const atMatch = html.match(/@([-\d]+\.\d{4,}),([-\d]+\.\d{4,})/)
+      if (atMatch) {
+        coords = { lat: parseFloat(atMatch[1]), lng: parseFloat(atMatch[2]) }
+      }
+    }
 
     if (!coords) {
       return {
