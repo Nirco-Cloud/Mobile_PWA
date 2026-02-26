@@ -42,14 +42,14 @@ export default function CategoryFilter({ onClose }) {
           </span>
           <button
             onClick={onClose}
-            className="text-sm font-semibold text-sky-500 active:text-sky-700"
+            className="flex items-center gap-2 px-4 py-2 rounded-full bg-sky-500 active:bg-sky-600 text-white text-sm font-bold shadow-lg"
           >
-            ← Map
+            ← Back to Map
           </button>
         </div>
 
         {/* Grid */}
-        <div className="grid grid-cols-3 gap-2 px-4 py-2 pb-4">
+        <div className="grid grid-cols-3 gap-2 px-4 pt-4 pb-2">
           {CATEGORIES.map((cat) => {
             const isActive = activeCategories.includes(cat.key)
             return (
@@ -80,6 +80,8 @@ export default function CategoryFilter({ onClose }) {
             )
           })}
         </div>
+
+        <div className="pb-4" />
       </div>
     </>
   )
