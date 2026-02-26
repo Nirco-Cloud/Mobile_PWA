@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - Google_maps_Link_Import
 
 permissions:
   contents: write
