@@ -30,13 +30,25 @@ function parseCoordinates(url) {
     return { lat: parseFloat(atMatch[1]), lng: parseFloat(atMatch[2]) }
   }
 
-  // Format 2: ?q=lat,lng  (search query with coordinates)
+  // Format 2: !3dlat!4dlng  (data-encoded place URLs from Android/mobile share)
+  const dataMatch = url.match(/!3d([-\d.]+)!4d([-\d.]+)/)
+  if (dataMatch) {
+    return { lat: parseFloat(dataMatch[1]), lng: parseFloat(dataMatch[2]) }
+  }
+
+  // Format 3: ?q=lat,lng  (search query with coordinates)
   const qMatch = url.match(/[?&]q=([-\d.]+),([-\d.]+)/)
   if (qMatch) {
     return { lat: parseFloat(qMatch[1]), lng: parseFloat(qMatch[2]) }
   }
 
-  // Format 3: /dir//lat,lng  (directions destination)
+  // Format 4: ll=lat,lng  (older Maps URLs)
+  const llMatch = url.match(/[?&]ll=([-\d.]+),([-\d.]+)/)
+  if (llMatch) {
+    return { lat: parseFloat(llMatch[1]), lng: parseFloat(llMatch[2]) }
+  }
+
+  // Format 5: /dir//lat,lng  (directions destination)
   const dirMatch = url.match(/\/dir\/\/([-\d.]+),([-\d.]+)/)
   if (dirMatch) {
     return { lat: parseFloat(dirMatch[1]), lng: parseFloat(dirMatch[2]) }
@@ -90,7 +102,7 @@ exports.handler = async (event) => {
       redirect: 'follow',
       headers: {
         'User-Agent':
-          'Mozilla/5.0 (Linux; Android 12; SM-G998B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         Accept: 'text/html,application/xhtml+xml',
       },
     })
