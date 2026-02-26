@@ -60,7 +60,9 @@ const LocationRow = forwardRef(function LocationRow({ location, distance, isSele
           )}
           <div className="flex gap-2">
             <a
-              href={`google.navigation:q=${location.lat},${location.lng}`}
+              href={`https://www.google.com/maps/dir/?api=1&destination=${location.lat},${location.lng}`}
+              target="_blank"
+              rel="noreferrer"
               className="flex-1 text-center py-1.5 px-2 text-xs font-medium bg-sky-500 text-white rounded active:bg-sky-600"
               onClick={(e) => e.stopPropagation()}
             >
