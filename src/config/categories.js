@@ -9,6 +9,7 @@ export const CATEGORIES = [
   { key: 'חטיפים ומלוחים',             label: 'חטיפים',      icon: 'snack.svg' },
   { key: 'חנויות',                     label: 'חנויות',      icon: 'shopping.svg' },
   { key: 'איזורים ואתרים',             label: 'אזורים',      icon: 'area.svg' },
+  { key: 'מלונות',                     label: 'Hotels',      icon: 'hotel.svg' },
   { key: 'custom',                     label: 'Imported',    icon: 'custom.svg' },
 ]
 
