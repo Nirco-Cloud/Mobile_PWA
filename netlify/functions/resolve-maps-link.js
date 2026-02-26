@@ -112,13 +112,23 @@ exports.handler = async (event) => {
     // Step 1: try to parse coordinates from the URL itself
     let coords = parseCoordinates(finalUrl)
 
-    // Step 2: fallback — read HTML body and search for coordinates embedded in page source
+    // Step 2: fallback — read HTML body and try multiple patterns
     if (!coords) {
       const html = await response.text()
-      // @lat,lng,zoom appears in canonical URLs and script data — require 4+ decimal places
-      const atMatch = html.match(/@([-\d]+\.\d{4,}),([-\d]+\.\d{4,})/)
-      if (atMatch) {
-        coords = { lat: parseFloat(atMatch[1]), lng: parseFloat(atMatch[2]) }
+
+      // %212d{lng}%213d{lat} — appears in static map URLs embedded in the HTML
+      // (%21 = !, 2d = longitude marker, 3d = latitude marker)
+      const encodedMatch = html.match(/%212d([-\d.]+)%213d([-\d.]+)/)
+      if (encodedMatch) {
+        coords = { lat: parseFloat(encodedMatch[2]), lng: parseFloat(encodedMatch[1]) }
+      }
+
+      // @lat,lng,zoom — appears in canonical URLs and script data
+      if (!coords) {
+        const atMatch = html.match(/@([-\d]+\.\d{4,}),([-\d]+\.\d{4,})/)
+        if (atMatch) {
+          coords = { lat: parseFloat(atMatch[1]), lng: parseFloat(atMatch[2]) }
+        }
       }
     }
 
