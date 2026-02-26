@@ -51,5 +51,19 @@ export const useAppStore = create(
           ? s.activeCategories.filter((k) => k !== key)
           : [...s.activeCategories, key],
       })),
+
+    // Imported locations (from Google Maps links)
+    importedLocations: [],
+    addImportedLocation: (loc) =>
+      set((s) => ({
+        importedLocations: [...s.importedLocations, loc],
+        locations: [...s.locations, loc],
+      })),
+    removeImportedLocation: (id) =>
+      set((s) => ({
+        importedLocations: s.importedLocations.filter((l) => l.id !== id),
+        locations: s.locations.filter((l) => l.id !== id),
+      })),
+    setImportedLocations: (importedLocations) => set({ importedLocations }),
   })),
 )

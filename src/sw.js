@@ -1,5 +1,5 @@
-import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching'
-import { registerRoute } from 'workbox-routing'
+import { precacheAndRoute, cleanupOutdatedCaches, createHandlerBoundToURL } from 'workbox-precaching'
+import { registerRoute, NavigationRoute } from 'workbox-routing'
 import { CacheFirst } from 'workbox-strategies'
 import { ExpirationPlugin } from 'workbox-expiration'
 import { CacheableResponsePlugin } from 'workbox-cacheable-response'
@@ -7,6 +7,10 @@ import { CacheableResponsePlugin } from 'workbox-cacheable-response'
 // Inject build-time manifest
 precacheAndRoute(self.__WB_MANIFEST)
 cleanupOutdatedCaches()
+
+// SPA navigation fallback — serves index.html for all navigations including
+// the share-target path (/Mobile_PWA/share-target?url=...)
+registerRoute(new NavigationRoute(createHandlerBoundToURL('/Mobile_PWA/index.html')))
 
 // Cache images at runtime (CacheFirst, 90 days, 500 entries)
 registerRoute(

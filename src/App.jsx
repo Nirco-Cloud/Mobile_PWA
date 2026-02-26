@@ -5,6 +5,7 @@ import { useAppStore } from './store/appStore.js'
 import { CATEGORIES, ALL_CATEGORY_KEYS } from './config/categories.js'
 import { initializeData } from './db/sync.js'
 import { readAllLocations } from './db/locations.js'
+import { readAllImportedLocations } from './db/importedLocations.js'
 import { resetSync } from './db/sync.js'
 import { useGPS } from './hooks/useGPS.js'
 import { useBattery } from './hooks/useBattery.js'
@@ -16,29 +17,55 @@ import MapComponent from './components/MapComponent.jsx'
 import ListComponent from './components/ListComponent.jsx'
 import BottomNav, { BOTTOM_NAV_HEIGHT } from './components/BottomNav.jsx'
 import CategoryFilter from './components/CategoryFilter.jsx'
+import ImportSheet from './components/ImportSheet.jsx'
 
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+
+function isGoogleMapsUrl(text) {
+  return (
+    text.includes('maps.app.goo.gl') ||
+    text.includes('google.com/maps') ||
+    text.includes('goo.gl/maps')
+  )
+}
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true)
   const [activeTab, setActiveTab] = useState('map')
   const [showSettings, setShowSettings] = useState(false)
   const [showFilter, setShowFilter] = useState(false)
+  const [showImport, setShowImport] = useState(false)
+  const [importInitialUrl, setImportInitialUrl] = useState('')
+  const [importAutoResolve, setImportAutoResolve] = useState(false)
   const setLocations = useAppStore((s) => s.setLocations)
   const setSyncStatus = useAppStore((s) => s.setSyncStatus)
   const batteryLevel = useAppStore((s) => s.batteryLevel)
   const position = useAppStore((s) => s.position)
   const setActiveCategories = useAppStore((s) => s.setActiveCategories)
   const setDefaultCategories = useAppStore((s) => s.setDefaultCategories)
+  const setImportedLocations = useAppStore((s) => s.setImportedLocations)
 
-  // Load persisted default categories on mount
+  // Load persisted default categories on mount — always ensure 'custom' is included
   useEffect(() => {
     idbGet('defaultCategories').then((saved) => {
       const cats = saved ?? ALL_CATEGORY_KEYS
-      setDefaultCategories(cats)
-      setActiveCategories(cats)
+      const withCustom = cats.includes('custom') ? cats : [...cats, 'custom']
+      setDefaultCategories(withCustom)
+      setActiveCategories(withCustom)
     })
   }, [setActiveCategories, setDefaultCategories])
+
+  // Detect Web Share Target — browser navigates to /share-target?url=... or ?text=...
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const sharedUrl = params.get('url') || params.get('text') || ''
+    if (sharedUrl && isGoogleMapsUrl(sharedUrl)) {
+      window.history.replaceState({}, '', window.location.pathname)
+      setImportInitialUrl(sharedUrl)
+      setImportAutoResolve(true)
+      setShowImport(true)
+    }
+  }, [])
 
   // Top-level hooks
   useServiceWorker()
@@ -52,14 +79,22 @@ export default function App() {
       setSyncStatus('syncing')
       try {
         await initializeData()
-        const records = await readAllLocations()
-        setLocations(records)
+        const [records, importedRecords] = await Promise.all([
+          readAllLocations(),
+          readAllImportedLocations(),
+        ])
+        setImportedLocations(importedRecords)
+        setLocations([...records, ...importedRecords])
         setSyncStatus('done')
       } catch (err) {
         console.error('Boot error:', err)
         try {
-          const records = await readAllLocations()
-          setLocations(records)
+          const [records, importedRecords] = await Promise.all([
+            readAllLocations(),
+            readAllImportedLocations(),
+          ])
+          setImportedLocations(importedRecords)
+          setLocations([...records, ...importedRecords])
         } catch {
           // Nothing we can do
         }
@@ -70,7 +105,7 @@ export default function App() {
       setTimeout(() => setShowSplash(false), remaining)
     }
     boot()
-  }, [setLocations, setSyncStatus])
+  }, [setLocations, setSyncStatus, setImportedLocations])
 
   function handleTabChange(tab) {
     if (tab === 'settings') {
@@ -83,6 +118,22 @@ export default function App() {
       setShowSettings(false)
       setShowFilter(false)
     }
+  }
+
+  async function handleImportFAB() {
+    setImportAutoResolve(false)
+    setImportInitialUrl('')
+    // Try to read clipboard for a maps URL
+    try {
+      const text = await navigator.clipboard.readText()
+      if (isGoogleMapsUrl(text)) {
+        setImportInitialUrl(text)
+        setImportAutoResolve(true)
+      }
+    } catch {
+      // Clipboard access denied or unavailable — open empty sheet
+    }
+    setShowImport(true)
   }
 
   async function handleResync() {
@@ -120,6 +171,36 @@ export default function App() {
       )}
 
       {showFilter && <CategoryFilter onClose={() => setShowFilter(false)} />}
+
+      {/* Import FAB — bottom-right, above nav bar */}
+      {!showImport && (
+        <button
+          onClick={handleImportFAB}
+          className="fixed z-30 flex items-center justify-center w-12 h-12 rounded-full bg-sky-500 shadow-lg active:bg-sky-600 active:scale-95 transition-transform"
+          style={{
+            bottom: `calc(${BOTTOM_NAV_HEIGHT}px + env(safe-area-inset-bottom) + 16px)`,
+            right: '16px',
+          }}
+          aria-label="Import from Google Maps link"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" className="w-5 h-5">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      )}
+
+      <ImportSheet
+        open={showImport}
+        onClose={() => {
+          setShowImport(false)
+          setImportInitialUrl('')
+          setImportAutoResolve(false)
+        }}
+        initialUrl={importInitialUrl}
+        autoResolve={importAutoResolve}
+      />
+
       <BottomNav activeTab={showSettings ? 'settings' : activeTab} onTabChange={handleTabChange} />
     </APIProvider>
   )
