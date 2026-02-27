@@ -92,7 +92,8 @@ function PlanMapLayer() {
   const routeLines    = useAppStore((s) => s.routeLines)
   const { getTodayDayNumber } = useTripConfig()
   const planFocusDay  = useAppStore((s) => s.planFocusDay)
-  const seqPolyRef    = useRef(null)      // sequential polyline (non-today views)
+  const showConnectors = useAppStore((s) => s.showTripConnectors)
+  const seqPolyRef    = useRef(null)      // red connector polyline (all views)
   const routePolysRef = useRef([])         // colored route polylines (today view)
 
   const active     = isPlannerOpen
@@ -106,22 +107,21 @@ function PlanMapLayer() {
   const stopsKey = stops.map((e) => `${e.id}:${e.lat}:${e.lng}`).join('|')
   const routeKey = routeLines.map((r) => `${r.entryId}:${r.path.length}`).join('|')
 
-  // Sequential polyline for non-today views
+  // Red connector lines between stops (all planner views)
   useEffect(() => {
-    if (!map) return
     if (seqPolyRef.current) {
       seqPolyRef.current.setMap(null)
       seqPolyRef.current = null
     }
-    if (!active || isToday || stops.length < 2) return
+    if (!map || !active || !showConnectors || stops.length < 2) return
 
     const path = stops.map((e) => ({ lat: e.lat, lng: e.lng }))
     const polyline = new window.google.maps.Polyline({
       path,
       geodesic: true,
-      strokeColor: '#0ea5e9',
-      strokeOpacity: 0.85,
-      strokeWeight: 3,
+      strokeColor: '#ef4444',
+      strokeOpacity: 0.75,
+      strokeWeight: 2,
     })
     polyline.setMap(map)
     seqPolyRef.current = polyline
@@ -130,7 +130,7 @@ function PlanMapLayer() {
       polyline.setMap(null)
       seqPolyRef.current = null
     }
-  }, [map, active, isToday, stopsKey]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [map, active, showConnectors, stopsKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Colored route polylines for today view
   useEffect(() => {

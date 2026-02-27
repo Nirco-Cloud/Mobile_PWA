@@ -75,11 +75,13 @@ export const useAppStore = create(
     setPlannerView: (v) => set({ plannerView: v }),
     planFocusDay: 1,
     setPlanFocusDay: (d) => set({ planFocusDay: d }),
-    plannerTravelMode: 'DRIVING',  // 'DRIVING' | 'WALKING'
+    plannerTravelMode: 'DRIVING',  // 'DRIVING' | 'WALKING' | 'TRANSIT'
     setPlannerTravelMode: (m) => set({ plannerTravelMode: m }),
     routeLines: [],  // [{ entryId, color, path: [{lat,lng}], duration }]
     setRouteLines: (lines) => set({ routeLines: lines }),
     clearRouteLines: () => set({ routeLines: [] }),
+    showTripConnectors: true,
+    setShowTripConnectors: (v) => set({ showTripConnectors: v }),
 
     // Imported locations (from Google Maps links)
     importedLocations: [],

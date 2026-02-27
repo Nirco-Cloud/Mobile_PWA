@@ -513,6 +513,13 @@ function TodayView() {
 
   // Fetch routes for BOTH modes in parallel
   useEffect(() => {
+    if (travelMode === 'TRANSIT') {
+      clearRouteLines()
+      setTravelLoading(false)
+      setTravelError(null)
+      return
+    }
+
     if (!routesLib || !position || todayEntries.length === 0) {
       clearRouteLines()
       return
@@ -618,7 +625,7 @@ function TodayView() {
         {/* Transit / Drive toggle */}
         <div className="px-4 pt-2 pb-1 border-b border-gray-100 dark:border-gray-800 space-y-1.5">
           <div className="flex gap-2">
-            {[inJapan ? 'WALKING' : 'TRANSIT', 'DRIVING'].map((mode) => (
+            {['WALKING', 'DRIVING', 'TRANSIT'].map((mode) => (
               <button
                 key={mode}
                 onClick={() => handleModeSwitch(mode)}
@@ -677,7 +684,16 @@ function TodayView() {
                   <p className="text-sm font-medium text-gray-800 dark:text-gray-100 leading-tight">
                     {entry.name}
                   </p>
-                  {travelTimes[entry.id] && (
+                  {travelMode === 'TRANSIT' && entry.lat != null && entry.lng != null ? (
+                    <a
+                      href={`https://www.google.com/maps/dir/?api=1${position ? `&origin=${position.lat},${position.lng}` : ''}&destination=${entry.lat},${entry.lng}&travelmode=transit`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-1 mt-1.5 py-1 text-[11px] font-medium text-purple-500 bg-purple-50 dark:bg-purple-900/20 rounded-lg active:bg-purple-100"
+                    >
+                      🚇 Open transit directions
+                    </a>
+                  ) : travelTimes[entry.id] && (
                     <div className="flex gap-3 mt-1 text-[11px]">
                       {travelTimes[entry.id].walk && (
                         <span className="text-green-500 dark:text-green-400">
@@ -700,16 +716,6 @@ function TodayView() {
                         </span>
                       )}
                     </div>
-                  )}
-                  {inJapan && entry.lat != null && entry.lng != null && (
-                    <a
-                      href={`https://www.google.com/maps/dir/?api=1${position ? `&origin=${position.lat},${position.lng}` : ''}&destination=${entry.lat},${entry.lng}&travelmode=transit`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-1 mt-1.5 py-1 text-[11px] font-medium text-purple-500 bg-purple-50 dark:bg-purple-900/20 rounded-lg active:bg-purple-100"
-                    >
-                      🚇 Transit directions
-                    </a>
                   )}
                   <div className="flex gap-2 mt-1.5">
                     <button

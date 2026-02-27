@@ -250,6 +250,8 @@ function SettingsPanel({ batteryLevel, position, onResync, onClose, bottomNavHei
   const syncStatus = useAppStore((s) => s.syncStatus)
   const demoMode   = useAppStore((s) => s.demoMode)
   const setDemoMode = useAppStore((s) => s.setDemoMode)
+  const showTripConnectors    = useAppStore((s) => s.showTripConnectors)
+  const setShowTripConnectors = useAppStore((s) => s.setShowTripConnectors)
   const tripStart  = useAppStore((s) => s.tripStart)
   const tripEnd    = useAppStore((s) => s.tripEnd)
   const [startVal, setStartVal] = useState(() => toDateInput(tripStart))
@@ -357,6 +359,35 @@ function SettingsPanel({ batteryLevel, position, onResync, onClose, bottomNavHei
           {demoMode && (
             <p className="text-xs text-sky-500">
               GPS locked to Hotel Sunroute Plaza Shinjuku
+            </p>
+          )}
+        </section>
+
+        {/* Trip Planner Map */}
+        <section className="space-y-2">
+          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+            Trip Planner
+          </h3>
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              Show connector lines on map
+            </p>
+            <button
+              onClick={() => setShowTripConnectors(!showTripConnectors)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                showTripConnectors ? 'bg-red-500' : 'bg-gray-300 dark:bg-gray-600'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                  showTripConnectors ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+          {showTripConnectors && (
+            <p className="text-xs text-red-400">
+              Red lines connect planned stops in order
             </p>
           )}
         </section>
