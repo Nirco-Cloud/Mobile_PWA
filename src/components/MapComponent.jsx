@@ -114,15 +114,23 @@ function PlanMapLayer() {
       seqPolyRef.current.setMap(null)
       seqPolyRef.current = null
     }
-    if (!map || !active || !showConnectors || stops.length < 2) return
+    if (!map || !active || !showConnectors || stops.length === 0) return
+    if (!position && stops.length < 2) return
 
-    const path = stops.map((e) => ({ lat: e.lat, lng: e.lng }))
+    const path = [
+      ...(position ? [{ lat: position.lat, lng: position.lng }] : []),
+      ...stops.map((e) => ({ lat: e.lat, lng: e.lng })),
+    ]
+    if (path.length < 2) return
+
+    const dashSymbol = { path: 'M 0,-1 0,1', strokeOpacity: 0.75, scale: 2.4 }
     const polyline = new window.google.maps.Polyline({
       path,
       geodesic: true,
+      strokeOpacity: 0,
+      strokeWeight: 2.4,
+      icons: [{ icon: dashSymbol, offset: '0', repeat: '12px' }],
       strokeColor: '#ef4444',
-      strokeOpacity: 0.75,
-      strokeWeight: 2,
     })
     polyline.setMap(map)
     seqPolyRef.current = polyline
@@ -131,7 +139,7 @@ function PlanMapLayer() {
       polyline.setMap(null)
       seqPolyRef.current = null
     }
-  }, [map, active, showConnectors, stopsKey]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [map, active, showConnectors, stopsKey, position]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Colored route polylines for today view
   useEffect(() => {
