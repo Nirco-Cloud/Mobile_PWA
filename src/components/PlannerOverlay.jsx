@@ -217,7 +217,8 @@ function ThreeDayView() {
   }
 
   async function handleMove(entry, targetDay) {
-    const updated = { ...entry, day: targetDay }
+    const targetCount = planEntries.filter((e) => e.day === targetDay).length
+    const updated = { ...entry, day: targetDay, order: targetCount + 1 }
     await dbUpdatePlanEntry(updated)
     updatePlanEntryStore(updated)
   }
@@ -369,6 +370,7 @@ function TodayView() {
   const todayEntries = planEntries
     .filter((e) => e.day === todayDay)
     .sort((a, b) => a.order - b.order)
+  const todayEntryIds = todayEntries.map((e) => e.id).join(',')
 
   // Compute travel times via DistanceMatrixService
   useEffect(() => {
@@ -400,7 +402,7 @@ function TodayView() {
       },
     )
     return () => { cancelled = true }
-  }, [apiLoaded, position, travelMode, todayEntries.length]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [apiLoaded, position, travelMode, todayEntryIds]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleDelete(id) {
     await deletePlanEntry(id)
@@ -409,7 +411,8 @@ function TodayView() {
 
   async function handleToTomorrow(entry) {
     if (!todayDay || todayDay >= tripDays) return
-    const updated = { ...entry, day: todayDay + 1 }
+    const tomorrowCount = planEntries.filter((e) => e.day === todayDay + 1).length
+    const updated = { ...entry, day: todayDay + 1, order: tomorrowCount + 1 }
     await dbUpdatePlanEntry(updated)
     updatePlanEntryStore(updated)
   }

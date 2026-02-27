@@ -10,6 +10,10 @@ export default {
       colors: {
         primary: '#38bdf8',
       },
+      zIndex: {
+        '60': '60',
+        '70': '70',
+      },
     },
   },
   plugins: [],

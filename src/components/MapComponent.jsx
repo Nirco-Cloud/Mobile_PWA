@@ -100,6 +100,7 @@ function PlanMapLayer() {
   const stops = planEntries
     .filter((e) => e.day === displayDay && e.lat != null && e.lng != null)
     .sort((a, b) => a.order - b.order)
+  const stopsKey = stops.map((e) => `${e.id}:${e.lat}:${e.lng}`).join('|')
 
   // Keep polyline in sync
   useEffect(() => {
@@ -125,7 +126,7 @@ function PlanMapLayer() {
       polyline.setMap(null)
       polylineRef.current = null
     }
-  }, [map, active, stops.length, displayDay]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [map, active, stopsKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!active) return null
 
