@@ -1,6 +1,24 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAppStore } from '../store/appStore.js'
 import { saveImportedLocation, deleteImportedLocation } from '../db/importedLocations.js'
+import { CATEGORIES } from '../config/categories.js'
+
+function detectCategory(name) {
+  if (!name) return 'custom'
+  const n = name.toLowerCase()
+  if (/hotel|inn|hostel|ryokan|lodge|resort|guesthouse|guest house|motel/.test(n)) return 'מלונות'
+  if (/ramen|noodle|soba|udon/.test(n))                                           return 'Ramen'
+  if (/izakaya|yakitori|robata/.test(n))                                           return 'Izakaya'
+  if (/omakase|kaiseki|teppanyaki/.test(n))                                        return 'מסעדות גבוהות / הזמנה'
+  if (/sushi|sashimi/.test(n))                                                     return 'סושי עממי ולא יקר'
+  if (/cafe|coffee|kissaten|tearoom|tea room/.test(n))                             return 'קפה/תה/אלכוהול'
+  if (/bar|pub|brewery|winery|sake/.test(n))                                       return 'קפה/תה/אלכוהול'
+  if (/bakery|patisserie|cake|donut|sweet|candy|ice cream|crepe|wagashi|mochi|dessert/.test(n)) return 'חטיפים ומלוחים'
+  if (/store|shop|market|mall|boutique|department|supermarket|drugstore|pharmacy/.test(n))      return 'חנויות'
+  if (/shrine|jinja|temple|park|garden|museum|castle|tower|palace|onsen|hot spring|waterfall/.test(n)) return 'איזורים ואתרים'
+  if (/restaurant|diner|eatery|bbq|grill|curry|tempura|tonkatsu|yakiniku/.test(n)) return 'מסעדות ואוכל רחוב'
+  return 'custom'
+}
 
 const RESOLVER_URL = import.meta.env.VITE_NETLIFY_RESOLVER_URL
 
@@ -17,6 +35,7 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
   const [status, setStatus] = useState('idle') // 'idle' | 'loading' | 'success' | 'error'
   const [result, setResult] = useState(null)
   const [customName, setCustomName] = useState('')
+  const [category, setCategory] = useState('custom')
   const [error, setError] = useState(null)
   const inputRef = useRef(null)
 
@@ -43,6 +62,7 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
       setResult(null)
       setError(null)
       setCustomName('')
+      setCategory('custom')
     }
   }, [open])
 
@@ -73,6 +93,7 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
       if (!res.ok) throw new Error(data.error || 'Failed to resolve')
       setResult(data)
       setCustomName(data.name || '')
+      setCategory(detectCategory(data.name || ''))
       setStatus('success')
     } catch (err) {
       setError(err.message)
@@ -82,12 +103,17 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
 
   async function handleSave() {
     if (!result) return
+    const alreadySaved = importedLocations.some((loc) => loc.sourceUrl === url.trim())
+    if (alreadySaved) {
+      setError('This location is already saved.')
+      return
+    }
     const loc = {
       id: `imported_${Date.now()}`,
       name: customName.trim() || `Imported ${new Date().toLocaleDateString()}`,
       lat: result.lat,
       lng: result.lng,
-      category: 'custom',
+      category,
       importedAt: new Date().toISOString(),
       sourceUrl: url,
     }
@@ -97,6 +123,7 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
     setResult(null)
     setUrl('')
     setCustomName('')
+    setCategory('custom')
     setError(null)
   }
 
@@ -224,6 +251,18 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
                   placeholder="Enter a name for this location"
                   className="w-full px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-400"
                 />
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">
+                  Category
+                </label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
+                >
+                  {CATEGORIES.map((c) => (
+                    <option key={c.key} value={c.key}>{c.label}</option>
+                  ))}
+                </select>
                 <button
                   onClick={handleSave}
                   className="w-full py-2 bg-sky-500 text-white text-sm font-medium rounded-lg active:bg-sky-600"
