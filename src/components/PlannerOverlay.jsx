@@ -703,7 +703,7 @@ function TodayView() {
                   )}
                   {inJapan && entry.lat != null && entry.lng != null && (
                     <a
-                      href={`https://www.google.com/maps/dir/?api=1&destination=${entry.lat},${entry.lng}&travelmode=transit`}
+                      href={`https://www.google.com/maps/dir/?api=1${position ? `&origin=${position.lat},${position.lng}` : ''}&destination=${entry.lat},${entry.lng}&travelmode=transit`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center justify-center gap-1 mt-1.5 py-1 text-[11px] font-medium text-purple-500 bg-purple-50 dark:bg-purple-900/20 rounded-lg active:bg-purple-100"

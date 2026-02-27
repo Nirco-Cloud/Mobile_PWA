@@ -5,6 +5,7 @@ import DayPicker from './DayPicker.jsx'
 
 const LocationRow = forwardRef(function LocationRow({ location, distance, isSelected, isExpanded, onToggle }, ref) {
   const setSelection  = useAppStore((s) => s.setSelection)
+  const position      = useAppStore((s) => s.position)
   const [showDayPicker, setShowDayPicker] = useState(false)
 
   function handleClick() {
@@ -63,7 +64,7 @@ const LocationRow = forwardRef(function LocationRow({ location, distance, isSele
           )}
           <div className="flex gap-2">
             <a
-              href={`https://www.google.com/maps/dir/?api=1&destination=${location.lat},${location.lng}`}
+              href={`https://www.google.com/maps/dir/?api=1${position ? `&origin=${position.lat},${position.lng}` : ''}&destination=${location.lat},${location.lng}`}
               target="_blank"
               rel="noreferrer"
               className="flex-1 text-center py-1.5 px-2 text-xs font-medium bg-sky-500 text-white rounded active:bg-sky-600"
