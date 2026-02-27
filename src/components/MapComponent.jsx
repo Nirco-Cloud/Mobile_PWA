@@ -93,6 +93,7 @@ function PlanMapLayer() {
   const { getTodayDayNumber } = useTripConfig()
   const planFocusDay  = useAppStore((s) => s.planFocusDay)
   const showConnectors = useAppStore((s) => s.showTripConnectors)
+  const position      = useAppStore((s) => s.position)
   const seqPolyRef    = useRef(null)      // red connector polyline (all views)
   const routePolysRef = useRef([])         // colored route polylines (today view)
 
@@ -161,22 +162,40 @@ function PlanMapLayer() {
 
   if (!active) return null
 
-  return stops.map((entry, idx) => {
-    const bgColor = isToday ? getRouteColor(idx) : '#0ea5e9'
-    return (
-      <AdvancedMarker
-        key={entry.id}
-        position={{ lat: entry.lat, lng: entry.lng }}
-      >
-        <div
-          className="flex items-center justify-center w-7 h-7 rounded-full border-2 border-white shadow-md"
-          style={{ backgroundColor: bgColor }}
+  return (
+    <>
+      {/* Starting point marker (0) at GPS position */}
+      {position && stops.length > 0 && (
+        <AdvancedMarker
+          key="origin-0"
+          position={{ lat: position.lat, lng: position.lng }}
         >
-          <span className="text-white text-xs font-bold leading-none">{idx + 1}</span>
-        </div>
-      </AdvancedMarker>
-    )
-  })
+          <div
+            className="flex items-center justify-center w-7 h-7 rounded-full border-2 border-white shadow-md"
+            style={{ backgroundColor: '#6b7280' }}
+          >
+            <span className="text-white text-xs font-bold leading-none">0</span>
+          </div>
+        </AdvancedMarker>
+      )}
+      {stops.map((entry, idx) => {
+        const bgColor = isToday ? getRouteColor(idx) : '#0ea5e9'
+        return (
+          <AdvancedMarker
+            key={entry.id}
+            position={{ lat: entry.lat, lng: entry.lng }}
+          >
+            <div
+              className="flex items-center justify-center w-7 h-7 rounded-full border-2 border-white shadow-md"
+              style={{ backgroundColor: bgColor }}
+            >
+              <span className="text-white text-xs font-bold leading-none">{idx + 1}</span>
+            </div>
+          </AdvancedMarker>
+        )
+      })}
+    </>
+  )
 }
 
 export default function MapComponent() {
