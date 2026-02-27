@@ -62,6 +62,14 @@ export default function App() {
     })
   }, [setActiveCategories, setDefaultCategories])
 
+  // Load persisted dark mode preference (default OFF)
+  const setIsDark = useAppStore((s) => s.setIsDark)
+  useEffect(() => {
+    idbGet('darkMode').then((saved) => {
+      if (saved === true) setIsDark(true)
+    })
+  }, [setIsDark])
+
   // Load persisted trip dates
   useEffect(() => {
     idbGet('tripDates').then((saved) => {
@@ -251,6 +259,8 @@ function SettingsPanel({ batteryLevel, position, onResync, onClose, bottomNavHei
   const syncStatus = useAppStore((s) => s.syncStatus)
   const demoMode   = useAppStore((s) => s.demoMode)
   const setDemoMode = useAppStore((s) => s.setDemoMode)
+  const isDark     = useAppStore((s) => s.isDark)
+  const setIsDark  = useAppStore((s) => s.setIsDark)
   const showTripConnectors    = useAppStore((s) => s.showTripConnectors)
   const setShowTripConnectors = useAppStore((s) => s.setShowTripConnectors)
   const tripStart  = useAppStore((s) => s.tripStart)
@@ -362,6 +372,34 @@ function SettingsPanel({ batteryLevel, position, onResync, onClose, bottomNavHei
               GPS locked to Hotel Sunroute Plaza Shinjuku
             </p>
           )}
+        </section>
+
+        {/* Appearance */}
+        <section className="space-y-2">
+          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+            Appearance
+          </h3>
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              Use device theme
+            </p>
+            <button
+              onClick={async () => {
+                const next = !isDark
+                setIsDark(next)
+                await idbSet('darkMode', next)
+              }}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                isDark ? 'bg-sky-500' : 'bg-gray-300 dark:bg-gray-600'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                  isDark ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
         </section>
 
         {/* Trip Planner Map */}

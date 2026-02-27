@@ -391,6 +391,7 @@ function TodayView() {
   const [travelLoading, setTravelLoading] = useState(false)
   const [travelError, setTravelError]     = useState(null)
   const [pickerOpen, setPickerOpen]       = useState(false)
+  const [transitLegsOpen, setTransitLegsOpen] = useState(false)
   const lastFetchPos = useRef(null)
   const inJapan      = position ? isInJapan(position) : true // default Japan for this trip
   const todayDay     = getTodayDayNumber()
@@ -483,7 +484,7 @@ function TodayView() {
           const response = await routesLib.Route.computeRoutes({
             origin,
             destination: { lat: entry.lat, lng: entry.lng },
-            travelMode: 'WALK',
+            travelMode: 'WALKING',
             fields: ['*'],
           })
           const route = response?.routes?.[0]
@@ -503,7 +504,7 @@ function TodayView() {
           return { entryId: entry.id, color: getRouteColor(idx), path, duration, distanceKm }
         } catch (err) {
           const code = err?.code || err?.message || 'UNKNOWN_ERROR'
-          console.warn(`Route error (WALK) for ${entry.name}:`, code)
+          console.warn(`Route error (WALKING) for ${entry.name}:`, code)
           const km = (haversineDistance(origin, { lat: entry.lat, lng: entry.lng }) / 1000).toFixed(1)
           return { entryId: entry.id, color: getRouteColor(idx), path: [], duration: null, distanceKm: km, error: code }
         }
@@ -594,16 +595,10 @@ function TodayView() {
 
   function handleModeSwitch(mode) {
     if (mode === 'TRANSIT') {
-      // Google Maps only supports transit between 2 points (no waypoints).
-      // Open directions to the first stop — tap again after arriving for next leg.
-      const geoStops = todayEntries.filter((e) => e.lat != null && e.lng != null)
-      if (geoStops.length === 0) return
-      const origin = position ? `&origin=${position.lat},${position.lng}` : ''
-      const dest = geoStops[0]
-      const url = `https://www.google.com/maps/dir/?api=1${origin}&destination=${dest.lat},${dest.lng}&travelmode=transit`
-      window.open(url, '_blank')
+      setTransitLegsOpen((prev) => !prev)
       return
     }
+    setTransitLegsOpen(false)
     lastFetchPos.current = null  // reset so next GPS tick triggers fetch
     setPlannerTravelMode(mode)
     setTravelError(null)
@@ -634,7 +629,7 @@ function TodayView() {
                 key={mode}
                 onClick={() => handleModeSwitch(mode)}
                 className={`flex-1 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
-                  travelMode === mode
+                  travelMode === mode && !transitLegsOpen
                     ? 'border-sky-500 bg-sky-500 text-white'
                     : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400'
                 }`}
@@ -644,7 +639,11 @@ function TodayView() {
             ))}
             <button
               onClick={() => handleModeSwitch('TRANSIT')}
-              className="flex-1 py-1.5 text-xs font-medium rounded-lg border border-purple-400 text-purple-500 dark:text-purple-400 active:bg-purple-50 dark:active:bg-purple-900/30 transition-colors"
+              className={`flex-1 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                transitLegsOpen
+                  ? 'border-purple-500 bg-purple-500 text-white'
+                  : 'border-purple-400 text-purple-500 dark:text-purple-400 active:bg-purple-50 dark:active:bg-purple-900/30'
+              }`}
             >
               🚇 Transit
             </button>
@@ -718,6 +717,25 @@ function TodayView() {
                       )}
                     </div>
                   )}
+                  {transitLegsOpen && entry.lat != null && entry.lng != null && (() => {
+                    const prevStop = todayEntries.filter((e) => e.lat != null && e.lng != null).slice(0, geoIdx)[geoIdx - 1]
+                    const fromCoords = geoIdx === 0 && position
+                      ? `${position.lat},${position.lng}`
+                      : prevStop ? `${prevStop.lat},${prevStop.lng}` : null
+                    const fromLabel = geoIdx === 0 ? 'Current location' : prevStop?.name
+                    if (!fromCoords) return null
+                    return (
+                      <a
+                        href={`https://www.google.com/maps/dir/?api=1&origin=${fromCoords}&destination=${entry.lat},${entry.lng}&travelmode=transit`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 mt-1.5 py-1 px-2 text-[11px] font-medium text-purple-500 bg-purple-50 dark:bg-purple-900/20 rounded-lg active:bg-purple-100 dark:active:bg-purple-900/40"
+                      >
+                        <span>🚇</span>
+                        <span className="truncate">from {fromLabel}</span>
+                      </a>
+                    )
+                  })()}
                   <div className="flex gap-2 mt-1.5">
                     <button
                       onClick={() => handleToTomorrow(entry)}
@@ -753,6 +771,7 @@ function TodayView() {
           onClose={() => setPickerOpen(false)}
         />
       )}
+
     </>
   )
 }
