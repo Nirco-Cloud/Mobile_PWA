@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { useApiIsLoaded } from '@vis.gl/react-google-maps'
+import { useEffect, useState, useRef } from 'react'
+import { useMapsLibrary } from '@vis.gl/react-google-maps'
 import { useAppStore } from '../store/appStore.js'
 import {
   deletePlanEntry,
@@ -8,6 +8,7 @@ import {
 } from '../db/plannerDb.js'
 import { useTripConfig } from '../hooks/useTripConfig.js'
 import { BOTTOM_NAV_HEIGHT } from './BottomNav.jsx'
+import { getRouteColor } from '../config/routeColors.js'
 
 // ─── View switcher tabs ──────────────────────────────────────────────────────
 
@@ -355,54 +356,228 @@ function ThreeDayView() {
 
 // ─── Today view ──────────────────────────────────────────────────────────────
 
+// Distance threshold (meters) — only re-fetch routes when position moves more than this
+const POSITION_DEBOUNCE_M = 100
+
+// Japan bounding box — transit API doesn't work in Japan
+function isInJapan(pos) {
+  return pos.lat >= 24 && pos.lat <= 46 && pos.lng >= 122 && pos.lng <= 154
+}
+
+function haversineDistance(a, b) {
+  const R = 6371000
+  const dLat = (b.lat - a.lat) * Math.PI / 180
+  const dLng = (b.lng - a.lng) * Math.PI / 180
+  const sinLat = Math.sin(dLat / 2)
+  const sinLng = Math.sin(dLng / 2)
+  const h = sinLat * sinLat +
+    Math.cos(a.lat * Math.PI / 180) * Math.cos(b.lat * Math.PI / 180) * sinLng * sinLng
+  return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h))
+}
+
 function TodayView() {
   const { tripDays, tripStart, tripEnd, getTodayDayNumber } = useTripConfig()
-  const apiLoaded            = useApiIsLoaded()
+  const routesLib            = useMapsLibrary('routes')
   const planEntries          = useAppStore((s) => s.planEntries)
   const position             = useAppStore((s) => s.position)
   const removePlanEntry      = useAppStore((s) => s.removePlanEntry)
   const updatePlanEntryStore = useAppStore((s) => s.updatePlanEntry)
+  const travelMode           = useAppStore((s) => s.plannerTravelMode)
+  const setPlannerTravelMode = useAppStore((s) => s.setPlannerTravelMode)
+  const setRouteLines        = useAppStore((s) => s.setRouteLines)
+  const clearRouteLines      = useAppStore((s) => s.clearRouteLines)
 
-  const [travelMode, setTravelMode]   = useState('TRANSIT')
-  const [travelTimes, setTravelTimes] = useState({})
-  const [pickerOpen, setPickerOpen]   = useState(false)
+  const [travelTimes, setTravelTimes]     = useState({})
+  const [travelLoading, setTravelLoading] = useState(false)
+  const [travelError, setTravelError]     = useState(null)
+  const [pickerOpen, setPickerOpen]       = useState(false)
+  const lastFetchPos = useRef(null)
+  const inJapan      = position ? isInJapan(position) : true // default Japan for this trip
   const todayDay     = getTodayDayNumber()
   const todayEntries = planEntries
     .filter((e) => e.day === todayDay)
     .sort((a, b) => a.order - b.order)
   const todayEntryIds = todayEntries.map((e) => e.id).join(',')
 
-  // Compute travel times via DistanceMatrixService
+  // Clear routes on unmount
   useEffect(() => {
-    if (!apiLoaded || !position || todayEntries.length === 0) return
-    const destCoords = todayEntries
-      .filter((e) => e.lat != null && e.lng != null)
-      .map((e) => ({ lat: e.lat, lng: e.lng }))
-    if (destCoords.length === 0) return
+    return () => clearRouteLines()
+  }, [clearRouteLines])
+
+  // Helper: fetch routes for DRIVING via Route.computeRoutes
+  function fetchDriving(validEntries, origin) {
+    return Promise.all(
+      validEntries.map(async (entry, idx) => {
+        try {
+          const response = await routesLib.Route.computeRoutes({
+            origin,
+            destination: { lat: entry.lat, lng: entry.lng },
+            travelMode: 'DRIVING',
+            fields: ['*'],
+          })
+          const route = response?.routes?.[0]
+          if (!route) {
+            const km = (haversineDistance(origin, { lat: entry.lat, lng: entry.lng }) / 1000).toFixed(1)
+            return { entryId: entry.id, color: getRouteColor(idx), path: [], duration: null, distanceKm: km, error: 'NO_ROUTE' }
+          }
+          const path = route?.path?.map((p) =>
+            typeof p.lat === 'function'
+              ? { lat: p.lat(), lng: p.lng() }
+              : { lat: p.lat, lng: p.lng }
+          ) ?? []
+          const duration = route.localizedValues?.duration ?? null
+          const distanceKm = route.distanceMeters
+            ? (route.distanceMeters / 1000).toFixed(1)
+            : (haversineDistance(origin, { lat: entry.lat, lng: entry.lng }) / 1000).toFixed(1)
+          return { entryId: entry.id, color: getRouteColor(idx), path, duration, distanceKm }
+        } catch (err) {
+          const code = err?.code || err?.message || 'UNKNOWN_ERROR'
+          console.warn(`Route error (DRIVING) for ${entry.name}:`, code)
+          const km = (haversineDistance(origin, { lat: entry.lat, lng: entry.lng }) / 1000).toFixed(1)
+          return { entryId: entry.id, color: getRouteColor(idx), path: [], duration: null, distanceKm: km, error: code }
+        }
+      }),
+    )
+  }
+
+  // Helper: fetch transit routes via DirectionsService (works outside Japan)
+  function fetchTransit(validEntries, origin) {
+    const svc = new routesLib.DirectionsService()
+    return Promise.all(
+      validEntries.map((entry, idx) =>
+        new Promise((resolve) => {
+          svc.route(
+            {
+              origin,
+              destination: { lat: entry.lat, lng: entry.lng },
+              travelMode: routesLib.TravelMode.TRANSIT,
+              transitOptions: { departureTime: new Date() },
+            },
+            (result, status) => {
+              if (status === 'OK') {
+                const leg = result.routes[0]?.legs[0]
+                const path = result.routes[0]?.overview_path?.map((p) => ({
+                  lat: p.lat(), lng: p.lng(),
+                })) ?? []
+                const duration = leg?.duration?.text ?? null
+                const distanceKm = leg?.distance?.value
+                  ? (leg.distance.value / 1000).toFixed(1)
+                  : (haversineDistance(origin, { lat: entry.lat, lng: entry.lng }) / 1000).toFixed(1)
+                resolve({ entryId: entry.id, color: getRouteColor(idx), path, duration, distanceKm })
+              } else {
+                const km = (haversineDistance(origin, { lat: entry.lat, lng: entry.lng }) / 1000).toFixed(1)
+                resolve({ entryId: entry.id, color: getRouteColor(idx), path: [], duration: null, distanceKm: km, error: status })
+              }
+            },
+          )
+        }),
+      ),
+    )
+  }
+
+  // Helper: fetch walking routes via Route.computeRoutes
+  function fetchWalking(validEntries, origin) {
+    return Promise.all(
+      validEntries.map(async (entry, idx) => {
+        try {
+          const response = await routesLib.Route.computeRoutes({
+            origin,
+            destination: { lat: entry.lat, lng: entry.lng },
+            travelMode: 'WALK',
+            fields: ['*'],
+          })
+          const route = response?.routes?.[0]
+          if (!route) {
+            const km = (haversineDistance(origin, { lat: entry.lat, lng: entry.lng }) / 1000).toFixed(1)
+            return { entryId: entry.id, color: getRouteColor(idx), path: [], duration: null, distanceKm: km, error: 'NO_ROUTE' }
+          }
+          const path = route?.path?.map((p) =>
+            typeof p.lat === 'function'
+              ? { lat: p.lat(), lng: p.lng() }
+              : { lat: p.lat, lng: p.lng }
+          ) ?? []
+          const duration = route.localizedValues?.duration ?? null
+          const distanceKm = route.distanceMeters
+            ? (route.distanceMeters / 1000).toFixed(1)
+            : (haversineDistance(origin, { lat: entry.lat, lng: entry.lng }) / 1000).toFixed(1)
+          return { entryId: entry.id, color: getRouteColor(idx), path, duration, distanceKm }
+        } catch (err) {
+          const code = err?.code || err?.message || 'UNKNOWN_ERROR'
+          console.warn(`Route error (WALK) for ${entry.name}:`, code)
+          const km = (haversineDistance(origin, { lat: entry.lat, lng: entry.lng }) / 1000).toFixed(1)
+          return { entryId: entry.id, color: getRouteColor(idx), path: [], duration: null, distanceKm: km, error: code }
+        }
+      }),
+    )
+  }
+
+  // Fetch routes for BOTH modes in parallel
+  useEffect(() => {
+    if (!routesLib || !position || todayEntries.length === 0) {
+      clearRouteLines()
+      return
+    }
+
+    // Position debounce — skip if moved less than threshold
+    if (lastFetchPos.current &&
+        haversineDistance(lastFetchPos.current, position) < POSITION_DEBOUNCE_M) {
+      return
+    }
+
+    const validEntries = todayEntries.filter((e) => e.lat != null && e.lng != null)
+    if (validEntries.length === 0) {
+      clearRouteLines()
+      return
+    }
 
     let cancelled = false
-    const svc = new window.google.maps.DistanceMatrixService()
-    svc.getDistanceMatrix(
-      {
-        origins: [{ lat: position.lat, lng: position.lng }],
-        destinations: destCoords,
-        travelMode: window.google.maps.TravelMode[travelMode],
-        unitSystem: window.google.maps.UnitSystem.METRIC,
-      },
-      (result, status) => {
-        if (cancelled || status !== 'OK') return
-        const row      = result.rows[0]?.elements ?? []
-        const filtered = todayEntries.filter((e) => e.lat != null && e.lng != null)
-        const next     = {}
-        filtered.forEach((entry, i) => {
-          const el = row[i]
-          if (el?.status === 'OK') next[entry.id] = el.duration.text
-        })
-        setTravelTimes(next)
-      },
-    )
-    return () => { cancelled = true }
-  }, [apiLoaded, position, travelMode, todayEntryIds]) // eslint-disable-line react-hooks/exhaustive-deps
+    setTravelLoading(true)
+    setTravelError(null)
+    lastFetchPos.current = { lat: position.lat, lng: position.lng }
+
+    const origin = { lat: position.lat, lng: position.lng }
+
+    const secondaryFetch = inJapan
+      ? fetchWalking(validEntries, origin)
+      : fetchTransit(validEntries, origin)
+
+    Promise.all([
+      fetchDriving(validEntries, origin),
+      secondaryFetch,
+    ]).then(([driveResults, altResults]) => {
+      if (cancelled) return
+      setTravelLoading(false)
+
+      // Pick the active mode's results for route lines on map
+      const activeResults = travelMode === 'DRIVING' ? driveResults : altResults
+      const errors = activeResults.filter((r) => r.error)
+      if (errors.length > 0 && errors.length === activeResults.length) {
+        setTravelError(errors[0].error)
+      }
+      setRouteLines(activeResults.filter((r) => r.path.length > 0))
+
+      // Merge both modes
+      const times = {}
+      driveResults.forEach((r) => {
+        if (!times[r.entryId]) times[r.entryId] = {}
+        times[r.entryId].drive = r.duration
+        times[r.entryId].driveKm = r.distanceKm
+      })
+      altResults.forEach((r) => {
+        if (!times[r.entryId]) times[r.entryId] = {}
+        if (inJapan) {
+          times[r.entryId].walk = r.duration
+          times[r.entryId].walkKm = r.distanceKm
+        } else {
+          times[r.entryId].transit = r.duration
+          times[r.entryId].transitKm = r.distanceKm
+        }
+      })
+      setTravelTimes(times)
+    })
+
+    return () => { cancelled = true; setTravelLoading(false) }
+  }, [routesLib, position, travelMode, todayEntryIds]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleDelete(id) {
     await deletePlanEntry(id)
@@ -415,6 +590,12 @@ function TodayView() {
     const updated = { ...entry, day: todayDay + 1, order: tomorrowCount + 1 }
     await dbUpdatePlanEntry(updated)
     updatePlanEntryStore(updated)
+  }
+
+  function handleModeSwitch(mode) {
+    lastFetchPos.current = null  // reset so next GPS tick triggers fetch
+    setPlannerTravelMode(mode)
+    setTravelError(null)
   }
 
   if (todayDay === null) {
@@ -435,20 +616,37 @@ function TodayView() {
     <>
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Transit / Drive toggle */}
-        <div className="flex gap-2 px-4 py-2 border-b border-gray-100 dark:border-gray-800">
-          {['TRANSIT', 'DRIVING'].map((mode) => (
-            <button
-              key={mode}
-              onClick={() => { setTravelMode(mode); setTravelTimes({}) }}
-              className={`flex-1 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
-                travelMode === mode
-                  ? 'border-sky-500 bg-sky-500 text-white'
-                  : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400'
-              }`}
-            >
-              {mode === 'TRANSIT' ? '🚇 Transit' : '🚗 Drive'}
-            </button>
-          ))}
+        <div className="px-4 pt-2 pb-1 border-b border-gray-100 dark:border-gray-800 space-y-1.5">
+          <div className="flex gap-2">
+            {[inJapan ? 'WALKING' : 'TRANSIT', 'DRIVING'].map((mode) => (
+              <button
+                key={mode}
+                onClick={() => handleModeSwitch(mode)}
+                className={`flex-1 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                  travelMode === mode
+                    ? 'border-sky-500 bg-sky-500 text-white'
+                    : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400'
+                }`}
+              >
+                {mode === 'WALKING' ? '🚶 Walk' : mode === 'TRANSIT' ? '🚇 Transit' : '🚗 Drive'}
+              </button>
+            ))}
+          </div>
+          {!position && (
+            <p className="text-[11px] text-gray-400 dark:text-gray-500 text-center pb-0.5">
+              Enable GPS for travel times
+            </p>
+          )}
+          {position && travelLoading && (
+            <p className="text-[11px] text-sky-400 text-center pb-0.5">Calculating routes…</p>
+          )}
+          {position && !travelLoading && travelError && (
+            <p className="text-[11px] text-orange-400 text-center pb-0.5">
+              {travelError === 'ZERO_RESULTS' || travelError === 'NOT_FOUND' || travelError === 'NO_ROUTE'
+                ? 'No routes found'
+                : `Route unavailable (${travelError})`}
+            </p>
+          )}
         </div>
 
         {/* Stop list */}
@@ -458,38 +656,79 @@ function TodayView() {
               No stops for today yet.
             </p>
           )}
-          {todayEntries.map((entry, idx) => (
-            <div
-              key={entry.id}
-              className="flex gap-3 items-start bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-3 shadow-sm"
-            >
-              <div className="shrink-0 w-7 h-7 rounded-full bg-sky-500 flex items-center justify-center">
-                <span className="text-white text-xs font-bold">{idx + 1}</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-800 dark:text-gray-100 leading-tight">
-                  {entry.name}
-                </p>
-                {travelTimes[entry.id] && (
-                  <p className="text-xs text-sky-500 mt-0.5">{travelTimes[entry.id]} away</p>
-                )}
-                <div className="flex gap-2 mt-2">
-                  <button
-                    onClick={() => handleToTomorrow(entry)}
-                    className="flex-1 py-1 text-xs font-medium text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg active:bg-indigo-100"
-                  >
-                    → Tomorrow
-                  </button>
-                  <button
-                    onClick={() => handleDelete(entry.id)}
-                    className="py-1 px-2 text-xs font-medium text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg active:bg-red-100"
-                  >
-                    Remove
-                  </button>
+          {todayEntries.map((entry, idx) => {
+            // Color index is based on position among geo-valid entries
+            const geoIdx = todayEntries
+              .filter((e) => e.lat != null && e.lng != null)
+              .indexOf(entry)
+            const color = geoIdx >= 0 ? getRouteColor(geoIdx) : null
+            return (
+              <div
+                key={entry.id}
+                className="flex gap-3 items-start bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-3 shadow-sm"
+              >
+                <div
+                  className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: color || '#0ea5e9' }}
+                >
+                  <span className="text-white text-xs font-bold">{idx + 1}</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-800 dark:text-gray-100 leading-tight">
+                    {entry.name}
+                  </p>
+                  {travelTimes[entry.id] && (
+                    <div className="flex gap-3 mt-1 text-[11px]">
+                      {travelTimes[entry.id].walk && (
+                        <span className="text-green-500 dark:text-green-400">
+                          🚶 {travelTimes[entry.id].walk}
+                        </span>
+                      )}
+                      {travelTimes[entry.id].transit && (
+                        <span className="text-purple-500 dark:text-purple-400">
+                          🚇 {travelTimes[entry.id].transit}
+                        </span>
+                      )}
+                      {travelTimes[entry.id].drive && (
+                        <span className="text-sky-500 dark:text-sky-400">
+                          🚗 {travelTimes[entry.id].drive}
+                        </span>
+                      )}
+                      {travelTimes[entry.id].driveKm && (
+                        <span className="text-gray-400 dark:text-gray-500">
+                          {travelTimes[entry.id].driveKm} km
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {inJapan && entry.lat != null && entry.lng != null && (
+                    <a
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${entry.lat},${entry.lng}&travelmode=transit`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-1 mt-1.5 py-1 text-[11px] font-medium text-purple-500 bg-purple-50 dark:bg-purple-900/20 rounded-lg active:bg-purple-100"
+                    >
+                      🚇 Transit directions
+                    </a>
+                  )}
+                  <div className="flex gap-2 mt-1.5">
+                    <button
+                      onClick={() => handleToTomorrow(entry)}
+                      className="flex-1 py-1 text-xs font-medium text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg active:bg-indigo-100"
+                    >
+                      → Tomorrow
+                    </button>
+                    <button
+                      onClick={() => handleDelete(entry.id)}
+                      className="py-1 px-2 text-xs font-medium text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg active:bg-red-100"
+                    >
+                      Remove
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
 
           {/* Add stop button */}
           <button

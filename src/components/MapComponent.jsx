@@ -3,6 +3,7 @@ import { Map, useMap, useApiIsLoaded, AdvancedMarker } from '@vis.gl/react-googl
 import { useAppStore } from '../store/appStore.js'
 import MapMarker from './MapMarker.jsx'
 import { useTripConfig } from '../hooks/useTripConfig.js'
+import { getRouteColor } from '../config/routeColors.js'
 
 const DEFAULT_ZOOM = 12
 
@@ -88,28 +89,31 @@ function PlanMapLayer() {
   const isPlannerOpen = useAppStore((s) => s.isPlannerOpen)
   const plannerView   = useAppStore((s) => s.plannerView)
   const planEntries   = useAppStore((s) => s.planEntries)
+  const routeLines    = useAppStore((s) => s.routeLines)
   const { getTodayDayNumber } = useTripConfig()
   const planFocusDay  = useAppStore((s) => s.planFocusDay)
-  const polylineRef   = useRef(null)
+  const seqPolyRef    = useRef(null)      // sequential polyline (non-today views)
+  const routePolysRef = useRef([])         // colored route polylines (today view)
 
   const active     = isPlannerOpen
   const todayDay   = getTodayDayNumber()
-  // In "today" view show today's stops; otherwise show the focused day
-  const displayDay = plannerView === 'today' ? (todayDay ?? planFocusDay) : planFocusDay
+  const isToday    = plannerView === 'today'
+  const displayDay = isToday ? (todayDay ?? planFocusDay) : planFocusDay
 
   const stops = planEntries
     .filter((e) => e.day === displayDay && e.lat != null && e.lng != null)
     .sort((a, b) => a.order - b.order)
   const stopsKey = stops.map((e) => `${e.id}:${e.lat}:${e.lng}`).join('|')
+  const routeKey = routeLines.map((r) => `${r.entryId}:${r.path.length}`).join('|')
 
-  // Keep polyline in sync
+  // Sequential polyline for non-today views
   useEffect(() => {
     if (!map) return
-    if (polylineRef.current) {
-      polylineRef.current.setMap(null)
-      polylineRef.current = null
+    if (seqPolyRef.current) {
+      seqPolyRef.current.setMap(null)
+      seqPolyRef.current = null
     }
-    if (!active || stops.length < 2) return
+    if (!active || isToday || stops.length < 2) return
 
     const path = stops.map((e) => ({ lat: e.lat, lng: e.lng }))
     const polyline = new window.google.maps.Polyline({
@@ -120,32 +124,68 @@ function PlanMapLayer() {
       strokeWeight: 3,
     })
     polyline.setMap(map)
-    polylineRef.current = polyline
+    seqPolyRef.current = polyline
 
     return () => {
       polyline.setMap(null)
-      polylineRef.current = null
+      seqPolyRef.current = null
     }
-  }, [map, active, stopsKey]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [map, active, isToday, stopsKey]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Colored route polylines for today view
+  useEffect(() => {
+    // Clean up previous route polylines
+    routePolysRef.current.forEach((p) => p.setMap(null))
+    routePolysRef.current = []
+
+    if (!map || !active || !isToday || routeLines.length === 0) return
+
+    const polys = routeLines.map((route) => {
+      const polyline = new window.google.maps.Polyline({
+        path: route.path,
+        geodesic: true,
+        strokeColor: route.color,
+        strokeOpacity: 0.8,
+        strokeWeight: 4,
+      })
+      polyline.setMap(map)
+      return polyline
+    })
+    routePolysRef.current = polys
+
+    return () => {
+      polys.forEach((p) => p.setMap(null))
+      routePolysRef.current = []
+    }
+  }, [map, active, isToday, routeKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!active) return null
 
-  return stops.map((entry, idx) => (
-    <AdvancedMarker
-      key={entry.id}
-      position={{ lat: entry.lat, lng: entry.lng }}
-    >
-      <div className="flex items-center justify-center w-7 h-7 rounded-full bg-sky-500 border-2 border-white shadow-md">
-        <span className="text-white text-xs font-bold leading-none">{idx + 1}</span>
-      </div>
-    </AdvancedMarker>
-  ))
+  return stops.map((entry, idx) => {
+    const bgColor = isToday ? getRouteColor(idx) : '#0ea5e9'
+    return (
+      <AdvancedMarker
+        key={entry.id}
+        position={{ lat: entry.lat, lng: entry.lng }}
+      >
+        <div
+          className="flex items-center justify-center w-7 h-7 rounded-full border-2 border-white shadow-md"
+          style={{ backgroundColor: bgColor }}
+        >
+          <span className="text-white text-xs font-bold leading-none">{idx + 1}</span>
+        </div>
+      </AdvancedMarker>
+    )
+  })
 }
 
 export default function MapComponent() {
   const allLocations = useAppStore((s) => s.locations)
   const activeCategories = useAppStore((s) => s.activeCategories)
-  const locations = allLocations.filter((l) => activeCategories.includes(l.category))
+  const isPlannerOpen = useAppStore((s) => s.isPlannerOpen)
+  const locations = isPlannerOpen
+    ? []
+    : allLocations.filter((l) => activeCategories.includes(l.category))
   const position = useAppStore((s) => s.position)
   const selectedLocationId = useAppStore((s) => s.selectedLocationId)
   const [mapReady, setMapReady] = useState(false)
