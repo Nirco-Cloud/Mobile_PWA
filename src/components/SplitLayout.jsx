@@ -39,35 +39,39 @@ export default function SplitLayout({ mapSlot, listSlot, bottomNavHeight = 56 })
       {/* Map panel */}
       <div
         className="overflow-hidden"
-        style={{ height: `${mapPercent}%`, minHeight: 0 }}
+        style={{ height: listSlot ? `${mapPercent}%` : '100%', minHeight: 0 }}
       >
         {mapSlot}
       </div>
 
-      {/* Divider */}
-      <div
-        className="relative flex items-center justify-center bg-gray-100 dark:bg-gray-800 border-y border-gray-200 dark:border-gray-700 z-10"
-        style={{
-          height: 20,
-          cursor: 'row-resize',
-          touchAction: 'none',
-          flexShrink: 0,
-        }}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-      >
-        <div className="w-12 h-1 rounded-full bg-gray-400 dark:bg-gray-500" />
-      </div>
+      {listSlot && (
+        <>
+          {/* Divider */}
+          <div
+            className="relative flex items-center justify-center bg-gray-100 dark:bg-gray-800 border-y border-gray-200 dark:border-gray-700 z-10"
+            style={{
+              height: 20,
+              cursor: 'row-resize',
+              touchAction: 'none',
+              flexShrink: 0,
+            }}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+          >
+            <div className="w-12 h-1 rounded-full bg-gray-400 dark:bg-gray-500" />
+          </div>
 
-      {/* List panel */}
-      <div
-        className="flex-1 overflow-hidden"
-        style={{ minHeight: 0 }}
-      >
-        {listSlot}
-      </div>
+          {/* List panel */}
+          <div
+            className="flex-1 overflow-hidden"
+            style={{ minHeight: 0 }}
+          >
+            {listSlot}
+          </div>
+        </>
+      )}
     </div>
   )
 }

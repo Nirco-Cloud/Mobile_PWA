@@ -48,6 +48,7 @@ export default function App() {
   const setDefaultCategories = useAppStore((s) => s.setDefaultCategories)
   const setImportedLocations = useAppStore((s) => s.setImportedLocations)
   const setPlanEntries   = useAppStore((s) => s.setPlanEntries)
+  const isPlannerOpen    = useAppStore((s) => s.isPlannerOpen)
   const setIsPlannerOpen = useAppStore((s) => s.setIsPlannerOpen)
   const setTripDates     = useAppStore((s) => s.setTripDates)
 
@@ -192,7 +193,7 @@ export default function App() {
               </button>
             </div>
           }
-          listSlot={<ListComponent />}
+          listSlot={isPlannerOpen ? null : <ListComponent />}
         />
       ) : (
         <SettingsPanel
