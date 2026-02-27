@@ -597,10 +597,11 @@ function TodayView() {
       // Open Google Maps with full trip route in transit mode
       const geoStops = todayEntries.filter((e) => e.lat != null && e.lng != null)
       if (geoStops.length === 0) return
-      const origin = position ? `${position.lat},${position.lng}` : ''
-      const dest = `${geoStops[geoStops.length - 1].lat},${geoStops[geoStops.length - 1].lng}`
-      const waypoints = geoStops.slice(0, -1).map((e) => `${e.lat},${e.lng}`).join('|')
-      const url = `https://www.google.com/maps/dir/?api=1${origin ? `&origin=${origin}` : ''}&destination=${dest}${waypoints ? `&waypoints=${waypoints}` : ''}&travelmode=transit`
+      // Path-based URL supports transit with multiple stops (api=1 waypoints doesn't)
+      const points = []
+      if (position) points.push(`${position.lat},${position.lng}`)
+      geoStops.forEach((e) => points.push(`${e.lat},${e.lng}`))
+      const url = `https://www.google.com/maps/dir/${points.join('/')}/data=!4m2!4m1!3e3`
       window.open(url, '_blank')
       return
     }
