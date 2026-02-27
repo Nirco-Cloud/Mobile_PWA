@@ -678,78 +678,83 @@ function TodayView() {
               .filter((e) => e.lat != null && e.lng != null)
               .indexOf(entry)
             const color = geoIdx >= 0 ? getRouteColor(geoIdx) : null
-            return (
-              <div
-                key={entry.id}
-                className="flex gap-3 items-start bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-3 shadow-sm"
-              >
+            const origin = position ? `${position.lat},${position.lng}` : null
+            const dest = entry.lat != null && entry.lng != null ? `${entry.lat},${entry.lng}` : null
+            const tt = travelTimes[entry.id]
+
+            let mapsUrl = null
+            if (origin && dest) {
+              if (transitLegsOpen) {
+                const prevStop = todayEntries.filter((e) => e.lat != null && e.lng != null).slice(0, geoIdx)[geoIdx - 1]
+                const transitOrigin = geoIdx === 0
+                  ? `${position.lat},${position.lng}`
+                  : prevStop ? `${prevStop.lat},${prevStop.lng}` : null
+                if (transitOrigin) {
+                  mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${transitOrigin}&destination=${dest}&travelmode=transit`
+                }
+              } else {
+                const gmMode = travelMode === 'WALKING' ? 'walking' : 'driving'
+                mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}&travelmode=${gmMode}`
+              }
+            }
+
+            let transitFromLabel = null
+            if (transitLegsOpen && entry.lat != null && entry.lng != null) {
+              const prevStop = todayEntries.filter((e) => e.lat != null && e.lng != null).slice(0, geoIdx)[geoIdx - 1]
+              transitFromLabel = geoIdx === 0 ? 'Current location' : prevStop?.name
+            }
+
+            const rowContent = (
+              <div className="flex gap-3 items-center">
                 <div
                   className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center"
                   style={{ backgroundColor: color || '#0ea5e9' }}
                 >
                   <span className="text-white text-xs font-bold">{idx + 1}</span>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-800 dark:text-gray-100 leading-tight">
+                <div className="flex-1 min-w-0 flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+                  <span className="text-[15px] font-semibold text-gray-800 dark:text-gray-100 leading-snug">
                     {entry.name}
-                  </p>
-                  {travelTimes[entry.id] && (
-                    <div className="flex gap-3 mt-1 text-[11px]">
-                      {travelTimes[entry.id].walk && (
-                        <span className="text-green-500 dark:text-green-400">
-                          🚶 {travelTimes[entry.id].walk}
-                        </span>
-                      )}
-                      {travelTimes[entry.id].transit && (
-                        <span className="text-purple-500 dark:text-purple-400">
-                          🚇 {travelTimes[entry.id].transit}
-                        </span>
-                      )}
-                      {travelTimes[entry.id].drive && (
-                        <span className="text-sky-500 dark:text-sky-400">
-                          🚗 {travelTimes[entry.id].drive}
-                        </span>
-                      )}
-                      {travelTimes[entry.id].driveKm && (
-                        <span className="text-gray-400 dark:text-gray-500">
-                          {travelTimes[entry.id].driveKm} km
-                        </span>
-                      )}
-                    </div>
+                  </span>
+                  {!transitLegsOpen && tt?.walk && (
+                    <span className="text-[13px] font-medium text-green-500 dark:text-green-400 whitespace-nowrap">🚶 {tt.walk}</span>
                   )}
-                  {transitLegsOpen && entry.lat != null && entry.lng != null && (() => {
-                    const prevStop = todayEntries.filter((e) => e.lat != null && e.lng != null).slice(0, geoIdx)[geoIdx - 1]
-                    const fromCoords = geoIdx === 0 && position
-                      ? `${position.lat},${position.lng}`
-                      : prevStop ? `${prevStop.lat},${prevStop.lng}` : null
-                    const fromLabel = geoIdx === 0 ? 'Current location' : prevStop?.name
-                    if (!fromCoords) return null
-                    return (
-                      <a
-                        href={`https://www.google.com/maps/dir/?api=1&origin=${fromCoords}&destination=${entry.lat},${entry.lng}&travelmode=transit`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 mt-1.5 py-1 px-2 text-[11px] font-medium text-purple-500 bg-purple-50 dark:bg-purple-900/20 rounded-lg active:bg-purple-100 dark:active:bg-purple-900/40"
-                      >
-                        <span>🚇</span>
-                        <span className="truncate">from {fromLabel}</span>
-                      </a>
-                    )
-                  })()}
-                  <div className="flex gap-2 mt-1.5">
-                    <button
-                      onClick={() => handleToTomorrow(entry)}
-                      className="flex-1 py-1 text-xs font-medium text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg active:bg-indigo-100"
-                    >
-                      → Tomorrow
-                    </button>
-                    <button
-                      onClick={() => handleDelete(entry.id)}
-                      className="py-1 px-2 text-xs font-medium text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg active:bg-red-100"
-                    >
-                      Remove
-                    </button>
-                  </div>
+                  {!transitLegsOpen && tt?.drive && (
+                    <span className="text-[13px] font-medium text-sky-500 dark:text-sky-400 whitespace-nowrap">🚗 {tt.drive}</span>
+                  )}
+                  {!transitLegsOpen && tt?.driveKm && (
+                    <span className="text-[13px] text-gray-400 dark:text-gray-500 whitespace-nowrap">{tt.driveKm} km</span>
+                  )}
+                  {transitLegsOpen && transitFromLabel && (
+                    <span className="text-[13px] font-medium text-purple-500 dark:text-purple-400 whitespace-nowrap">🚇 from {transitFromLabel}</span>
+                  )}
+                </div>
+              </div>
+            )
+
+            return (
+              <div
+                key={entry.id}
+                className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-3 shadow-sm"
+              >
+                {mapsUrl ? (
+                  <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="block active:opacity-70">
+                    {rowContent}
+                  </a>
+                ) : rowContent}
+                <div className="flex gap-2 mt-1.5">
+                  <button
+                    onClick={() => handleToTomorrow(entry)}
+                    className="flex-1 py-1 text-xs font-medium text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg active:bg-indigo-100"
+                  >
+                    → Tomorrow
+                  </button>
+                  <button
+                    onClick={() => handleDelete(entry.id)}
+                    className="py-1 px-2 text-xs font-medium text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg active:bg-red-100"
+                  >
+                    Remove
+                  </button>
                 </div>
               </div>
             )
