@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Map, useMap, useApiIsLoaded } from '@vis.gl/react-google-maps'
+import { Map, useMap, useApiIsLoaded, AdvancedMarker } from '@vis.gl/react-google-maps'
 import { useAppStore } from '../store/appStore.js'
 import MapMarker from './MapMarker.jsx'
+import { useTripConfig } from '../hooks/useTripConfig.js'
 
 const DEFAULT_ZOOM = 12
 
@@ -18,9 +19,33 @@ function MapMarkers({ locations, selectedLocationId }) {
 }
 
 function MapController() {
-  const map = useMap()
-  const position = useAppStore((s) => s.position)
+  const map           = useMap()
+  const position      = useAppStore((s) => s.position)
+  const isPlannerOpen = useAppStore((s) => s.isPlannerOpen)
+  const planFocusDay  = useAppStore((s) => s.planFocusDay)
+  const plannerView   = useAppStore((s) => s.plannerView)
+  const planEntries   = useAppStore((s) => s.planEntries)
+  const { getTodayDayNumber } = useTripConfig()
   const userHasPanned = useRef(false)
+
+  // Fit map to planned stops when planner opens or focused day changes
+  useEffect(() => {
+    if (!map || !isPlannerOpen) return
+    const todayDay   = getTodayDayNumber()
+    const displayDay = plannerView === 'today' ? (todayDay ?? planFocusDay) : planFocusDay
+    const stops      = planEntries.filter(
+      (e) => e.day === displayDay && e.lat != null && e.lng != null,
+    )
+    if (stops.length === 0) return
+    if (stops.length === 1) {
+      map.panTo({ lat: stops[0].lat, lng: stops[0].lng })
+      if (map.getZoom() < 15) map.setZoom(15)
+      return
+    }
+    const bounds = new window.google.maps.LatLngBounds()
+    stops.forEach((s) => bounds.extend({ lat: s.lat, lng: s.lng }))
+    map.fitBounds(bounds, { top: 20, bottom: 20, left: 20, right: 20 })
+  }, [map, isPlannerOpen, planFocusDay, plannerView, planEntries, getTodayDayNumber])
 
   // Auto-center when position updates (unless user has panned)
   useEffect(() => {
@@ -58,6 +83,64 @@ function MapController() {
   return null
 }
 
+function PlanMapLayer() {
+  const map           = useMap()
+  const isPlannerOpen = useAppStore((s) => s.isPlannerOpen)
+  const plannerView   = useAppStore((s) => s.plannerView)
+  const planEntries   = useAppStore((s) => s.planEntries)
+  const { getTodayDayNumber } = useTripConfig()
+  const planFocusDay  = useAppStore((s) => s.planFocusDay)
+  const polylineRef   = useRef(null)
+
+  const active     = isPlannerOpen
+  const todayDay   = getTodayDayNumber()
+  // In "today" view show today's stops; otherwise show the focused day
+  const displayDay = plannerView === 'today' ? (todayDay ?? planFocusDay) : planFocusDay
+
+  const stops = planEntries
+    .filter((e) => e.day === displayDay && e.lat != null && e.lng != null)
+    .sort((a, b) => a.order - b.order)
+
+  // Keep polyline in sync
+  useEffect(() => {
+    if (!map) return
+    if (polylineRef.current) {
+      polylineRef.current.setMap(null)
+      polylineRef.current = null
+    }
+    if (!active || stops.length < 2) return
+
+    const path = stops.map((e) => ({ lat: e.lat, lng: e.lng }))
+    const polyline = new window.google.maps.Polyline({
+      path,
+      geodesic: true,
+      strokeColor: '#0ea5e9',
+      strokeOpacity: 0.85,
+      strokeWeight: 3,
+    })
+    polyline.setMap(map)
+    polylineRef.current = polyline
+
+    return () => {
+      polyline.setMap(null)
+      polylineRef.current = null
+    }
+  }, [map, active, stops.length, displayDay]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!active) return null
+
+  return stops.map((entry, idx) => (
+    <AdvancedMarker
+      key={entry.id}
+      position={{ lat: entry.lat, lng: entry.lng }}
+    >
+      <div className="flex items-center justify-center w-7 h-7 rounded-full bg-sky-500 border-2 border-white shadow-md">
+        <span className="text-white text-xs font-bold leading-none">{idx + 1}</span>
+      </div>
+    </AdvancedMarker>
+  ))
+}
+
 export default function MapComponent() {
   const allLocations = useAppStore((s) => s.locations)
   const activeCategories = useAppStore((s) => s.activeCategories)
@@ -87,6 +170,7 @@ export default function MapComponent() {
         {mapReady && (
           <MapMarkers locations={locations} selectedLocationId={selectedLocationId} />
         )}
+        {mapReady && <PlanMapLayer />}
       </Map>
 
       {/* Re-center FAB */}

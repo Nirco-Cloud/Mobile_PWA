@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { subscribeWithSelector } from 'zustand/middleware'
 import { ALL_CATEGORY_KEYS } from '../config/categories.js'
+import { DEFAULT_TRIP_START, DEFAULT_TRIP_END } from '../config/trip.js'
 
 export const useAppStore = create(
   subscribeWithSelector((set) => ({
@@ -52,6 +53,29 @@ export const useAppStore = create(
           : [...s.activeCategories, key],
       })),
 
+    // Trip dates (user-configurable)
+    tripStart: DEFAULT_TRIP_START,
+    tripEnd:   DEFAULT_TRIP_END,
+    setTripDates: (start, end) => set({ tripStart: start, tripEnd: end }),
+
+    // Planner
+    planEntries: [],
+    setPlanEntries: (entries) => set({ planEntries: entries }),
+    addPlanEntry: (entry) =>
+      set((s) => ({ planEntries: [...s.planEntries, entry] })),
+    removePlanEntry: (id) =>
+      set((s) => ({ planEntries: s.planEntries.filter((e) => e.id !== id) })),
+    updatePlanEntry: (updated) =>
+      set((s) => ({
+        planEntries: s.planEntries.map((e) => (e.id === updated.id ? updated : e)),
+      })),
+    isPlannerOpen: false,
+    setIsPlannerOpen: (v) => set({ isPlannerOpen: v }),
+    plannerView: 'full',    // 'full' | '3day' | 'today'
+    setPlannerView: (v) => set({ plannerView: v }),
+    planFocusDay: 1,
+    setPlanFocusDay: (d) => set({ planFocusDay: d }),
+
     // Imported locations (from Google Maps links)
     importedLocations: [],
     addImportedLocation: (loc) =>
@@ -65,5 +89,10 @@ export const useAppStore = create(
         locations: s.locations.filter((l) => l.id !== id),
       })),
     setImportedLocations: (importedLocations) => set({ importedLocations }),
+    updateImportedLocation: (updated) =>
+      set((s) => ({
+        importedLocations: s.importedLocations.map((l) => l.id === updated.id ? updated : l),
+        locations: s.locations.map((l) => l.id === updated.id ? updated : l),
+      })),
   })),
 )

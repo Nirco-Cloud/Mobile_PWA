@@ -1,0 +1,562 @@
+import { useEffect, useState } from 'react'
+import { useApiIsLoaded } from '@vis.gl/react-google-maps'
+import { useAppStore } from '../store/appStore.js'
+import {
+  deletePlanEntry,
+  savePlanEntry,
+  updatePlanEntry as dbUpdatePlanEntry,
+} from '../db/plannerDb.js'
+import { useTripConfig } from '../hooks/useTripConfig.js'
+import { BOTTOM_NAV_HEIGHT } from './BottomNav.jsx'
+
+// ─── View switcher tabs ──────────────────────────────────────────────────────
+
+function ViewTabs({ view, onSet, tripDays }) {
+  const tabs = [
+    { id: 'full',  label: `${tripDays} Days` },
+    { id: '3day',  label: '3 Days'           },
+    { id: 'today', label: 'Today'            },
+  ]
+  return (
+    <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+      {tabs.map((t) => (
+        <button
+          key={t.id}
+          onClick={() => onSet(t.id)}
+          className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors ${
+            view === t.id
+              ? 'bg-white dark:bg-gray-700 text-sky-600 dark:text-sky-400 shadow-sm'
+              : 'text-gray-500 dark:text-gray-400'
+          }`}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// ─── Location picker sheet ────────────────────────────────────────────────────
+
+function LocationPickerSheet({ targetDay, onClose }) {
+  const locations    = useAppStore((s) => s.locations)
+  const planEntries  = useAppStore((s) => s.planEntries)
+  const addPlanEntry = useAppStore((s) => s.addPlanEntry)
+  const [query, setQuery] = useState('')
+
+  const filtered = locations.filter((l) =>
+    l.name.toLowerCase().includes(query.toLowerCase()),
+  )
+
+  async function handlePick(loc) {
+    const dayEntries = planEntries.filter((e) => e.day === targetDay)
+    const entry = {
+      id: `plan_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      day: targetDay,
+      order: dayEntries.length + 1,
+      type: 'location',
+      locationId: loc.id ?? null,
+      name: loc.name,
+      lat: loc.lat ?? null,
+      lng: loc.lng ?? null,
+      note: null,
+      createdAt: new Date().toISOString(),
+    }
+    await savePlanEntry(entry)
+    addPlanEntry(entry)
+    onClose()
+  }
+
+  return (
+    <>
+      <div className="fixed inset-0 z-60 bg-black/40" onClick={onClose} />
+      <div
+        className="fixed left-0 right-0 bottom-0 z-70 bg-white dark:bg-gray-900 rounded-t-2xl shadow-xl flex flex-col"
+        style={{
+          maxHeight: '75dvh',
+          paddingBottom: 'env(safe-area-inset-bottom)',
+        }}
+      >
+        {/* Handle */}
+        <div className="flex justify-center pt-3 pb-2 shrink-0">
+          <div className="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
+        </div>
+
+        <div className="px-4 pb-2 shrink-0">
+          <h3 className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-2">
+            Add to Day {targetDay}
+          </h3>
+          <input
+            type="text"
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search locations…"
+            className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
+          />
+        </div>
+
+        <div className="flex-1 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800">
+          {filtered.length === 0 && (
+            <p className="px-4 py-4 text-sm text-gray-400 dark:text-gray-500 text-center">
+              No locations found
+            </p>
+          )}
+          {filtered.map((loc) => (
+            <button
+              key={loc.id}
+              onClick={() => handlePick(loc)}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-left active:bg-gray-50 dark:active:bg-gray-800"
+            >
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">
+                  {loc.name}
+                </p>
+                {loc.category && (
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500">
+                    {loc.category}
+                  </p>
+                )}
+              </div>
+            </button>
+          ))}
+        </div>
+
+        <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-800 shrink-0">
+          <button
+            onClick={onClose}
+            className="w-full py-2.5 text-sm font-medium text-gray-500 dark:text-gray-400 active:text-gray-700"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </>
+  )
+}
+
+// ─── Full trip view ──────────────────────────────────────────────────────────
+
+function FullTripView() {
+  const { tripDays, formatDayLabel, getTodayDayNumber } = useTripConfig()
+  const planEntries     = useAppStore((s) => s.planEntries)
+  const setPlanFocusDay = useAppStore((s) => s.setPlanFocusDay)
+  const setPlannerView  = useAppStore((s) => s.setPlannerView)
+  const todayDay        = getTodayDayNumber()
+  const days            = Array.from({ length: tripDays }, (_, i) => i + 1)
+
+  function handleDayPress(day) {
+    setPlanFocusDay(day)
+    setPlannerView('3day')
+  }
+
+  return (
+    <div className="flex-1 overflow-y-auto">
+      {days.map((day) => {
+        const count   = planEntries.filter((e) => e.day === day).length
+        const isToday = todayDay === day
+
+        return (
+          <button
+            key={day}
+            onClick={() => handleDayPress(day)}
+            className={`w-full flex items-center gap-3 px-4 py-3 border-b border-gray-100 dark:border-gray-800 text-left active:bg-gray-50 dark:active:bg-gray-800 transition-colors ${
+              isToday ? 'bg-sky-50 dark:bg-sky-900/20' : ''
+            }`}
+          >
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                  Day {day}
+                </span>
+                {isToday && (
+                  <span className="text-[10px] font-bold text-white bg-sky-500 rounded-full px-1.5 py-0.5 leading-none">
+                    TODAY
+                  </span>
+                )}
+              </div>
+              <span className="text-xs text-gray-400 dark:text-gray-500">
+                {formatDayLabel(day)}
+              </span>
+            </div>
+            {count > 0 && (
+              <span className="shrink-0 text-[11px] font-semibold text-sky-600 dark:text-sky-400 bg-sky-100 dark:bg-sky-900/40 rounded-full px-2 py-0.5">
+                {count}
+              </span>
+            )}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+              className="w-4 h-4 text-gray-300 dark:text-gray-600 shrink-0">
+              <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+// ─── Three-day view ──────────────────────────────────────────────────────────
+
+function ThreeDayView() {
+  const { tripDays, formatDayLabel, getTodayDayNumber } = useTripConfig()
+  const planEntries          = useAppStore((s) => s.planEntries)
+  const planFocusDay         = useAppStore((s) => s.planFocusDay)
+  const setPlanFocusDay      = useAppStore((s) => s.setPlanFocusDay)
+  const removePlanEntry      = useAppStore((s) => s.removePlanEntry)
+  const updatePlanEntryStore = useAppStore((s) => s.updatePlanEntry)
+  const todayDay             = getTodayDayNumber()
+
+  const [pickerDay, setPickerDay] = useState(null) // null = closed
+
+  const visibleDays = [planFocusDay - 1, planFocusDay, planFocusDay + 1]
+    .filter((d) => d >= 1 && d <= tripDays)
+
+  async function handleDelete(id) {
+    await deletePlanEntry(id)
+    removePlanEntry(id)
+  }
+
+  async function handleMove(entry, targetDay) {
+    const updated = { ...entry, day: targetDay }
+    await dbUpdatePlanEntry(updated)
+    updatePlanEntryStore(updated)
+  }
+
+  function nav(delta) {
+    const next = planFocusDay + delta
+    if (next >= 1 && next <= tripDays) setPlanFocusDay(next)
+  }
+
+  return (
+    <>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Day navigation arrows */}
+        <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100 dark:border-gray-800">
+          <button
+            onClick={() => nav(-1)}
+            disabled={planFocusDay <= 1}
+            className="p-1.5 rounded-lg text-gray-400 disabled:opacity-30 active:bg-gray-100 dark:active:bg-gray-800"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+              <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+            Days {visibleDays[0] ?? '—'} – {visibleDays[visibleDays.length - 1] ?? '—'}
+          </span>
+          <button
+            onClick={() => nav(1)}
+            disabled={planFocusDay >= tripDays}
+            className="p-1.5 rounded-lg text-gray-400 disabled:opacity-30 active:bg-gray-100 dark:active:bg-gray-800"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+              <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        </div>
+
+        {/* 3 columns */}
+        <div className="flex-1 flex overflow-hidden">
+          {visibleDays.map((day) => {
+            const entries = planEntries
+              .filter((e) => e.day === day)
+              .sort((a, b) => a.order - b.order)
+            const isToday = todayDay === day
+            const isFocus = day === planFocusDay
+
+            return (
+              <div
+                key={day}
+                className={`flex-1 flex flex-col border-r last:border-r-0 border-gray-100 dark:border-gray-800 ${
+                  isFocus ? 'bg-sky-50/50 dark:bg-sky-900/10' : ''
+                }`}
+              >
+                {/* Column header */}
+                <div className={`px-2 py-2 border-b border-gray-100 dark:border-gray-800 ${
+                  isToday ? 'bg-sky-500' : 'bg-white dark:bg-gray-900'
+                }`}>
+                  <p className={`text-[11px] font-bold leading-tight ${
+                    isToday ? 'text-white' : 'text-gray-700 dark:text-gray-200'
+                  }`}>
+                    Day {day}
+                  </p>
+                  <p className={`text-[9px] leading-tight ${
+                    isToday ? 'text-sky-100' : 'text-gray-400 dark:text-gray-500'
+                  }`}>
+                    {formatDayLabel(day).split(' · ')[0]}
+                  </p>
+                </div>
+
+                {/* Entries */}
+                <div className="flex-1 overflow-y-auto py-1">
+                  {entries.map((entry) => {
+                    const canMoveLeft  = day > 1
+                    const canMoveRight = day < tripDays
+                    return (
+                      <div
+                        key={entry.id}
+                        className="mx-1 mb-1 p-1.5 rounded-lg bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm"
+                      >
+                        <p className="text-[10px] font-medium text-gray-700 dark:text-gray-200 leading-tight mb-1 line-clamp-2">
+                          {entry.name}
+                        </p>
+                        <div className="flex gap-1">
+                          {canMoveLeft && (
+                            <button
+                              onClick={() => handleMove(entry, day - 1)}
+                              className="flex-1 py-0.5 text-[9px] text-sky-500 bg-sky-50 dark:bg-sky-900/30 rounded active:bg-sky-100"
+                            >
+                              ← Move
+                            </button>
+                          )}
+                          {canMoveRight && (
+                            <button
+                              onClick={() => handleMove(entry, day + 1)}
+                              className="flex-1 py-0.5 text-[9px] text-sky-500 bg-sky-50 dark:bg-sky-900/30 rounded active:bg-sky-100"
+                            >
+                              Move →
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDelete(entry.id)}
+                            className="py-0.5 px-1 text-[9px] text-red-400 bg-red-50 dark:bg-red-900/20 rounded active:bg-red-100"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+
+                  {/* + Add stop button */}
+                  <button
+                    onClick={() => setPickerDay(day)}
+                    className="mx-1 mt-0.5 w-[calc(100%-8px)] py-1.5 text-[10px] font-medium text-sky-500 border border-dashed border-sky-300 dark:border-sky-700 rounded-lg active:bg-sky-50 dark:active:bg-sky-900/20"
+                  >
+                    + Add
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {pickerDay != null && (
+        <LocationPickerSheet
+          targetDay={pickerDay}
+          onClose={() => setPickerDay(null)}
+        />
+      )}
+    </>
+  )
+}
+
+// ─── Today view ──────────────────────────────────────────────────────────────
+
+function TodayView() {
+  const { tripDays, tripStart, tripEnd, getTodayDayNumber } = useTripConfig()
+  const apiLoaded            = useApiIsLoaded()
+  const planEntries          = useAppStore((s) => s.planEntries)
+  const position             = useAppStore((s) => s.position)
+  const removePlanEntry      = useAppStore((s) => s.removePlanEntry)
+  const updatePlanEntryStore = useAppStore((s) => s.updatePlanEntry)
+
+  const [travelMode, setTravelMode]   = useState('TRANSIT')
+  const [travelTimes, setTravelTimes] = useState({})
+  const [pickerOpen, setPickerOpen]   = useState(false)
+  const todayDay     = getTodayDayNumber()
+  const todayEntries = planEntries
+    .filter((e) => e.day === todayDay)
+    .sort((a, b) => a.order - b.order)
+
+  // Compute travel times via DistanceMatrixService
+  useEffect(() => {
+    if (!apiLoaded || !position || todayEntries.length === 0) return
+    const destCoords = todayEntries
+      .filter((e) => e.lat != null && e.lng != null)
+      .map((e) => ({ lat: e.lat, lng: e.lng }))
+    if (destCoords.length === 0) return
+
+    let cancelled = false
+    const svc = new window.google.maps.DistanceMatrixService()
+    svc.getDistanceMatrix(
+      {
+        origins: [{ lat: position.lat, lng: position.lng }],
+        destinations: destCoords,
+        travelMode: window.google.maps.TravelMode[travelMode],
+        unitSystem: window.google.maps.UnitSystem.METRIC,
+      },
+      (result, status) => {
+        if (cancelled || status !== 'OK') return
+        const row      = result.rows[0]?.elements ?? []
+        const filtered = todayEntries.filter((e) => e.lat != null && e.lng != null)
+        const next     = {}
+        filtered.forEach((entry, i) => {
+          const el = row[i]
+          if (el?.status === 'OK') next[entry.id] = el.duration.text
+        })
+        setTravelTimes(next)
+      },
+    )
+    return () => { cancelled = true }
+  }, [apiLoaded, position, travelMode, todayEntries.length]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function handleDelete(id) {
+    await deletePlanEntry(id)
+    removePlanEntry(id)
+  }
+
+  async function handleToTomorrow(entry) {
+    if (!todayDay || todayDay >= tripDays) return
+    const updated = { ...entry, day: todayDay + 1 }
+    await dbUpdatePlanEntry(updated)
+    updatePlanEntryStore(updated)
+  }
+
+  if (todayDay === null) {
+    const now          = new Date()
+    const isBeforeTrip = now < new Date(tripStart)
+    const startLabel   = new Date(tripStart).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+    const endLabel     = new Date(tripEnd).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+    return (
+      <div className="flex-1 flex items-center justify-center px-6 text-center">
+        <p className="text-sm text-gray-400 dark:text-gray-500">
+          {isBeforeTrip ? `Trip starts ${startLabel}` : `Trip ended ${endLabel}`}
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Transit / Drive toggle */}
+        <div className="flex gap-2 px-4 py-2 border-b border-gray-100 dark:border-gray-800">
+          {['TRANSIT', 'DRIVING'].map((mode) => (
+            <button
+              key={mode}
+              onClick={() => { setTravelMode(mode); setTravelTimes({}) }}
+              className={`flex-1 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                travelMode === mode
+                  ? 'border-sky-500 bg-sky-500 text-white'
+                  : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400'
+              }`}
+            >
+              {mode === 'TRANSIT' ? '🚇 Transit' : '🚗 Drive'}
+            </button>
+          ))}
+        </div>
+
+        {/* Stop list */}
+        <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2">
+          {todayEntries.length === 0 && (
+            <p className="text-sm text-gray-400 dark:text-gray-500 text-center pt-6">
+              No stops for today yet.
+            </p>
+          )}
+          {todayEntries.map((entry, idx) => (
+            <div
+              key={entry.id}
+              className="flex gap-3 items-start bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-3 shadow-sm"
+            >
+              <div className="shrink-0 w-7 h-7 rounded-full bg-sky-500 flex items-center justify-center">
+                <span className="text-white text-xs font-bold">{idx + 1}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-800 dark:text-gray-100 leading-tight">
+                  {entry.name}
+                </p>
+                {travelTimes[entry.id] && (
+                  <p className="text-xs text-sky-500 mt-0.5">{travelTimes[entry.id]} away</p>
+                )}
+                <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={() => handleToTomorrow(entry)}
+                    className="flex-1 py-1 text-xs font-medium text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg active:bg-indigo-100"
+                  >
+                    → Tomorrow
+                  </button>
+                  <button
+                    onClick={() => handleDelete(entry.id)}
+                    className="py-1 px-2 text-xs font-medium text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg active:bg-red-100"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {/* Add stop button */}
+          <button
+            onClick={() => setPickerOpen(true)}
+            className="w-full py-3 text-sm font-medium text-sky-500 border border-dashed border-sky-300 dark:border-sky-700 rounded-xl active:bg-sky-50 dark:active:bg-sky-900/20"
+          >
+            + Add Stop
+          </button>
+        </div>
+      </div>
+
+      {pickerOpen && (
+        <LocationPickerSheet
+          targetDay={todayDay}
+          onClose={() => setPickerOpen(false)}
+        />
+      )}
+    </>
+  )
+}
+
+// ─── Main overlay ────────────────────────────────────────────────────────────
+
+export default function PlannerOverlay() {
+  const { tripDays }     = useTripConfig()
+  const isPlannerOpen    = useAppStore((s) => s.isPlannerOpen)
+  const setIsPlannerOpen = useAppStore((s) => s.setIsPlannerOpen)
+  const plannerView      = useAppStore((s) => s.plannerView)
+  const setPlannerView   = useAppStore((s) => s.setPlannerView)
+
+  if (!isPlannerOpen) return null
+
+  return (
+    <div
+      className="fixed bottom-0 left-0 right-0 z-40 flex flex-col bg-white dark:bg-gray-900 rounded-t-2xl shadow-2xl"
+      style={{
+        height: '65dvh',
+        paddingBottom: `calc(${BOTTOM_NAV_HEIGHT}px + env(safe-area-inset-bottom))`,
+      }}
+    >
+      {/* Drag handle */}
+      <div className="flex justify-center pt-2.5 pb-1 shrink-0">
+        <div className="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
+      </div>
+
+      {/* Header */}
+      <div className="flex items-center gap-3 px-4 py-2 border-b border-gray-100 dark:border-gray-800">
+        <button
+          onClick={() => setIsPlannerOpen(false)}
+          className="p-1.5 -ml-1.5 rounded-lg text-gray-400 active:bg-gray-100 dark:active:bg-gray-800"
+          aria-label="Close planner"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
+            <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+        <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100 flex-1">
+          Trip Planner
+        </h2>
+      </div>
+
+      {/* View tabs */}
+      <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-800">
+        <ViewTabs view={plannerView} onSet={setPlannerView} tripDays={tripDays} />
+      </div>
+
+      {/* Content */}
+      {plannerView === 'full'  && <FullTripView />}
+      {plannerView === '3day'  && <ThreeDayView />}
+      {plannerView === 'today' && <TodayView />}
+    </div>
+  )
+}
