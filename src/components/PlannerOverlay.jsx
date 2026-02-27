@@ -594,14 +594,13 @@ function TodayView() {
 
   function handleModeSwitch(mode) {
     if (mode === 'TRANSIT') {
-      // Open Google Maps with full trip route in transit mode
+      // Google Maps only supports transit between 2 points (no waypoints).
+      // Open directions to the first stop — tap again after arriving for next leg.
       const geoStops = todayEntries.filter((e) => e.lat != null && e.lng != null)
       if (geoStops.length === 0) return
-      // Path-based URL supports transit with multiple stops (api=1 waypoints doesn't)
-      const points = []
-      if (position) points.push(`${position.lat},${position.lng}`)
-      geoStops.forEach((e) => points.push(`${e.lat},${e.lng}`))
-      const url = `https://www.google.com/maps/dir/${points.join('/')}/data=!4m2!4m1!3e3`
+      const origin = position ? `&origin=${position.lat},${position.lng}` : ''
+      const dest = geoStops[0]
+      const url = `https://www.google.com/maps/dir/?api=1${origin}&destination=${dest.lat},${dest.lng}&travelmode=transit`
       window.open(url, '_blank')
       return
     }
