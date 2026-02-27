@@ -392,6 +392,7 @@ function TodayView() {
   const [travelError, setTravelError]     = useState(null)
   const [pickerOpen, setPickerOpen]       = useState(false)
   const [transitLegsOpen, setTransitLegsOpen] = useState(false)
+  const [editMode, setEditMode]             = useState(false)
   const lastFetchPos = useRef(null)
   const inJapan      = position ? isInJapan(position) : true // default Japan for this trip
   const todayDay     = getTodayDayNumber()
@@ -604,6 +605,18 @@ function TodayView() {
     setTravelError(null)
   }
 
+  async function handleSwapOrder(idxA, idxB) {
+    const a = todayEntries[idxA]
+    const b = todayEntries[idxB]
+    if (!a || !b) return
+    const updA = { ...a, order: b.order }
+    const updB = { ...b, order: a.order }
+    await dbUpdatePlanEntry(updA)
+    await dbUpdatePlanEntry(updB)
+    updatePlanEntryStore(updA)
+    updatePlanEntryStore(updB)
+  }
+
   if (todayDay === null) {
     const now          = new Date()
     const isBeforeTrip = now < new Date(tripStart)
@@ -646,6 +659,16 @@ function TodayView() {
               }`}
             >
               🚇 Transit
+            </button>
+            <button
+              onClick={() => setEditMode((prev) => !prev)}
+              className={`py-1.5 px-3 text-xs font-medium rounded-lg border transition-colors ${
+                editMode
+                  ? 'border-amber-500 bg-amber-500 text-white'
+                  : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400'
+              }`}
+            >
+              {editMode ? 'Done' : '✏️'}
             </button>
           </div>
           {!position && (
@@ -706,6 +729,24 @@ function TodayView() {
 
             const rowContent = (
               <div className="flex gap-3 items-center">
+                {editMode && (
+                  <div className="flex flex-col gap-0.5 shrink-0">
+                    <button
+                      onClick={() => handleSwapOrder(idx, idx - 1)}
+                      disabled={idx === 0}
+                      className="p-1 text-gray-400 disabled:opacity-20 active:text-gray-700"
+                    >
+                      <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M10 5.293l4.354 4.354-1.414 1.414L10 8.12 7.06 11.06 5.646 9.647 10 5.293z" clipRule="evenodd"/></svg>
+                    </button>
+                    <button
+                      onClick={() => handleSwapOrder(idx, idx + 1)}
+                      disabled={idx === todayEntries.length - 1}
+                      className="p-1 text-gray-400 disabled:opacity-20 active:text-gray-700"
+                    >
+                      <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M10 14.707l-4.354-4.354 1.414-1.414L10 11.88l2.94-2.94 1.414 1.414L10 14.707z" clipRule="evenodd"/></svg>
+                    </button>
+                  </div>
+                )}
                 <div
                   className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center"
                   style={{ backgroundColor: color || '#0ea5e9' }}
@@ -716,16 +757,16 @@ function TodayView() {
                   <span className="text-[15px] font-semibold text-gray-800 dark:text-gray-100 leading-snug">
                     {entry.name}
                   </span>
-                  {!transitLegsOpen && tt?.walk && (
+                  {!editMode && !transitLegsOpen && tt?.walk && (
                     <span className="text-[13px] font-medium text-green-500 dark:text-green-400 whitespace-nowrap">🚶 {tt.walk}</span>
                   )}
-                  {!transitLegsOpen && tt?.drive && (
+                  {!editMode && !transitLegsOpen && tt?.drive && (
                     <span className="text-[13px] font-medium text-sky-500 dark:text-sky-400 whitespace-nowrap">🚗 {tt.drive}</span>
                   )}
-                  {!transitLegsOpen && tt?.driveKm && (
+                  {!editMode && !transitLegsOpen && tt?.driveKm && (
                     <span className="text-[13px] text-gray-400 dark:text-gray-500 whitespace-nowrap">{tt.driveKm} km</span>
                   )}
-                  {transitLegsOpen && transitFromLabel && (
+                  {!editMode && transitLegsOpen && transitFromLabel && (
                     <span className="text-[13px] font-medium text-purple-500 dark:text-purple-400 whitespace-nowrap">🚇 from {transitFromLabel}</span>
                   )}
                 </div>
@@ -735,27 +776,31 @@ function TodayView() {
             return (
               <div
                 key={entry.id}
-                className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-3 shadow-sm"
+                className={`bg-white dark:bg-gray-800 rounded-xl border p-3 shadow-sm ${
+                  editMode ? 'border-amber-200 dark:border-amber-800' : 'border-gray-100 dark:border-gray-700'
+                }`}
               >
-                {mapsUrl ? (
+                {!editMode && mapsUrl ? (
                   <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="block active:opacity-70">
                     {rowContent}
                   </a>
                 ) : rowContent}
-                <div className="flex gap-2 mt-1.5">
-                  <button
-                    onClick={() => handleToTomorrow(entry)}
-                    className="flex-1 py-1 text-xs font-medium text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg active:bg-indigo-100"
-                  >
-                    → Tomorrow
-                  </button>
-                  <button
-                    onClick={() => handleDelete(entry.id)}
-                    className="py-1 px-2 text-xs font-medium text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg active:bg-red-100"
-                  >
-                    Remove
-                  </button>
-                </div>
+                {!editMode && (
+                  <div className="flex gap-2 mt-1.5">
+                    <button
+                      onClick={() => handleToTomorrow(entry)}
+                      className="flex-1 py-1 text-xs font-medium text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg active:bg-indigo-100"
+                    >
+                      → Tomorrow
+                    </button>
+                    <button
+                      onClick={() => handleDelete(entry.id)}
+                      className="py-1 px-2 text-xs font-medium text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg active:bg-red-100"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
               </div>
             )
           })}
