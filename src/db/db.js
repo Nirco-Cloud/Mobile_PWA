@@ -7,4 +7,5 @@ export const planStore = createStore('nirco-plans', 'plans')
 
 export const KEYS = {
   SYNC_COMPLETE: 'syncComplete',
+  PLAN_LOADED: 'planLoaded',
 }

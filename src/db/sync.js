@@ -1,8 +1,8 @@
 import { get, set, del } from 'idb-keyval'
-import { kvStore } from './db.js'
+import { kvStore, KEYS } from './db.js'
 import { writeLocations } from './locations.js'
+import { writeAllPlanEntries } from './plannerDb.js'
 import { precacheImages } from '../workers/imagePrecache.js'
-import { KEYS } from './db.js'
 
 const JSON_FILES = ['locations.json']
 
@@ -60,4 +60,24 @@ export async function initializeData() {
 
 export async function resetSync() {
   await del(KEYS.SYNC_COMPLETE, kvStore)
+}
+
+export async function initializePlan() {
+  const done = await get(KEYS.PLAN_LOADED, kvStore)
+  if (done) return
+
+  const base = import.meta.env.BASE_URL
+  try {
+    const res = await fetch(`${base}data/plan.json`)
+    if (!res.ok) return
+    const data = await res.json()
+    const entries = Array.isArray(data) ? data : (data.entries ?? data.plan ?? [])
+    const validated = entries.filter((e) => e.id && typeof e.day === 'number' && e.name)
+    if (validated.length > 0) {
+      await writeAllPlanEntries(validated)
+    }
+  } catch {
+    // No baseline plan or fetch failed — continue without it
+  }
+  await set(KEYS.PLAN_LOADED, true, kvStore)
 }
