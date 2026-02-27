@@ -260,7 +260,7 @@ function SettingsPanel({ batteryLevel, position, onResync, onClose, bottomNavHei
     const s = fromDateInput(startVal)
     const e = fromDateInput(endVal)
     if (isNaN(s) || isNaN(e)) { setDateError('Invalid date'); return }
-    if (e <= s) { setDateError('End must be after start'); return }
+    if (e < s) { setDateError('End must be after start'); return }
     setDateError('')
     onSaveTripDates(s, e)
   }
@@ -339,7 +339,7 @@ function SettingsPanel({ batteryLevel, position, onResync, onClose, bottomNavHei
           </h3>
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-600 dark:text-gray-300">
-              Lock GPS to Tokyo
+              Lock GPS to Shinjuku Hotel
             </p>
             <button
               onClick={() => setDemoMode(!demoMode)}
@@ -356,7 +356,7 @@ function SettingsPanel({ batteryLevel, position, onResync, onClose, bottomNavHei
           </div>
           {demoMode && (
             <p className="text-xs text-sky-500">
-              Showing locations relative to Tokyo
+              GPS locked to Hotel Sunroute Plaza Shinjuku
             </p>
           )}
         </section>

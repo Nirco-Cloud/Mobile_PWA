@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react'
 import { useAppStore } from '../store/appStore.js'
 
-const TOKYO = { lat: 35.6861, lng: 139.7530 }
+// Hotel Sunroute Plaza Shinjuku, 2-3-1 Yoyogi, Shibuya-ku
+const DEMO_POSITION = { lat: 35.6870, lng: 139.6988 }
 
 export function useGPS() {
   const setPosition = useAppStore((s) => s.setPosition)
@@ -18,7 +19,7 @@ export function useGPS() {
   useEffect(() => {
     if (demoMode) {
       if (timerRef.current) clearTimeout(timerRef.current)
-      setPosition(TOKYO)
+      setPosition(DEMO_POSITION)
     }
   }, [demoMode, setPosition])
 

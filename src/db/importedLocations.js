@@ -14,3 +14,7 @@ export async function readAllImportedLocations() {
 export async function deleteImportedLocation(id) {
   await del(id, importedLocStore)
 }
+
+export async function updateImportedLocation(loc) {
+  await set(loc.id, loc, importedLocStore)
+}
