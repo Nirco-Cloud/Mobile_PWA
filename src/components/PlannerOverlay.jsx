@@ -764,6 +764,30 @@ export default function PlannerOverlay() {
   const setIsPlannerOpen = useAppStore((s) => s.setIsPlannerOpen)
   const plannerView      = useAppStore((s) => s.plannerView)
   const setPlannerView   = useAppStore((s) => s.setPlannerView)
+  const [panelH, setPanelH] = useState(65)       // % of viewport
+  const dragRef = useRef(null)
+
+  function onDragStart(e) {
+    e.preventDefault()
+    const startY = e.touches ? e.touches[0].clientY : e.clientY
+    const startH = panelH
+    function onMove(ev) {
+      const y = ev.touches ? ev.touches[0].clientY : ev.clientY
+      const delta = startY - y                    // positive = dragging up = taller
+      const newH = startH + (delta / window.innerHeight) * 100
+      setPanelH(Math.min(85, Math.max(20, newH)))
+    }
+    function onEnd() {
+      window.removeEventListener('touchmove', onMove)
+      window.removeEventListener('touchend', onEnd)
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onEnd)
+    }
+    window.addEventListener('touchmove', onMove, { passive: false })
+    window.addEventListener('touchend', onEnd)
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onEnd)
+  }
 
   if (!isPlannerOpen) return null
 
@@ -771,12 +795,17 @@ export default function PlannerOverlay() {
     <div
       className="fixed bottom-0 left-0 right-0 z-40 flex flex-col bg-white dark:bg-gray-900 rounded-t-2xl shadow-2xl"
       style={{
-        height: '65dvh',
+        height: `${panelH}dvh`,
         paddingBottom: `calc(${BOTTOM_NAV_HEIGHT}px + env(safe-area-inset-bottom))`,
       }}
     >
-      {/* Drag handle */}
-      <div className="flex justify-center pt-2.5 pb-1 shrink-0">
+      {/* Drag handle — drag to resize */}
+      <div
+        ref={dragRef}
+        className="flex justify-center pt-2.5 pb-1 shrink-0 cursor-row-resize touch-none"
+        onTouchStart={onDragStart}
+        onMouseDown={onDragStart}
+      >
         <div className="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
       </div>
 
