@@ -24,34 +24,38 @@ function isGoogleMapsUrl(url) {
 }
 
 function parseCoordinates(url) {
-  // Format 1: /@lat,lng,zoom  (most common — place pages, directions)
-  const atMatch = url.match(/@([-\d.]+),([-\d.]+)/)
-  if (atMatch) {
-    return { lat: parseFloat(atMatch[1]), lng: parseFloat(atMatch[2]) }
-  }
+  // Priority: exact place coords first, viewport coords last.
+  // /@lat,lng is the VIEWPORT center, not the place — a server in the US
+  // can get US viewport coords even when the actual place is in Japan.
 
-  // Format 2: !3dlat!4dlng  (data-encoded place URLs from Android/mobile share)
+  // 1. !3dlat!4dlng — exact place coordinates in proto-encoded data
   const dataMatch = url.match(/!3d([-\d.]+)!4d([-\d.]+)/)
   if (dataMatch) {
     return { lat: parseFloat(dataMatch[1]), lng: parseFloat(dataMatch[2]) }
   }
 
-  // Format 3: ?q=lat,lng  (search query with coordinates)
+  // 2. ?q=lat,lng — search query with coordinates
   const qMatch = url.match(/[?&]q=([-\d.]+),([-\d.]+)/)
   if (qMatch) {
     return { lat: parseFloat(qMatch[1]), lng: parseFloat(qMatch[2]) }
   }
 
-  // Format 4: ll=lat,lng  (older Maps URLs)
+  // 3. ll=lat,lng — older Maps URLs
   const llMatch = url.match(/[?&]ll=([-\d.]+),([-\d.]+)/)
   if (llMatch) {
     return { lat: parseFloat(llMatch[1]), lng: parseFloat(llMatch[2]) }
   }
 
-  // Format 5: /dir//lat,lng  (directions destination)
+  // 4. /dir//lat,lng — directions destination
   const dirMatch = url.match(/\/dir\/\/([-\d.]+),([-\d.]+)/)
   if (dirMatch) {
     return { lat: parseFloat(dirMatch[1]), lng: parseFloat(dirMatch[2]) }
+  }
+
+  // 5. /@lat,lng — viewport center (LAST — least reliable, can reflect server location)
+  const atMatch = url.match(/@([-\d.]+),([-\d.]+)/)
+  if (atMatch) {
+    return { lat: parseFloat(atMatch[1]), lng: parseFloat(atMatch[2]) }
   }
 
   return null
@@ -112,7 +116,9 @@ exports.handler = async (event) => {
     // Step 1: try to parse coordinates from the URL itself
     let coords = parseCoordinates(finalUrl)
 
-    // Step 2: fallback — read only first 4KB of HTML body (coords appear within first 500 bytes)
+    // Step 2: fallback — scan HTML for coordinate patterns.
+    // NOTE: %212d/%213d (OG static map) is deliberately skipped —
+    //       it always contains the VIEWER's location, not the place.
     if (!coords) {
       const reader = response.body.getReader()
       let html = ''
@@ -123,34 +129,30 @@ exports.handler = async (event) => {
       }
       reader.cancel()
 
-      // %212d{lng}%213d{lat} — appears in static map URLs embedded in the HTML
-      // (%21 = !, 2d = longitude marker, 3d = latitude marker)
-      const encodedMatch = html.match(/%212d([-\d.]+)%213d([-\d.]+)/)
-      if (encodedMatch) {
-        coords = { lat: parseFloat(encodedMatch[2]), lng: parseFloat(encodedMatch[1]) }
-      }
-
       // @lat,lng,zoom — appears in canonical URLs and script data
-      if (!coords) {
-        const atMatch = html.match(/@([-\d]+\.\d{4,}),([-\d]+\.\d{4,})/)
-        if (atMatch) {
-          coords = { lat: parseFloat(atMatch[1]), lng: parseFloat(atMatch[2]) }
-        }
-      }
-    }
-
-    if (!coords) {
-      return {
-        statusCode: 422,
-        headers,
-        body: JSON.stringify({
-          error: 'Could not extract coordinates from URL',
-          finalUrl,
-        }),
+      const atMatch = html.match(/@([-\d]+\.\d{4,}),([-\d]+\.\d{4,})/)
+      if (atMatch) {
+        coords = { lat: parseFloat(atMatch[1]), lng: parseFloat(atMatch[2]) }
       }
     }
 
     const name = parsePlaceName(finalUrl)
+
+    // Step 3: if still no coords, return address for client-side geocoding.
+    // Android GPS share links (g_st=aw) often have no coords in URL/HTML,
+    // but the address is in the URL path.
+    if (!coords) {
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          name,
+          address: name,
+          needsGeocode: true,
+          finalUrl,
+        }),
+      }
+    }
 
     return {
       statusCode: 200,

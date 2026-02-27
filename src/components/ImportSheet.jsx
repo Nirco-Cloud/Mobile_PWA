@@ -91,6 +91,23 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
       const res = await fetch(`${RESOLVER_URL}?url=${encodeURIComponent(trimmed)}`)
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed to resolve')
+
+      // Android GPS share links have no coords in URL/HTML — geocode client-side
+      if (data.needsGeocode && data.address && window.google?.maps?.Geocoder) {
+        const geocoder = new window.google.maps.Geocoder()
+        const geoResult = await geocoder.geocode({ address: data.address })
+        if (geoResult.results?.[0]) {
+          const loc = geoResult.results[0].geometry.location
+          data.lat = loc.lat()
+          data.lng = loc.lng()
+          delete data.needsGeocode
+        } else {
+          throw new Error('Could not find coordinates for this place')
+        }
+      } else if (data.needsGeocode) {
+        throw new Error('Could not extract coordinates from this link')
+      }
+
       setResult(data)
       setCustomName(data.name || '')
       setCategory(detectCategory(data.name || ''))
