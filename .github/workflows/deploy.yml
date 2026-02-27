@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - Google_maps_Link_Import
+      - Trip_Planner
 
 permissions:
   contents: write
