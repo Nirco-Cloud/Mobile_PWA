@@ -513,13 +513,6 @@ function TodayView() {
 
   // Fetch routes for BOTH modes in parallel
   useEffect(() => {
-    if (travelMode === 'TRANSIT') {
-      clearRouteLines()
-      setTravelLoading(false)
-      setTravelError(null)
-      return
-    }
-
     if (!routesLib || !position || todayEntries.length === 0) {
       clearRouteLines()
       return
@@ -600,6 +593,17 @@ function TodayView() {
   }
 
   function handleModeSwitch(mode) {
+    if (mode === 'TRANSIT') {
+      // Open Google Maps with full trip route in transit mode
+      const geoStops = todayEntries.filter((e) => e.lat != null && e.lng != null)
+      if (geoStops.length === 0) return
+      const origin = position ? `${position.lat},${position.lng}` : ''
+      const dest = `${geoStops[geoStops.length - 1].lat},${geoStops[geoStops.length - 1].lng}`
+      const waypoints = geoStops.slice(0, -1).map((e) => `${e.lat},${e.lng}`).join('|')
+      const url = `https://www.google.com/maps/dir/?api=1${origin ? `&origin=${origin}` : ''}&destination=${dest}${waypoints ? `&waypoints=${waypoints}` : ''}&travelmode=transit`
+      window.open(url, '_blank')
+      return
+    }
     lastFetchPos.current = null  // reset so next GPS tick triggers fetch
     setPlannerTravelMode(mode)
     setTravelError(null)
@@ -625,7 +629,7 @@ function TodayView() {
         {/* Transit / Drive toggle */}
         <div className="px-4 pt-2 pb-1 border-b border-gray-100 dark:border-gray-800 space-y-1.5">
           <div className="flex gap-2">
-            {['WALKING', 'DRIVING', 'TRANSIT'].map((mode) => (
+            {['WALKING', 'DRIVING'].map((mode) => (
               <button
                 key={mode}
                 onClick={() => handleModeSwitch(mode)}
@@ -635,9 +639,15 @@ function TodayView() {
                     : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400'
                 }`}
               >
-                {mode === 'WALKING' ? '🚶 Walk' : mode === 'TRANSIT' ? '🚇 Transit' : '🚗 Drive'}
+                {mode === 'WALKING' ? '🚶 Walk' : '🚗 Drive'}
               </button>
             ))}
+            <button
+              onClick={() => handleModeSwitch('TRANSIT')}
+              className="flex-1 py-1.5 text-xs font-medium rounded-lg border border-purple-400 text-purple-500 dark:text-purple-400 active:bg-purple-50 dark:active:bg-purple-900/30 transition-colors"
+            >
+              🚇 Transit
+            </button>
           </div>
           {!position && (
             <p className="text-[11px] text-gray-400 dark:text-gray-500 text-center pb-0.5">
@@ -684,16 +694,7 @@ function TodayView() {
                   <p className="text-sm font-medium text-gray-800 dark:text-gray-100 leading-tight">
                     {entry.name}
                   </p>
-                  {travelMode === 'TRANSIT' && entry.lat != null && entry.lng != null ? (
-                    <a
-                      href={`https://www.google.com/maps/dir/?api=1${position ? `&origin=${position.lat},${position.lng}` : ''}&destination=${entry.lat},${entry.lng}&travelmode=transit`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-1 mt-1.5 py-1 text-[11px] font-medium text-purple-500 bg-purple-50 dark:bg-purple-900/20 rounded-lg active:bg-purple-100"
-                    >
-                      🚇 Open transit directions
-                    </a>
-                  ) : travelTimes[entry.id] && (
+                  {travelTimes[entry.id] && (
                     <div className="flex gap-3 mt-1 text-[11px]">
                       {travelTimes[entry.id].walk && (
                         <span className="text-green-500 dark:text-green-400">
