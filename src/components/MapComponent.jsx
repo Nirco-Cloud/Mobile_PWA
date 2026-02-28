@@ -3,6 +3,7 @@ import { Map, useMap, useApiIsLoaded, AdvancedMarker } from '@vis.gl/react-googl
 import { useAppStore } from '../store/appStore.js'
 import MapMarker from './MapMarker.jsx'
 import { getRouteColor } from '../config/routeColors.js'
+import { useVisiblePlanEntries } from '../hooks/useVisiblePlanEntries.js'
 
 const DEFAULT_ZOOM = 12
 
@@ -24,7 +25,7 @@ function MapController() {
   const isPlannerOpen = useAppStore((s) => s.isPlannerOpen)
   const planFocusDay  = useAppStore((s) => s.planFocusDay)
   const plannerView   = useAppStore((s) => s.plannerView)
-  const planEntries   = useAppStore((s) => s.planEntries)
+  const planEntries   = useVisiblePlanEntries()
   const userHasPanned = useRef(false)
 
   // Fit map to planned stops when planner opens or focused day changes
@@ -85,7 +86,7 @@ function PlanMapLayer() {
   const map           = useMap()
   const isPlannerOpen = useAppStore((s) => s.isPlannerOpen)
   const plannerView   = useAppStore((s) => s.plannerView)
-  const planEntries   = useAppStore((s) => s.planEntries)
+  const planEntries   = useVisiblePlanEntries()
   const routeLines    = useAppStore((s) => s.routeLines)
   const planFocusDay  = useAppStore((s) => s.planFocusDay)
   const showConnectors = useAppStore((s) => s.showTripConnectors)

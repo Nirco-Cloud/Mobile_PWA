@@ -13,6 +13,7 @@ import EntryCard, { EntryCardCompact } from './EntryCard.jsx'
 import EntryCreatorSheet from './EntryCreatorSheet.jsx'
 import BookingsSection from './BookingsSection.jsx'
 import { ENTRY_TYPES } from '../config/entryTypes.js'
+import { useVisiblePlanEntries } from '../hooks/useVisiblePlanEntries.js'
 
 // ─── View switcher tabs ──────────────────────────────────────────────────────
 
@@ -166,7 +167,7 @@ function TypeBadge({ type }) {
 
 function FullTripView() {
   const { tripDays, formatDayLabel, getTodayDayNumber } = useTripConfig()
-  const planEntries     = useAppStore((s) => s.planEntries)
+  const planEntries     = useVisiblePlanEntries()
   const setPlanFocusDay = useAppStore((s) => s.setPlanFocusDay)
   const setPlannerView  = useAppStore((s) => s.setPlannerView)
   const todayDay        = getTodayDayNumber()
@@ -268,7 +269,8 @@ function FullTripView() {
 
 function ThreeDayView() {
   const { tripDays, formatDayLabel, getTodayDayNumber } = useTripConfig()
-  const planEntries          = useAppStore((s) => s.planEntries)
+  const allPlanEntries       = useAppStore((s) => s.planEntries)
+  const planEntries          = useVisiblePlanEntries()
   const planFocusDay         = useAppStore((s) => s.planFocusDay)
   const setPlanFocusDay      = useAppStore((s) => s.setPlanFocusDay)
   const removePlanEntry      = useAppStore((s) => s.removePlanEntry)
@@ -287,7 +289,7 @@ function ThreeDayView() {
   }
 
   async function handleMove(entry, targetDay) {
-    const targetCount = planEntries.filter((e) => e.day === targetDay).length
+    const targetCount = allPlanEntries.filter((e) => e.day === targetDay).length
     const updated = { ...entry, day: targetDay, order: targetCount + 1 }
     await dbUpdatePlanEntry(updated)
     updatePlanEntryStore(updated)
@@ -432,7 +434,8 @@ function haversineDistance(a, b) {
 function TodayView() {
   const { tripDays, formatDayLabel } = useTripConfig()
   const routesLib            = useMapsLibrary('routes')
-  const planEntries          = useAppStore((s) => s.planEntries)
+  const allPlanEntries       = useAppStore((s) => s.planEntries)
+  const planEntries          = useVisiblePlanEntries()
   const position             = useAppStore((s) => s.position)
   const removePlanEntry      = useAppStore((s) => s.removePlanEntry)
   const updatePlanEntryStore = useAppStore((s) => s.updatePlanEntry)
@@ -655,7 +658,7 @@ function TodayView() {
 
   async function handleToTomorrow(entry) {
     if (activeDay >= tripDays) return
-    const tomorrowCount = planEntries.filter((e) => e.day === activeDay + 1).length
+    const tomorrowCount = allPlanEntries.filter((e) => e.day === activeDay + 1).length
     const updated = { ...entry, day: activeDay + 1, order: tomorrowCount + 1 }
     await dbUpdatePlanEntry(updated)
     updatePlanEntryStore(updated)

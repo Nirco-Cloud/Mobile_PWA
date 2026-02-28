@@ -150,7 +150,11 @@ function BookingCard({ entry, onDelete }) {
 export default function BookingsSection({ dayNumber }) {
   const [isOpen, setIsOpen]   = useState(true)
   const planEntries           = useAppStore((s) => s.planEntries)
+  const encPassphrase         = useAppStore((s) => s.encPassphrase)
   const removePlanEntry       = useAppStore((s) => s.removePlanEntry)
+
+  // Hide entire section when locked
+  if (!encPassphrase) return null
 
   const bookings = planEntries
     .filter((e) => e.day === dayNumber && e.owner === 'nirco')
