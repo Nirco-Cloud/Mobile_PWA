@@ -6,7 +6,7 @@ import { CATEGORIES, ALL_CATEGORY_KEYS } from './config/categories.js'
 import { initializeData, initializePlan } from './db/sync.js'
 import { readAllLocations } from './db/locations.js'
 import { readAllImportedLocations, deleteImportedLocation, updateImportedLocation } from './db/importedLocations.js'
-import { readAllPlanEntries } from './db/plannerDb.js'
+import { readAllPlanEntries, enrichPlanEntries } from './db/plannerDb.js'
 import { getGithubConfig, setGithubConfig, getLastSyncTime } from './db/githubSync.js'
 import { useGithubSync } from './hooks/useGithubSync.js'
 import { toDateInput, fromDateInput } from './config/trip.js'
@@ -149,18 +149,7 @@ export default function App() {
         setImportedLocations(importedRecords)
         const allLocs = [...records, ...importedRecords]
         setLocations(allLocs)
-        // Enrich plan entries with coords from locations when locationId exists
-        const locMap = new Map(allLocs.map((l) => [l.id, l]))
-        const enrichedPlan = planRecords.map((e) => {
-          if (e.lat == null && e.lng == null && e.locationId) {
-            const loc = locMap.get(e.locationId)
-            if (loc?.lat != null && loc?.lng != null) {
-              return { ...e, lat: loc.lat, lng: loc.lng }
-            }
-          }
-          return e
-        })
-        setPlanEntries(enrichedPlan)
+        setPlanEntries(enrichPlanEntries(planRecords, allLocs))
         // Validate saved passphrase against encrypted data
         const savedPass = await idbGet('encPassphrase')
         if (savedPass) {
@@ -194,14 +183,7 @@ export default function App() {
           setImportedLocations(importedRecords)
           const allLocs = [...records, ...importedRecords]
           setLocations(allLocs)
-          const locMap = new Map(allLocs.map((l) => [l.id, l]))
-          setPlanEntries(planRecords.map((e) => {
-            if (e.lat == null && e.lng == null && e.locationId) {
-              const loc = locMap.get(e.locationId)
-              if (loc?.lat != null && loc?.lng != null) return { ...e, lat: loc.lat, lng: loc.lng }
-            }
-            return e
-          }))
+          setPlanEntries(enrichPlanEntries(planRecords, allLocs))
         } catch {
           // Nothing we can do
         }
@@ -261,7 +243,7 @@ export default function App() {
         readAllPlanEntries(),
       ])
       setLocations(records)
-      setPlanEntries(planRecords)
+      setPlanEntries(enrichPlanEntries(planRecords, records))
       setSyncStatus('done')
     } catch (err) {
       console.error('Resync error:', err)

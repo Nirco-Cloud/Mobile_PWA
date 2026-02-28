@@ -1,6 +1,18 @@
 import { get, set, keys, getMany, clear, setMany } from 'idb-keyval'
 import { planStore } from './db.js'
 
+// Enrich plan entries with lat/lng from locations when locationId exists but coords are missing
+export function enrichPlanEntries(entries, locations) {
+  const locMap = new Map(locations.map((l) => [l.id, l]))
+  return entries.map((e) => {
+    if (e.lat == null && e.lng == null && e.locationId) {
+      const loc = locMap.get(e.locationId)
+      if (loc?.lat != null && loc?.lng != null) return { ...e, lat: loc.lat, lng: loc.lng }
+    }
+    return e
+  })
+}
+
 // Normalize legacy entries (v1/v2) to include owner, meta, valid type, updatedAt, deletedAt
 export function normalizePlanEntry(entry) {
   const now = new Date().toISOString()

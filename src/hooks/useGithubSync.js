@@ -1,17 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAppStore } from '../store/appStore.js'
 import { syncPlanEntries } from '../db/githubSync.js'
-
-function enrichWithCoords(entries, locations) {
-  const locMap = new Map(locations.map((l) => [l.id, l]))
-  return entries.map((e) => {
-    if (e.lat == null && e.lng == null && e.locationId) {
-      const loc = locMap.get(e.locationId)
-      if (loc?.lat != null && loc?.lng != null) return { ...e, lat: loc.lat, lng: loc.lng }
-    }
-    return e
-  })
-}
+import { enrichPlanEntries } from '../db/plannerDb.js'
 
 export function useGithubSync() {
   const setPlanEntries      = useAppStore((s) => s.setPlanEntries)
@@ -46,7 +36,7 @@ export function useGithubSync() {
 
     try {
       const result = await syncPlanEntries()
-      setPlanEntries(enrichWithCoords(result.entries, locations))
+      setPlanEntries(enrichPlanEntries(result.entries, locations))
       setGithubLastSync(result.syncedAt)
       setGithubSyncStatus('success')
     } catch (err) {
