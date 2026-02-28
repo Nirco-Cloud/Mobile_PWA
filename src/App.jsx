@@ -66,11 +66,6 @@ export default function App() {
 
   // Load persisted encryption passphrase
   const setEncPassphrase = useAppStore((s) => s.setEncPassphrase)
-  useEffect(() => {
-    idbGet('encPassphrase').then((saved) => {
-      if (saved) setEncPassphrase(saved)
-    })
-  }, [setEncPassphrase])
 
   // Load persisted dark mode preference (default OFF)
   const setIsDark = useAppStore((s) => s.setIsDark)
@@ -122,6 +117,21 @@ export default function App() {
         setImportedLocations(importedRecords)
         setLocations([...records, ...importedRecords])
         setPlanEntries(planRecords)
+        // Validate saved passphrase against encrypted data
+        const savedPass = await idbGet('encPassphrase')
+        if (savedPass) {
+          const testEntry = planRecords.find((e) => isEncrypted(e.meta?.confirmationNumber))
+          if (testEntry) {
+            const result = await decryptValue(testEntry.meta.confirmationNumber, savedPass)
+            if (result !== null) {
+              setEncPassphrase(savedPass)
+            } else {
+              await idbSet('encPassphrase', null)
+            }
+          } else {
+            setEncPassphrase(savedPass)
+          }
+        }
         setSyncStatus('done')
       } catch (err) {
         console.error('Boot error:', err)
