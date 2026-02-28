@@ -333,6 +333,7 @@ function SettingsPanel({ batteryLevel, position, onResync, onClose, bottomNavHei
   const [passInput, setPassInput] = useState('')
   const [passSaved, setPassSaved] = useState(false)
   const [passError, setPassError] = useState('')
+  const [passShow, setPassShow] = useState(false)
   const [ghToken, setGhToken] = useState('')
   const [ghShowToken, setGhShowToken] = useState(false)
   const [ghSaveMsg, setGhSaveMsg] = useState('')
@@ -410,12 +411,18 @@ function SettingsPanel({ batteryLevel, position, onResync, onClose, bottomNavHei
           ) : (
             <div className="flex gap-2">
               <input
-                type="password"
+                type={passShow ? 'text' : 'password'}
                 value={passInput}
                 onChange={(e) => { setPassInput(e.target.value); setPassSaved(false); setPassError('') }}
                 placeholder="Enter passphrase"
                 className="flex-1 px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
               />
+              <button
+                onClick={() => setPassShow(!passShow)}
+                className="px-2 py-1.5 text-xs text-gray-400 border border-gray-200 dark:border-gray-700 rounded-lg"
+              >
+                {passShow ? 'Hide' : 'Show'}
+              </button>
               <button
                 onClick={async () => {
                   if (!passInput) return
