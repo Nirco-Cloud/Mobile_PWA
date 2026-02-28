@@ -75,8 +75,12 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
   }, [open, initialUrl])
 
   async function resolve(resolveUrl) {
-    const trimmed = (resolveUrl ?? url).trim()
+    let trimmed = (resolveUrl ?? url).trim()
     if (!trimmed) return
+    // Ensure protocol is present
+    if (trimmed && !trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+      trimmed = 'https://' + trimmed
+    }
 
     if (!RESOLVER_URL) {
       setStatus('error')
