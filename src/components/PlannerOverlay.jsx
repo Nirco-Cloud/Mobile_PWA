@@ -462,7 +462,9 @@ function TodayView() {
     const next = activeDay + delta
     if (next >= 1 && next <= tripDays) {
       setPlanFocusDay(next)
-      lastFetchPos.current = null // re-fetch routes for new day
+      lastFetchPos.current = null
+      setTravelTimes({})
+      setTravelError(null)
     }
   }
 
@@ -644,7 +646,7 @@ function TodayView() {
     })
 
     return () => { cancelled = true; setTravelLoading(false) }
-  }, [routesLib, position, travelMode, todayEntryIds]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [routesLib, position, travelMode, todayEntryIds, activeDay]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleDelete(id) {
     await deletePlanEntry(id)

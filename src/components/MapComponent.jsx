@@ -2,7 +2,6 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { Map, useMap, useApiIsLoaded, AdvancedMarker } from '@vis.gl/react-google-maps'
 import { useAppStore } from '../store/appStore.js'
 import MapMarker from './MapMarker.jsx'
-import { useTripConfig } from '../hooks/useTripConfig.js'
 import { getRouteColor } from '../config/routeColors.js'
 
 const DEFAULT_ZOOM = 12
@@ -26,14 +25,12 @@ function MapController() {
   const planFocusDay  = useAppStore((s) => s.planFocusDay)
   const plannerView   = useAppStore((s) => s.plannerView)
   const planEntries   = useAppStore((s) => s.planEntries)
-  const { getTodayDayNumber } = useTripConfig()
   const userHasPanned = useRef(false)
 
   // Fit map to planned stops when planner opens or focused day changes
   useEffect(() => {
     if (!map || !isPlannerOpen) return
-    const todayDay   = getTodayDayNumber()
-    const displayDay = plannerView === 'today' ? (todayDay ?? planFocusDay) : planFocusDay
+    const displayDay = planFocusDay ?? 1
     const stops      = planEntries.filter(
       (e) => e.day === displayDay && e.lat != null && e.lng != null,
     )
@@ -46,7 +43,7 @@ function MapController() {
     const bounds = new window.google.maps.LatLngBounds()
     stops.forEach((s) => bounds.extend({ lat: s.lat, lng: s.lng }))
     map.fitBounds(bounds, { top: 20, bottom: 20, left: 20, right: 20 })
-  }, [map, isPlannerOpen, planFocusDay, plannerView, planEntries, getTodayDayNumber])
+  }, [map, isPlannerOpen, planFocusDay, plannerView, planEntries])
 
   // Auto-center when position updates (unless user has panned)
   useEffect(() => {
@@ -90,7 +87,6 @@ function PlanMapLayer() {
   const plannerView   = useAppStore((s) => s.plannerView)
   const planEntries   = useAppStore((s) => s.planEntries)
   const routeLines    = useAppStore((s) => s.routeLines)
-  const { getTodayDayNumber } = useTripConfig()
   const planFocusDay  = useAppStore((s) => s.planFocusDay)
   const showConnectors = useAppStore((s) => s.showTripConnectors)
   const position      = useAppStore((s) => s.position)
@@ -98,9 +94,7 @@ function PlanMapLayer() {
   const routePolysRef = useRef([])         // colored route polylines (today view)
 
   const active     = isPlannerOpen
-  const todayDay   = getTodayDayNumber()
-  const isToday    = plannerView === 'today'
-  const displayDay = isToday ? (todayDay ?? planFocusDay) : planFocusDay
+  const displayDay = planFocusDay ?? 1
 
   const stops = planEntries
     .filter((e) => e.day === displayDay && e.lat != null && e.lng != null)
