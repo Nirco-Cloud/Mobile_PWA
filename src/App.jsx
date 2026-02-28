@@ -273,9 +273,23 @@ function SettingsPanel({ batteryLevel, position, onResync, onClose, bottomNavHei
   const setShowTripConnectors = useAppStore((s) => s.setShowTripConnectors)
   const planEntries    = useAppStore((s) => s.planEntries)
   const setPlanEntries = useAppStore((s) => s.setPlanEntries)
+  const tripStart  = useAppStore((s) => s.tripStart)
+  const tripEnd    = useAppStore((s) => s.tripEnd)
+  const [startVal, setStartVal] = useState(() => toDateInput(tripStart))
+  const [endVal,   setEndVal]   = useState(() => toDateInput(tripEnd))
+  const [dateError, setDateError] = useState('')
   const fileInputRef = useRef(null)
   const [importStatus, setImportStatus] = useState(null)
   const [confirmImport, setConfirmImport] = useState(null)
+
+  function handleSaveDates() {
+    const s = fromDateInput(startVal)
+    const e = fromDateInput(endVal)
+    if (isNaN(s) || isNaN(e)) { setDateError('Invalid date'); return }
+    if (e < s) { setDateError('End must be after start'); return }
+    setDateError('')
+    onSaveTripDates(s, e)
+  }
 
   function handleExport() {
     exportPlanToFile(planEntries)
@@ -321,6 +335,42 @@ function SettingsPanel({ batteryLevel, position, onResync, onClose, bottomNavHei
     >
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
         <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Settings</h2>
+
+        {/* Trip Dates */}
+        <section className="space-y-2">
+          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+            Trip Dates
+          </h3>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-gray-500 dark:text-gray-400 w-10 shrink-0">Start</label>
+              <input
+                type="date"
+                value={startVal}
+                onChange={(e) => setStartVal(e.target.value)}
+                className="flex-1 px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-gray-500 dark:text-gray-400 w-10 shrink-0">End</label>
+              <input
+                type="date"
+                value={endVal}
+                onChange={(e) => setEndVal(e.target.value)}
+                className="flex-1 px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
+              />
+            </div>
+            {dateError && (
+              <p className="text-xs text-red-500">{dateError}</p>
+            )}
+            <button
+              onClick={handleSaveDates}
+              className="px-4 py-2 bg-sky-500 text-white rounded-lg text-sm font-medium active:bg-sky-600 self-start"
+            >
+              Save Dates
+            </button>
+          </div>
+        </section>
 
         {/* Sync */}
         <section className="space-y-2">
