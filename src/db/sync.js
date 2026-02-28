@@ -69,7 +69,7 @@ export async function initializePlan() {
 
   const base = import.meta.env.BASE_URL
   try {
-    const res = await fetch(`${base}data/plan.json`)
+    const res = await fetch(`${base}data/plan.json?v=${Date.now()}`)
     if (!res.ok) return
     const data = await res.json()
     const entries = Array.isArray(data) ? data : (data.entries ?? data.plan ?? [])
