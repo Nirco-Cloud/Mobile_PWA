@@ -2,8 +2,20 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAppStore } from '../store/appStore.js'
 import { syncPlanEntries } from '../db/githubSync.js'
 
+function enrichWithCoords(entries, locations) {
+  const locMap = new Map(locations.map((l) => [l.id, l]))
+  return entries.map((e) => {
+    if (e.lat == null && e.lng == null && e.locationId) {
+      const loc = locMap.get(e.locationId)
+      if (loc?.lat != null && loc?.lng != null) return { ...e, lat: loc.lat, lng: loc.lng }
+    }
+    return e
+  })
+}
+
 export function useGithubSync() {
   const setPlanEntries      = useAppStore((s) => s.setPlanEntries)
+  const locations           = useAppStore((s) => s.locations)
   const setGithubSyncStatus = useAppStore((s) => s.setGithubSyncStatus)
   const setGithubSyncError  = useAppStore((s) => s.setGithubSyncError)
   const setGithubLastSync   = useAppStore((s) => s.setGithubLastSync)
@@ -34,7 +46,7 @@ export function useGithubSync() {
 
     try {
       const result = await syncPlanEntries()
-      setPlanEntries(result.entries)
+      setPlanEntries(enrichWithCoords(result.entries, locations))
       setGithubLastSync(result.syncedAt)
       setGithubSyncStatus('success')
     } catch (err) {
@@ -54,7 +66,7 @@ export function useGithubSync() {
       setGithubSyncStatus('idle')
       setGithubSyncError(null)
     }, 4000)
-  }, [setPlanEntries, setGithubSyncStatus, setGithubSyncError, setGithubLastSync])
+  }, [setPlanEntries, setGithubSyncStatus, setGithubSyncError, setGithubLastSync, locations])
 
   return { triggerSync, status, error, lastSync, configured, isOnline }
 }

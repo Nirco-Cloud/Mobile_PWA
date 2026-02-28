@@ -778,9 +778,9 @@ function TodayView() {
         {/* Stop list */}
         <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2">
           {/* My Bookings (private entries) */}
-          <BookingsSection dayNumber={activeDay} />
+          <BookingsSection dayNumber={activeDay} travelTimes={travelTimes} travelMode={travelMode} transitLegsOpen={transitLegsOpen} />
 
-          {sharedEntries.length === 0 && (
+          {sharedEntries.length === 0 && todayEntries.filter((e) => e.owner === 'nirco').length === 0 && (
             <p className="text-sm text-gray-400 dark:text-gray-500 text-center pt-6">
               No stops for today yet.
             </p>

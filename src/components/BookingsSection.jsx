@@ -58,9 +58,10 @@ function formatDate(val) {
   } catch { return val }
 }
 
-function BookingCard({ entry, onDelete, mapsUrl }) {
+function BookingCard({ entry, onDelete, mapsUrl, travelTime }) {
   const typeDef = ENTRY_TYPES[entry.type] ?? ENTRY_TYPES.location
   const meta = entry.meta
+  const tt = travelTime
 
   return (
     <div
@@ -85,9 +86,14 @@ function BookingCard({ entry, onDelete, mapsUrl }) {
           </svg>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[14px] font-semibold text-gray-800 dark:text-gray-100 leading-snug">
-            {entry.name}
-          </p>
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+            <span className="text-[14px] font-semibold text-gray-800 dark:text-gray-100 leading-snug">
+              {entry.name}
+            </span>
+            {tt?.walk && <span className="text-[12px] font-medium text-green-500">🚶 {tt.walk}</span>}
+            {tt?.drive && <span className="text-[12px] font-medium text-sky-500">🚗 {tt.drive}</span>}
+            {tt?.driveKm && <span className="text-[12px] text-gray-400">{tt.driveKm} km</span>}
+          </div>
           <p className="text-[11px] text-amber-500 font-medium mt-0.5">
             {typeDef.label}
           </p>
@@ -163,7 +169,7 @@ function BookingCard({ entry, onDelete, mapsUrl }) {
   )
 }
 
-export default function BookingsSection({ dayNumber }) {
+export default function BookingsSection({ dayNumber, travelTimes, travelMode, transitLegsOpen }) {
   const [isOpen, setIsOpen]   = useState(true)
   const planEntries           = useAppStore((s) => s.planEntries)
   const encPassphrase         = useAppStore((s) => s.encPassphrase)
@@ -214,8 +220,9 @@ export default function BookingsSection({ dayNumber }) {
           {bookings.map((entry) => {
             const origin = position ? `${position.lat},${position.lng}` : null
             const dest = entry.lat != null && entry.lng != null ? `${entry.lat},${entry.lng}` : null
+            const gmMode = transitLegsOpen ? 'transit' : travelMode === 'WALKING' ? 'walking' : 'driving'
             const mapsUrl = origin && dest
-              ? `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}&travelmode=driving`
+              ? `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}&travelmode=${gmMode}`
               : null
             return (
               <BookingCard
@@ -223,6 +230,7 @@ export default function BookingsSection({ dayNumber }) {
                 entry={entry}
                 onDelete={() => handleDelete(entry.id)}
                 mapsUrl={mapsUrl}
+                travelTime={travelTimes?.[entry.id]}
               />
             )
           })}
