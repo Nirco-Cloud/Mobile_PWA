@@ -1,7 +1,7 @@
 import { get, set, del } from 'idb-keyval'
 import { kvStore, KEYS } from './db.js'
 import { writeLocations } from './locations.js'
-import { writeAllPlanEntries } from './plannerDb.js'
+import { writeAllPlanEntries, normalizePlanEntry } from './plannerDb.js'
 import { precacheImages } from '../workers/imagePrecache.js'
 
 const JSON_FILES = ['locations.json']
@@ -60,6 +60,7 @@ export async function initializeData() {
 
 export async function resetSync() {
   await del(KEYS.SYNC_COMPLETE, kvStore)
+  await del(KEYS.PLAN_LOADED, kvStore)
 }
 
 export async function initializePlan() {
@@ -72,7 +73,9 @@ export async function initializePlan() {
     if (!res.ok) return
     const data = await res.json()
     const entries = Array.isArray(data) ? data : (data.entries ?? data.plan ?? [])
-    const validated = entries.filter((e) => e.id && typeof e.day === 'number' && e.name)
+    const validated = entries
+      .filter((e) => e.id && typeof e.day === 'number' && e.name)
+      .map(normalizePlanEntry)
     if (validated.length > 0) {
       await writeAllPlanEntries(validated)
     }

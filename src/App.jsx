@@ -171,8 +171,13 @@ export default function App() {
     await resetSync()
     try {
       await initializeData()
-      const records = await readAllLocations()
+      await initializePlan()
+      const [records, planRecords] = await Promise.all([
+        readAllLocations(),
+        readAllPlanEntries(),
+      ])
       setLocations(records)
+      setPlanEntries(planRecords)
       setSyncStatus('done')
     } catch (err) {
       console.error('Resync error:', err)
