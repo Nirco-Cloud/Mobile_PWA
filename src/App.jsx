@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { APIProvider } from '@vis.gl/react-google-maps'
 import { get as idbGet, set as idbSet } from 'idb-keyval'
 import { useAppStore } from './store/appStore.js'
@@ -6,7 +6,7 @@ import { CATEGORIES, ALL_CATEGORY_KEYS } from './config/categories.js'
 import { initializeData, initializePlan } from './db/sync.js'
 import { readAllLocations } from './db/locations.js'
 import { readAllImportedLocations, deleteImportedLocation, updateImportedLocation } from './db/importedLocations.js'
-import { readAllPlanEntries, clearAllPlanEntries, writeAllPlanEntries, exportPlanToFile, parsePlanFile } from './db/plannerDb.js'
+import { readAllPlanEntries } from './db/plannerDb.js'
 import { toDateInput, fromDateInput } from './config/trip.js'
 import { decryptValue, isEncrypted } from './utils/crypto.js'
 import { resetSync } from './db/sync.js'
@@ -277,10 +277,6 @@ function SettingsPanel({ batteryLevel, position, onResync, onClose, bottomNavHei
   const [startVal, setStartVal] = useState(() => toDateInput(tripStart))
   const [endVal,   setEndVal]   = useState(() => toDateInput(tripEnd))
   const [dateError, setDateError] = useState('')
-  const fileInputRef = useRef(null)
-  const [importStatus, setImportStatus] = useState(null)
-  const [confirmImport, setConfirmImport] = useState(null)
-
   function handleSaveDates() {
     const s = fromDateInput(startVal)
     const e = fromDateInput(endVal)
@@ -288,40 +284,6 @@ function SettingsPanel({ batteryLevel, position, onResync, onClose, bottomNavHei
     if (e < s) { setDateError('End must be after start'); return }
     setDateError('')
     onSaveTripDates(s, e)
-  }
-
-  function handleExport() {
-    exportPlanToFile(planEntries)
-  }
-
-  function handleImportFile(e) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    e.target.value = ''
-    const reader = new FileReader()
-    reader.onload = () => {
-      const { entries, error } = parsePlanFile(reader.result)
-      if (error) {
-        setImportStatus({ ok: false, message: error })
-        return
-      }
-      setConfirmImport({ entries })
-    }
-    reader.readAsText(file)
-  }
-
-  async function handleConfirmImport() {
-    if (!confirmImport) return
-    try {
-      await clearAllPlanEntries()
-      await writeAllPlanEntries(confirmImport.entries)
-      setPlanEntries(confirmImport.entries)
-      setImportStatus({ ok: true, message: `Imported ${confirmImport.entries.length} entries.` })
-    } catch (err) {
-      console.error('Import error:', err)
-      setImportStatus({ ok: false, message: 'Failed to import plan.' })
-    }
-    setConfirmImport(null)
   }
 
   return (
@@ -539,43 +501,6 @@ function SettingsPanel({ batteryLevel, position, onResync, onClose, bottomNavHei
           )}
         </section>
 
-        {/* Trip Plan Data */}
-        <section className="space-y-2">
-          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-            Trip Plan Data
-          </h3>
-          <p className="text-xs text-gray-400 dark:text-gray-500">
-            {planEntries.length} entries across all days
-          </p>
-          <div className="flex gap-2">
-            <button
-              onClick={handleExport}
-              disabled={planEntries.length === 0}
-              className="flex-1 px-4 py-2 bg-sky-500 text-white rounded-lg text-sm font-medium active:bg-sky-600 disabled:opacity-50"
-            >
-              Export Plan
-            </button>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="flex-1 px-4 py-2 bg-indigo-500 text-white rounded-lg text-sm font-medium active:bg-indigo-600"
-            >
-              Import Plan
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".json,application/json"
-              className="hidden"
-              onChange={handleImportFile}
-            />
-          </div>
-          {importStatus && (
-            <p className={`text-xs ${importStatus.ok ? 'text-green-500' : 'text-red-500'}`}>
-              {importStatus.message}
-            </p>
-          )}
-        </section>
-
         {/* GPS */}
         <section className="space-y-2">
           <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
@@ -605,34 +530,6 @@ function SettingsPanel({ batteryLevel, position, onResync, onClose, bottomNavHei
         <LocationManager />
       </div>
 
-      {/* Import confirmation modal */}
-      {confirmImport && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="mx-6 bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-5 max-w-sm w-full">
-            <h3 className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-2">
-              Replace current plan?
-            </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              This will delete all {planEntries.length} current entries and replace them
-              with {confirmImport.entries.length} entries from the file. This cannot be undone.
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setConfirmImport(null)}
-                className="flex-1 py-2.5 text-sm font-medium text-gray-500 bg-gray-100 dark:bg-gray-700 dark:text-gray-300 rounded-lg active:bg-gray-200"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmImport}
-                className="flex-1 py-2.5 text-sm font-medium text-white bg-red-500 rounded-lg active:bg-red-600"
-              >
-                Replace
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
