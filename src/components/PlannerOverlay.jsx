@@ -876,7 +876,7 @@ function TodayView() {
 
 // ─── Main overlay ────────────────────────────────────────────────────────────
 
-export default function PlannerOverlay() {
+export default function PlannerOverlay({ onImportLink }) {
   const { tripDays }     = useTripConfig()
   const isPlannerOpen    = useAppStore((s) => s.isPlannerOpen)
   const setIsPlannerOpen = useAppStore((s) => s.setIsPlannerOpen)
@@ -962,6 +962,18 @@ export default function PlannerOverlay() {
         <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100 flex-1">
           Trip Planner
         </h2>
+        {onImportLink && (
+          <button
+            onClick={onImportLink}
+            className="p-1.5 -mr-1.5 rounded-lg text-sky-500 active:bg-gray-100 dark:active:bg-gray-800"
+            aria-label="Import Google Maps link"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        )}
       </div>
 
       {/* View tabs */}

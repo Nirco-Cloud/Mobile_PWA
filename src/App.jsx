@@ -237,25 +237,8 @@ export default function App() {
 
       {showFilter && <CategoryFilter onClose={() => setShowFilter(false)} />}
 
-      <PlannerOverlay />
+      <PlannerOverlay onImportLink={handleImportFAB} />
 
-      {/* Import FAB — bottom-right, above nav bar */}
-      {!showImport && (
-        <button
-          onClick={handleImportFAB}
-          className="fixed z-30 flex items-center justify-center w-12 h-12 rounded-full bg-sky-500 shadow-lg active:bg-sky-600 active:scale-95 transition-transform"
-          style={{
-            bottom: `calc(${BOTTOM_NAV_HEIGHT}px + env(safe-area-inset-bottom) + 16px)`,
-            right: '16px',
-          }}
-          aria-label="Import from Google Maps link"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" className="w-5 h-5">
-            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-      )}
 
       <ImportSheet
         open={showImport}
