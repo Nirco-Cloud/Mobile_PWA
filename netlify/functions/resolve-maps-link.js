@@ -7,11 +7,13 @@ const GOOGLE_MAPS_HOSTS = [
   'goo.gl',
   'google.com',
   'www.google.com',
+  'share.google',
 ]
 
 function isGoogleMapsUrl(url) {
   try {
     const parsed = new URL(url)
+    if (parsed.hostname === 'share.google') return true
     return (
       GOOGLE_MAPS_HOSTS.includes(parsed.hostname) &&
       (parsed.pathname.includes('/maps') ||
@@ -70,6 +72,45 @@ function parsePlaceName(url) {
   return null
 }
 
+function isShareGoogleUrl(url) {
+  try {
+    return new URL(url).hostname === 'share.google'
+  } catch {
+    return false
+  }
+}
+
+function parseShareGooglePage(finalUrl, html) {
+  // 1. Look for embedded Google Search URL with kgmid + q param
+  //    e.g. /search?kgmid=/g/xxx&q=Place+Name
+  const searchMatch = html.match(/\/search\?[^"'\s<>]*kgmid=[^"'\s<>]*/)
+  if (searchMatch) {
+    try {
+      const raw = searchMatch[0].replace(/&amp;/g, '&')
+      const searchUrl = new URL('https://www.google.com' + raw)
+      const q = searchUrl.searchParams.get('q')
+      if (q) return q.replace(/\+/g, ' ')
+    } catch { /* continue */ }
+  }
+
+  // 2. Fallback: q param in the final URL itself (google.com/share.google?q=...)
+  try {
+    const parsed = new URL(finalUrl)
+    const q = parsed.searchParams.get('q')
+    if (q) return q.replace(/\+/g, ' ')
+  } catch { /* continue */ }
+
+  // 3. Fallback: look for <title> content
+  const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/)
+  if (titleMatch) {
+    const title = titleMatch[1].trim()
+    // Ignore generic Google titles
+    if (title && !title.toLowerCase().includes('google')) return title
+  }
+
+  return null
+}
+
 exports.handler = async (event) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -112,6 +153,41 @@ exports.handler = async (event) => {
     })
 
     const finalUrl = response.url
+
+    // share.google links are Knowledge Panel shares — no coordinates,
+    // extract place name and let client geocode it
+    if (isShareGoogleUrl(url)) {
+      const reader = response.body.getReader()
+      let html = ''
+      while (html.length < 8192) {
+        const { done, value } = await reader.read()
+        if (done) break
+        html += new TextDecoder().decode(value)
+      }
+      reader.cancel()
+
+      const placeName = parseShareGooglePage(finalUrl, html)
+      if (placeName) {
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            name: placeName,
+            address: placeName,
+            needsGeocode: true,
+            finalUrl,
+          }),
+        }
+      }
+
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          error: 'Could not extract place name from this share.google link',
+        }),
+      }
+    }
 
     // Step 1: try to parse coordinates from the URL itself
     let coords = parseCoordinates(finalUrl)

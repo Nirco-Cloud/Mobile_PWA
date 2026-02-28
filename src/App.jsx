@@ -28,7 +28,8 @@ function isGoogleMapsUrl(text) {
   return (
     text.includes('maps.app.goo.gl') ||
     text.includes('google.com/maps') ||
-    text.includes('goo.gl/maps')
+    text.includes('goo.gl/maps') ||
+    text.includes('share.google/')
   )
 }
 
