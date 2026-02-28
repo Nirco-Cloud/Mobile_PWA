@@ -882,25 +882,46 @@ export default function PlannerOverlay() {
   const planFocusDay     = useAppStore((s) => s.planFocusDay)
   const [panelH, setPanelH] = useState(65)       // % of viewport
   const dragRef = useRef(null)
+  const panelHRef = useRef(panelH)
+  panelHRef.current = panelH
 
-  function onDragStart(e) {
-    e.preventDefault()
-    const startY = e.touches ? e.touches[0].clientY : e.clientY
+  // Attach touchstart with { passive: false } so preventDefault works
+  useEffect(() => {
+    const el = dragRef.current
+    if (!el) return
+    function onDragStart(e) {
+      e.preventDefault()
+      const startY = e.touches[0].clientY
+      const startH = panelHRef.current
+      function onMove(ev) {
+        const y = ev.touches[0].clientY
+        const delta = startY - y
+        const newH = startH + (delta / window.innerHeight) * 100
+        setPanelH(Math.min(85, Math.max(20, newH)))
+      }
+      function onEnd() {
+        window.removeEventListener('touchmove', onMove)
+        window.removeEventListener('touchend', onEnd)
+      }
+      window.addEventListener('touchmove', onMove, { passive: false })
+      window.addEventListener('touchend', onEnd)
+    }
+    el.addEventListener('touchstart', onDragStart, { passive: false })
+    return () => el.removeEventListener('touchstart', onDragStart)
+  }, [])
+
+  function onMouseDragStart(e) {
+    const startY = e.clientY
     const startH = panelH
     function onMove(ev) {
-      const y = ev.touches ? ev.touches[0].clientY : ev.clientY
-      const delta = startY - y                    // positive = dragging up = taller
+      const delta = startY - ev.clientY
       const newH = startH + (delta / window.innerHeight) * 100
       setPanelH(Math.min(85, Math.max(20, newH)))
     }
     function onEnd() {
-      window.removeEventListener('touchmove', onMove)
-      window.removeEventListener('touchend', onEnd)
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('mouseup', onEnd)
     }
-    window.addEventListener('touchmove', onMove, { passive: false })
-    window.addEventListener('touchend', onEnd)
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mouseup', onEnd)
   }
@@ -919,8 +940,7 @@ export default function PlannerOverlay() {
       <div
         ref={dragRef}
         className="flex justify-center pt-2.5 pb-1 shrink-0 cursor-row-resize touch-none"
-        onTouchStart={onDragStart}
-        onMouseDown={onDragStart}
+        onMouseDown={onMouseDragStart}
       >
         <div className="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
       </div>
