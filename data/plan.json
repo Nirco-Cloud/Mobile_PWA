@@ -19,7 +19,7 @@
         "arrivalStation": "NRT",
         "departureTime": "2026-11-02T19:00",
         "arrivalTime": "2026-11-03T13:25",
-        "confirmationNumber": "XAUDYZ"
+        "confirmationNumber": "enc:03tfL1poVcpn636z342cBg==.n3EmtU/Tkg4N1p5y.yo256GarisH/i6VxKlNw6C6yksmaQg=="
       },
       "createdAt": "2026-02-28T10:30:00.000Z"
     },
@@ -41,7 +41,7 @@
         "arrivalStation": "TLV",
         "departureTime": "2026-11-19T15:45",
         "arrivalTime": "2026-11-19T22:05",
-        "confirmationNumber": "XAUDYZ"
+        "confirmationNumber": "enc:4ez7W5h9Fd8UTvspfJJyhQ==.Blcs3IsXQ5fBXNOK.pgxeCyNl0iVdhITLDYzjzONrqdRjQQ=="
       },
       "createdAt": "2026-02-28T10:30:00.000Z"
     },
@@ -57,7 +57,7 @@
       "note": "Limousine bus stops at hotel",
       "owner": "nirco",
       "meta": {
-        "confirmationNumber": "T011F757B6C57",
+        "confirmationNumber": "enc:iQtgJR7wwydbO1v/elOpNQ==.Wvk/pSCzVu1VXf2l.pw7AUfPrHSretFDPbVfntH7FWe2s4TN9suNOmNg=",
         "checkIn": "2026-11-03",
         "checkOut": "2026-11-06",
         "nights": "3",
@@ -77,7 +77,7 @@
       "note": null,
       "owner": "nirco",
       "meta": {
-        "confirmationNumber": "5049728576",
+        "confirmationNumber": "enc:PZzXlI7Fcuhl/c3edwG26g==.aCIn4boj3emUzs7O.g+F1vgGrtiAAIMJB9D6t6j9p+XZqMypmSaE=",
         "checkIn": "2026-11-06",
         "checkOut": "2026-11-07",
         "nights": "1",
@@ -97,7 +97,7 @@
       "note": null,
       "owner": "nirco",
       "meta": {
-        "confirmationNumber": "5020261102",
+        "confirmationNumber": "enc:zLowPSHdVLO3xrVGWedMvA==.BGWx8ydvmYdY2QEO.RZJdLXDSmGRsdi94j9ihpaa7eDo3KgoKW9c=",
         "checkIn": "2026-11-07",
         "checkOut": "2026-11-09",
         "nights": "2",
@@ -117,7 +117,7 @@
       "note": null,
       "owner": "nirco",
       "meta": {
-        "confirmationNumber": "6474867538",
+        "confirmationNumber": "enc:mBm3GiyCE9i+2z6OdoxJFw==.AtDRSMP1sh3OT4Fu.yMmgetL91+z4/0V7Ujn2yKtZANgyF+UuB+I=",
         "checkIn": "2026-11-09",
         "checkOut": "2026-11-11",
         "nights": "2",
@@ -137,7 +137,7 @@
       "note": null,
       "owner": "nirco",
       "meta": {
-        "confirmationNumber": "5720697435",
+        "confirmationNumber": "enc:pyoxuHe0zAuJJQMUlC40Ew==.8nX/g8RDdU8zPFLu.QTGwHHzQUYACV4ON/HU/1a6zDcH3GWSGgZ8=",
         "checkIn": "2026-11-11",
         "checkOut": "2026-11-13",
         "nights": "2",
@@ -157,7 +157,7 @@
       "note": null,
       "owner": "nirco",
       "meta": {
-        "confirmationNumber": "5739606766",
+        "confirmationNumber": "enc:z3osNwuEe/h0dU+vUbdYxA==.LZKQrmws+4Kijb5P.CwNZGO3i3F3I94maV2YLESKUCO/S2aUTHyI=",
         "checkIn": "2026-11-13",
         "checkOut": "2026-11-17",
         "nights": "4",
@@ -177,7 +177,7 @@
       "note": null,
       "owner": "nirco",
       "meta": {
-        "confirmationNumber": "70179SF050244",
+        "confirmationNumber": "enc:PL0/gWSr6McSY3LTVxiV0Q==.aW9Iu7cpJf4MQFMT.7f3GkNUX15CBJWMrnnb73BXF+ZHVT38+Y1JFPx4=",
         "checkIn": "2026-11-17",
         "checkOut": "2026-11-19",
         "nights": "2",
