@@ -1,8 +1,14 @@
 import { precacheAndRoute, cleanupOutdatedCaches, createHandlerBoundToURL } from 'workbox-precaching'
 import { registerRoute, NavigationRoute } from 'workbox-routing'
-import { CacheFirst } from 'workbox-strategies'
+import { CacheFirst, NetworkFirst } from 'workbox-strategies'
 import { ExpirationPlugin } from 'workbox-expiration'
 import { CacheableResponsePlugin } from 'workbox-cacheable-response'
+
+// Take control immediately on install
+self.addEventListener('install', () => self.skipWaiting())
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim())
+})
 
 // Inject build-time manifest
 precacheAndRoute(self.__WB_MANIFEST)
@@ -24,10 +30,10 @@ registerRoute(
   }),
 )
 
-// Cache JSON data files at runtime (CacheFirst)
+// Cache JSON data files at runtime (NetworkFirst — so updated plan.json is picked up)
 registerRoute(
   ({ url }) => url.pathname.includes('/data/'),
-  new CacheFirst({
+  new NetworkFirst({
     cacheName: 'location-data',
     plugins: [
       new CacheableResponsePlugin({ statuses: [0, 200] }),
