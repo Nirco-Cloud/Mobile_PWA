@@ -63,6 +63,14 @@ export default function App() {
     })
   }, [setActiveCategories, setDefaultCategories])
 
+  // Load persisted encryption passphrase
+  const setEncPassphrase = useAppStore((s) => s.setEncPassphrase)
+  useEffect(() => {
+    idbGet('encPassphrase').then((saved) => {
+      if (saved) setEncPassphrase(saved)
+    })
+  }, [setEncPassphrase])
+
   // Load persisted dark mode preference (default OFF)
   const setIsDark = useAppStore((s) => s.setIsDark)
   useEffect(() => {
@@ -273,6 +281,10 @@ function SettingsPanel({ batteryLevel, position, onResync, onClose, bottomNavHei
   const setShowTripConnectors = useAppStore((s) => s.setShowTripConnectors)
   const planEntries    = useAppStore((s) => s.planEntries)
   const setPlanEntries = useAppStore((s) => s.setPlanEntries)
+  const encPassphrase    = useAppStore((s) => s.encPassphrase)
+  const setEncPassphrase = useAppStore((s) => s.setEncPassphrase)
+  const [passInput, setPassInput] = useState('')
+  const [passSaved, setPassSaved] = useState(false)
   const tripStart  = useAppStore((s) => s.tripStart)
   const tripEnd    = useAppStore((s) => s.tripEnd)
   const [startVal, setStartVal] = useState(() => toDateInput(tripStart))
@@ -335,6 +347,54 @@ function SettingsPanel({ batteryLevel, position, onResync, onClose, bottomNavHei
     >
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
         <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Settings</h2>
+
+        {/* Encryption Passphrase */}
+        <section className="space-y-2">
+          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+            Bookings Key
+          </h3>
+          {encPassphrase ? (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-green-500">Unlocked</span>
+              <button
+                onClick={async () => {
+                  setEncPassphrase(null)
+                  await idbSet('encPassphrase', null)
+                }}
+                className="text-xs text-red-400 underline"
+              >
+                Lock
+              </button>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <input
+                type="password"
+                value={passInput}
+                onChange={(e) => { setPassInput(e.target.value); setPassSaved(false) }}
+                placeholder="Enter passphrase"
+                className="flex-1 px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
+              />
+              <button
+                onClick={async () => {
+                  if (!passInput) return
+                  setEncPassphrase(passInput)
+                  await idbSet('encPassphrase', passInput)
+                  setPassInput('')
+                  setPassSaved(true)
+                  setTimeout(() => setPassSaved(false), 2000)
+                }}
+                className="px-4 py-1.5 bg-sky-500 text-white rounded-lg text-sm font-medium active:bg-sky-600"
+              >
+                Unlock
+              </button>
+            </div>
+          )}
+          {passSaved && <p className="text-xs text-green-500">Saved!</p>}
+          <p className="text-xs text-gray-400 dark:text-gray-500">
+            Unlocks encrypted confirmation numbers in bookings
+          </p>
+        </section>
 
         {/* Trip Dates */}
         <section className="space-y-2">

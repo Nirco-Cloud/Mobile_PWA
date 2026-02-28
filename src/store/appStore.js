@@ -83,6 +83,10 @@ export const useAppStore = create(
     showTripConnectors: true,
     setShowTripConnectors: (v) => set({ showTripConnectors: v }),
 
+    // Encryption passphrase (stored in memory only, loaded from IDB on boot)
+    encPassphrase: null,
+    setEncPassphrase: (p) => set({ encPassphrase: p }),
+
     // Imported locations (from Google Maps links)
     importedLocations: [],
     addImportedLocation: (loc) =>

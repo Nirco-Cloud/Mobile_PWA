@@ -2,15 +2,17 @@ import { useState } from 'react'
 import { ENTRY_TYPES } from '../config/entryTypes.js'
 import { useAppStore } from '../store/appStore.js'
 import { deletePlanEntry } from '../db/plannerDb.js'
+import { useDecrypt } from '../hooks/useDecrypt.js'
 
-// Tap-to-copy for confirmation numbers
+// Tap-to-copy for confirmation numbers (auto-decrypts encrypted values)
 function CopyBadge({ value }) {
   const [copied, setCopied] = useState(false)
-  if (!value) return null
+  const decrypted = useDecrypt(value)
+  if (!decrypted) return null
 
   async function handleCopy() {
     try {
-      await navigator.clipboard.writeText(value)
+      await navigator.clipboard.writeText(decrypted)
       setCopied(true)
       setTimeout(() => setCopied(false), 1500)
     } catch {
@@ -31,7 +33,7 @@ function CopyBadge({ value }) {
             <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
             <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
           </svg>
-          {value}
+          {decrypted}
         </>
       )}
     </button>
