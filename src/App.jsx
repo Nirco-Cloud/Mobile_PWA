@@ -456,7 +456,7 @@ function SettingsPanel({ batteryLevel, position, onResync, onClose, bottomNavHei
               {syncStatus}
             </span>
             {syncStatus === 'done' && (
-              <span className="text-gray-400 dark:text-gray-500"> ({locations.length} locations, {planEntries.length} plan entries)</span>
+              <span className="text-gray-400 dark:text-gray-500"> ({locations.length} locations{encPassphrase ? `, ${planEntries.length} plan entries` : ''})</span>
             )}
           </p>
           <button
