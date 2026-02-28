@@ -1,0 +1,50 @@
+{
+  "version": "2.0.0",
+  "exportedAt": "2026-02-28T10:30:00.000Z",
+  "entries": [
+    {
+      "id": "plan_flight_ly91_outbound",
+      "day": 1,
+      "order": 0,
+      "type": "flight",
+      "locationId": null,
+      "name": "LY91 TLV → NRT",
+      "lat": null,
+      "lng": null,
+      "note": "Passengers: Nir Cohen, Noga Mazal Cohen",
+      "owner": "nirco",
+      "meta": {
+        "airline": "EL AL",
+        "flightNumber": "LY91",
+        "departureStation": "TLV",
+        "arrivalStation": "NRT",
+        "departureTime": "2026-11-02T19:00",
+        "arrivalTime": "2026-11-03T13:25",
+        "confirmationNumber": "XAUDYZ"
+      },
+      "createdAt": "2026-02-28T10:30:00.000Z"
+    },
+    {
+      "id": "plan_flight_ly92_return",
+      "day": 17,
+      "order": 0,
+      "type": "flight",
+      "locationId": null,
+      "name": "LY92 NRT → TLV",
+      "lat": null,
+      "lng": null,
+      "note": "Passengers: Nir Cohen, Noga Mazal Cohen",
+      "owner": "nirco",
+      "meta": {
+        "airline": "EL AL",
+        "flightNumber": "LY92",
+        "departureStation": "NRT",
+        "arrivalStation": "TLV",
+        "departureTime": "2026-11-19T15:45",
+        "arrivalTime": "2026-11-19T22:05",
+        "confirmationNumber": "XAUDYZ"
+      },
+      "createdAt": "2026-02-28T10:30:00.000Z"
+    }
+  ]
+}

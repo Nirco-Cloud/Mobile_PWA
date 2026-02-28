@@ -20,6 +20,8 @@ export default function DayPicker({ location, onClose }) {
       lat: location.lat ?? null,
       lng: location.lng ?? null,
       note: null,
+      owner: 'shared',
+      meta: null,
       createdAt: new Date().toISOString(),
     }
     await savePlanEntry(entry)

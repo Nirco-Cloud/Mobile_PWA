@@ -9,6 +9,9 @@ import {
 import { useTripConfig } from '../hooks/useTripConfig.js'
 import { BOTTOM_NAV_HEIGHT } from './BottomNav.jsx'
 import { getRouteColor } from '../config/routeColors.js'
+import EntryCard, { EntryCardCompact } from './EntryCard.jsx'
+import EntryCreatorSheet from './EntryCreatorSheet.jsx'
+import BookingsSection from './BookingsSection.jsx'
 
 // ─── View switcher tabs ──────────────────────────────────────────────────────
 
@@ -61,6 +64,8 @@ function LocationPickerSheet({ targetDay, onClose }) {
       lat: loc.lat ?? null,
       lng: loc.lng ?? null,
       note: null,
+      owner: 'shared',
+      meta: null,
       createdAt: new Date().toISOString(),
     }
     await savePlanEntry(entry)
@@ -207,7 +212,8 @@ function ThreeDayView() {
   const updatePlanEntryStore = useAppStore((s) => s.updatePlanEntry)
   const todayDay             = getTodayDayNumber()
 
-  const [pickerDay, setPickerDay] = useState(null) // null = closed
+  const [pickerDay, setPickerDay]             = useState(null) // null = closed
+  const [entryCreatorDay, setEntryCreatorDay] = useState(null)
 
   const visibleDays = [planFocusDay - 1, planFocusDay, planFocusDay + 1]
     .filter((d) => d >= 1 && d <= tripDays)
@@ -291,52 +297,31 @@ function ThreeDayView() {
 
                 {/* Entries */}
                 <div className="flex-1 overflow-y-auto py-1">
-                  {entries.map((entry) => {
-                    const canMoveLeft  = day > 1
-                    const canMoveRight = day < tripDays
-                    return (
-                      <div
-                        key={entry.id}
-                        className="mx-1 mb-1 p-1.5 rounded-lg bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm"
-                      >
-                        <p className="text-[10px] font-medium text-gray-700 dark:text-gray-200 leading-tight mb-1 line-clamp-2">
-                          {entry.name}
-                        </p>
-                        <div className="flex gap-1">
-                          {canMoveLeft && (
-                            <button
-                              onClick={() => handleMove(entry, day - 1)}
-                              className="flex-1 py-0.5 text-[9px] text-sky-500 bg-sky-50 dark:bg-sky-900/30 rounded active:bg-sky-100"
-                            >
-                              ← Move
-                            </button>
-                          )}
-                          {canMoveRight && (
-                            <button
-                              onClick={() => handleMove(entry, day + 1)}
-                              className="flex-1 py-0.5 text-[9px] text-sky-500 bg-sky-50 dark:bg-sky-900/30 rounded active:bg-sky-100"
-                            >
-                              Move →
-                            </button>
-                          )}
-                          <button
-                            onClick={() => handleDelete(entry.id)}
-                            className="py-0.5 px-1 text-[9px] text-red-400 bg-red-50 dark:bg-red-900/20 rounded active:bg-red-100"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      </div>
-                    )
-                  })}
+                  {entries.map((entry) => (
+                    <EntryCardCompact
+                      key={entry.id}
+                      entry={entry}
+                      onDelete={() => handleDelete(entry.id)}
+                      onMoveLeft={day > 1 ? () => handleMove(entry, day - 1) : null}
+                      onMoveRight={day < tripDays ? () => handleMove(entry, day + 1) : null}
+                    />
+                  ))}
 
-                  {/* + Add stop button */}
-                  <button
-                    onClick={() => setPickerDay(day)}
-                    className="mx-1 mt-0.5 w-[calc(100%-8px)] py-1.5 text-[10px] font-medium text-sky-500 border border-dashed border-sky-300 dark:border-sky-700 rounded-lg active:bg-sky-50 dark:active:bg-sky-900/20"
-                  >
-                    + Add
-                  </button>
+                  {/* + Add buttons */}
+                  <div className="mx-1 mt-0.5 flex gap-1">
+                    <button
+                      onClick={() => setPickerDay(day)}
+                      className="flex-1 py-1.5 text-[9px] font-medium text-sky-500 border border-dashed border-sky-300 dark:border-sky-700 rounded-lg active:bg-sky-50 dark:active:bg-sky-900/20"
+                    >
+                      + Loc
+                    </button>
+                    <button
+                      onClick={() => setEntryCreatorDay(day)}
+                      className="flex-1 py-1.5 text-[9px] font-medium text-violet-500 border border-dashed border-violet-300 dark:border-violet-700 rounded-lg active:bg-violet-50 dark:active:bg-violet-900/20"
+                    >
+                      + Entry
+                    </button>
+                  </div>
                 </div>
               </div>
             )
@@ -348,6 +333,12 @@ function ThreeDayView() {
         <LocationPickerSheet
           targetDay={pickerDay}
           onClose={() => setPickerDay(null)}
+        />
+      )}
+      {entryCreatorDay != null && (
+        <EntryCreatorSheet
+          targetDay={entryCreatorDay}
+          onClose={() => setEntryCreatorDay(null)}
         />
       )}
     </>
@@ -390,9 +381,10 @@ function TodayView() {
   const [travelTimes, setTravelTimes]     = useState({})
   const [travelLoading, setTravelLoading] = useState(false)
   const [travelError, setTravelError]     = useState(null)
-  const [pickerOpen, setPickerOpen]       = useState(false)
-  const [transitLegsOpen, setTransitLegsOpen] = useState(false)
-  const [editMode, setEditMode]             = useState(false)
+  const [pickerOpen, setPickerOpen]               = useState(false)
+  const [entryCreatorOpen, setEntryCreatorOpen]   = useState(false)
+  const [transitLegsOpen, setTransitLegsOpen]     = useState(false)
+  const [editMode, setEditMode]                   = useState(false)
   const lastFetchPos = useRef(null)
   const inJapan      = position ? isInJapan(position) : true // default Japan for this trip
   const todayDay     = getTodayDayNumber()
@@ -605,12 +597,12 @@ function TodayView() {
     setTravelError(null)
   }
 
-  async function handleSwapOrder(idxA, idxB) {
-    const a = todayEntries[idxA]
-    const b = todayEntries[idxB]
-    if (!a || !b) return
-    const updA = { ...a, order: b.order }
-    const updB = { ...b, order: a.order }
+  const sharedEntries = todayEntries.filter((e) => e.owner !== 'nirco')
+
+  async function handleSwapOrder(entryA, entryB) {
+    if (!entryA || !entryB) return
+    const updA = { ...entryA, order: entryB.order }
+    const updB = { ...entryB, order: entryA.order }
     await dbUpdatePlanEntry(updA)
     await dbUpdatePlanEntry(updB)
     updatePlanEntryStore(updA)
@@ -690,14 +682,17 @@ function TodayView() {
 
         {/* Stop list */}
         <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2">
-          {todayEntries.length === 0 && (
+          {/* My Bookings (private entries) */}
+          <BookingsSection dayNumber={todayDay} />
+
+          {sharedEntries.length === 0 && (
             <p className="text-sm text-gray-400 dark:text-gray-500 text-center pt-6">
               No stops for today yet.
             </p>
           )}
-          {todayEntries.map((entry, idx) => {
+          {sharedEntries.map((entry, idx) => {
             // Color index is based on position among geo-valid entries
-            const geoIdx = todayEntries
+            const geoIdx = sharedEntries
               .filter((e) => e.lat != null && e.lng != null)
               .indexOf(entry)
             const color = geoIdx >= 0 ? getRouteColor(geoIdx) : null
@@ -708,7 +703,8 @@ function TodayView() {
             let mapsUrl = null
             if (origin && dest) {
               if (transitLegsOpen) {
-                const prevStop = todayEntries.filter((e) => e.lat != null && e.lng != null).slice(0, geoIdx)[geoIdx - 1]
+                const geoEntries = sharedEntries.filter((e) => e.lat != null && e.lng != null)
+                const prevStop = geoEntries[geoIdx - 1]
                 const transitOrigin = geoIdx === 0
                   ? `${position.lat},${position.lng}`
                   : prevStop ? `${prevStop.lat},${prevStop.lng}` : null
@@ -723,95 +719,47 @@ function TodayView() {
 
             let transitFromLabel = null
             if (transitLegsOpen && entry.lat != null && entry.lng != null) {
-              const prevStop = todayEntries.filter((e) => e.lat != null && e.lng != null).slice(0, geoIdx)[geoIdx - 1]
+              const geoEntries = sharedEntries.filter((e) => e.lat != null && e.lng != null)
+              const prevStop = geoEntries[geoIdx - 1]
               transitFromLabel = geoIdx === 0 ? 'Current location' : prevStop?.name
             }
 
-            const rowContent = (
-              <div className="flex gap-3 items-center">
-                {editMode && (
-                  <div className="flex flex-col gap-0.5 shrink-0">
-                    <button
-                      onClick={() => handleSwapOrder(idx, idx - 1)}
-                      disabled={idx === 0}
-                      className="p-1 text-gray-400 disabled:opacity-20 active:text-gray-700"
-                    >
-                      <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M10 5.293l4.354 4.354-1.414 1.414L10 8.12 7.06 11.06 5.646 9.647 10 5.293z" clipRule="evenodd"/></svg>
-                    </button>
-                    <button
-                      onClick={() => handleSwapOrder(idx, idx + 1)}
-                      disabled={idx === todayEntries.length - 1}
-                      className="p-1 text-gray-400 disabled:opacity-20 active:text-gray-700"
-                    >
-                      <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M10 14.707l-4.354-4.354 1.414-1.414L10 11.88l2.94-2.94 1.414 1.414L10 14.707z" clipRule="evenodd"/></svg>
-                    </button>
-                  </div>
-                )}
-                <div
-                  className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: color || '#0ea5e9' }}
-                >
-                  <span className="text-white text-xs font-bold">{idx + 1}</span>
-                </div>
-                <div className="flex-1 min-w-0 flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-                  <span className="text-[15px] font-semibold text-gray-800 dark:text-gray-100 leading-snug">
-                    {entry.name}
-                  </span>
-                  {!editMode && !transitLegsOpen && tt?.walk && (
-                    <span className="text-[13px] font-medium text-green-500 dark:text-green-400 whitespace-nowrap">🚶 {tt.walk}</span>
-                  )}
-                  {!editMode && !transitLegsOpen && tt?.drive && (
-                    <span className="text-[13px] font-medium text-sky-500 dark:text-sky-400 whitespace-nowrap">🚗 {tt.drive}</span>
-                  )}
-                  {!editMode && !transitLegsOpen && tt?.driveKm && (
-                    <span className="text-[13px] text-gray-400 dark:text-gray-500 whitespace-nowrap">{tt.driveKm} km</span>
-                  )}
-                  {!editMode && transitLegsOpen && transitFromLabel && (
-                    <span className="text-[13px] font-medium text-purple-500 dark:text-purple-400 whitespace-nowrap">🚇 from {transitFromLabel}</span>
-                  )}
-                </div>
-              </div>
-            )
-
             return (
-              <div
+              <EntryCard
                 key={entry.id}
-                className={`bg-white dark:bg-gray-800 rounded-xl border p-3 shadow-sm ${
-                  editMode ? 'border-amber-200 dark:border-amber-800' : 'border-gray-100 dark:border-gray-700'
-                }`}
-              >
-                {!editMode && mapsUrl ? (
-                  <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="block active:opacity-70">
-                    {rowContent}
-                  </a>
-                ) : rowContent}
-                {!editMode && (
-                  <div className="flex gap-2 mt-1.5">
-                    <button
-                      onClick={() => handleToTomorrow(entry)}
-                      className="flex-1 py-1 text-xs font-medium text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg active:bg-indigo-100"
-                    >
-                      → Tomorrow
-                    </button>
-                    <button
-                      onClick={() => handleDelete(entry.id)}
-                      className="py-1 px-2 text-xs font-medium text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg active:bg-red-100"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                )}
-              </div>
+                entry={entry}
+                index={idx}
+                color={color}
+                travelTime={tt}
+                mapsUrl={mapsUrl}
+                transitFromLabel={transitFromLabel}
+                transitLegsOpen={transitLegsOpen}
+                editMode={editMode}
+                onDelete={() => handleDelete(entry.id)}
+                onToTomorrow={() => handleToTomorrow(entry)}
+                onSwapUp={() => handleSwapOrder(entry, sharedEntries[idx - 1])}
+                onSwapDown={() => handleSwapOrder(entry, sharedEntries[idx + 1])}
+                isFirst={idx === 0}
+                isLast={idx === sharedEntries.length - 1}
+              />
             )
           })}
 
-          {/* Add stop button */}
-          <button
-            onClick={() => setPickerOpen(true)}
-            className="w-full py-3 text-sm font-medium text-sky-500 border border-dashed border-sky-300 dark:border-sky-700 rounded-xl active:bg-sky-50 dark:active:bg-sky-900/20"
-          >
-            + Add Stop
-          </button>
+          {/* Add buttons */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPickerOpen(true)}
+              className="flex-1 py-3 text-sm font-medium text-sky-500 border border-dashed border-sky-300 dark:border-sky-700 rounded-xl active:bg-sky-50 dark:active:bg-sky-900/20"
+            >
+              + Location
+            </button>
+            <button
+              onClick={() => setEntryCreatorOpen(true)}
+              className="flex-1 py-3 text-sm font-medium text-violet-500 border border-dashed border-violet-300 dark:border-violet-700 rounded-xl active:bg-violet-50 dark:active:bg-violet-900/20"
+            >
+              + Entry
+            </button>
+          </div>
         </div>
       </div>
 
@@ -819,6 +767,12 @@ function TodayView() {
         <LocationPickerSheet
           targetDay={todayDay}
           onClose={() => setPickerOpen(false)}
+        />
+      )}
+      {entryCreatorOpen && (
+        <EntryCreatorSheet
+          targetDay={todayDay}
+          onClose={() => setEntryCreatorOpen(false)}
         />
       )}
 

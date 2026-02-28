@@ -1,6 +1,16 @@
 import { set, del, keys, getMany, clear, setMany } from 'idb-keyval'
 import { planStore } from './db.js'
 
+// Normalize legacy entries (v1) to include owner, meta, and valid type
+export function normalizePlanEntry(entry) {
+  return {
+    ...entry,
+    owner: entry.owner ?? 'shared',
+    meta: entry.meta ?? null,
+    type: entry.type ?? 'location',
+  }
+}
+
 export async function savePlanEntry(entry) {
   await set(entry.id, entry, planStore)
 }
@@ -8,7 +18,7 @@ export async function savePlanEntry(entry) {
 export async function readAllPlanEntries() {
   const allKeys = await keys(planStore)
   const allValues = await getMany(allKeys, planStore)
-  return allValues.filter(Boolean)
+  return allValues.filter(Boolean).map(normalizePlanEntry)
 }
 
 export async function updatePlanEntry(entry) {
@@ -30,7 +40,7 @@ export async function writeAllPlanEntries(entries) {
 
 export function exportPlanToFile(entries) {
   const data = {
-    version: '1.0.0',
+    version: '2.0.0',
     exportedAt: new Date().toISOString(),
     entries,
   }
@@ -54,7 +64,9 @@ export function parsePlanFile(jsonString) {
       return { entries: null, error: 'No plan entries found in file.' }
     }
 
-    const validated = entries.filter((e) => e.id && typeof e.day === 'number' && e.name)
+    const validated = entries
+      .filter((e) => e.id && typeof e.day === 'number' && e.name)
+      .map(normalizePlanEntry)
     if (validated.length === 0) {
       return { entries: null, error: 'File contains no valid plan entries.' }
     }
