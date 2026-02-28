@@ -44,6 +44,139 @@
         "confirmationNumber": "XAUDYZ"
       },
       "createdAt": "2026-02-28T10:30:00.000Z"
+    },
+    {
+      "id": "plan_hotel_sunroute_shinjuku",
+      "day": 1,
+      "order": 1,
+      "type": "hotel",
+      "locationId": "hotel-sunroute-plaza-shinjuku",
+      "name": "Hotel Sunroute Plaza Shinjuku",
+      "lat": null,
+      "lng": null,
+      "note": "Limousine bus stops at hotel",
+      "owner": "nirco",
+      "meta": {
+        "checkIn": "2026-11-03",
+        "checkOut": "2026-11-06",
+        "nights": "3",
+        "roomType": "Deluxe room 28m², Pure Wellness"
+      },
+      "createdAt": "2026-02-28T11:00:00.000Z"
+    },
+    {
+      "id": "plan_hotel_hakone_hanaori",
+      "day": 4,
+      "order": 0,
+      "type": "hotel",
+      "locationId": "hotel-hakone-ashinoko-hanaori",
+      "name": "Hakone Ashinoko Hanaori",
+      "lat": null,
+      "lng": null,
+      "note": null,
+      "owner": "nirco",
+      "meta": {
+        "checkIn": "2026-11-06",
+        "checkOut": "2026-11-07",
+        "nights": "1",
+        "roomType": "Casual twin, open-air bath 23m², half board"
+      },
+      "createdAt": "2026-02-28T11:00:00.000Z"
+    },
+    {
+      "id": "plan_hotel_onn_nakatsugawa",
+      "day": 5,
+      "order": 0,
+      "type": "hotel",
+      "locationId": "hotel-onn-nakatsugawa",
+      "name": "Onn Nakatsugawa",
+      "lat": null,
+      "lng": null,
+      "note": null,
+      "owner": "nirco",
+      "meta": {
+        "checkIn": "2026-11-07",
+        "checkOut": "2026-11-09",
+        "nights": "2",
+        "roomType": "Twin room, breakfast included"
+      },
+      "createdAt": "2026-02-28T11:00:00.000Z"
+    },
+    {
+      "id": "plan_hotel_miyama_ouan",
+      "day": 7,
+      "order": 0,
+      "type": "hotel",
+      "locationId": "hotel-miyama-ouan-kyoritsu",
+      "name": "Miyama Ouan Kyoritsu Resort",
+      "lat": null,
+      "lng": null,
+      "note": null,
+      "owner": "nirco",
+      "meta": {
+        "checkIn": "2026-11-09",
+        "checkOut": "2026-11-11",
+        "nights": "2",
+        "roomType": "Japanese-western renovated room 45m²"
+      },
+      "createdAt": "2026-02-28T11:00:00.000Z"
+    },
+    {
+      "id": "plan_hotel_sanraku_kanazawa",
+      "day": 9,
+      "order": 0,
+      "type": "hotel",
+      "locationId": "hotel-sanraku-kanazawa",
+      "name": "The Hotel Sanraku Kanazawa",
+      "lat": null,
+      "lng": null,
+      "note": null,
+      "owner": "nirco",
+      "meta": {
+        "checkIn": "2026-11-11",
+        "checkOut": "2026-11-13",
+        "nights": "2",
+        "roomType": "Superior Hollywood Twin"
+      },
+      "createdAt": "2026-02-28T11:00:00.000Z"
+    },
+    {
+      "id": "plan_hotel_cross_kyoto",
+      "day": 11,
+      "order": 0,
+      "type": "hotel",
+      "locationId": "hotel-cross-kyoto",
+      "name": "Cross Hotel Kyoto",
+      "lat": null,
+      "lng": null,
+      "note": null,
+      "owner": "nirco",
+      "meta": {
+        "checkIn": "2026-11-13",
+        "checkOut": "2026-11-17",
+        "nights": "4",
+        "roomType": "Superior Twin"
+      },
+      "createdAt": "2026-02-28T11:00:00.000Z"
+    },
+    {
+      "id": "plan_hotel_grand_nikko_daiba",
+      "day": 15,
+      "order": 0,
+      "type": "hotel",
+      "locationId": "hotel-grand-nikko-tokyo-daiba",
+      "name": "Grand Nikko Tokyo Daiba",
+      "lat": null,
+      "lng": null,
+      "note": null,
+      "owner": "nirco",
+      "meta": {
+        "checkIn": "2026-11-17",
+        "checkOut": "2026-11-19",
+        "nights": "2",
+        "roomType": "Superior 33m², Premier Rainbow view (floor 23)"
+      },
+      "createdAt": "2026-02-28T11:00:00.000Z"
     }
   ]
 }
