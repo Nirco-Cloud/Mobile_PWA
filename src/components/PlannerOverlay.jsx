@@ -12,14 +12,15 @@ import { getRouteColor } from '../config/routeColors.js'
 import EntryCard, { EntryCardCompact } from './EntryCard.jsx'
 import EntryCreatorSheet from './EntryCreatorSheet.jsx'
 import BookingsSection from './BookingsSection.jsx'
+import { ENTRY_TYPES } from '../config/entryTypes.js'
 
 // ─── View switcher tabs ──────────────────────────────────────────────────────
 
-function ViewTabs({ view, onSet, tripDays }) {
+function ViewTabs({ view, onSet, tripDays, focusDayLabel }) {
   const tabs = [
     { id: 'full',  label: `${tripDays} Days` },
     { id: '3day',  label: '3 Days'           },
-    { id: 'today', label: 'Today'            },
+    { id: 'today', label: focusDayLabel || 'Day' },
   ]
   return (
     <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
@@ -143,6 +144,26 @@ function LocationPickerSheet({ targetDay, onClose }) {
 
 // ─── Full trip view ──────────────────────────────────────────────────────────
 
+// Small inline type icon for FullTripView badges
+function TypeBadge({ type }) {
+  const def = ENTRY_TYPES[type]
+  if (!def) return null
+  return (
+    <div
+      className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+      style={{ backgroundColor: def.accentColor + '20' }}
+    >
+      <svg
+        viewBox="0 0 24 24" fill="none" stroke={def.accentColor}
+        strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+        className="w-3 h-3"
+      >
+        <path d={def.icon} />
+      </svg>
+    </div>
+  )
+}
+
 function FullTripView() {
   const { tripDays, formatDayLabel, getTodayDayNumber } = useTripConfig()
   const planEntries     = useAppStore((s) => s.planEntries)
@@ -153,43 +174,85 @@ function FullTripView() {
 
   function handleDayPress(day) {
     setPlanFocusDay(day)
-    setPlannerView('3day')
+    setPlannerView('today')
   }
 
   return (
     <div className="flex-1 overflow-y-auto">
       {days.map((day) => {
-        const count   = planEntries.filter((e) => e.day === day).length
+        const dayEntries = planEntries.filter((e) => e.day === day)
+        const count   = dayEntries.length
         const isToday = todayDay === day
+        const hasEntries = count > 0
+
+        // Collect unique non-location types for this day
+        const typeSet = new Set(dayEntries.filter((e) => e.type !== 'location').map((e) => e.type))
+        // Find hotel name if there's a hotel entry
+        const hotelEntry = dayEntries.find((e) => e.type === 'hotel')
 
         return (
           <button
             key={day}
             onClick={() => handleDayPress(day)}
             className={`w-full flex items-center gap-3 px-4 py-3 border-b border-gray-100 dark:border-gray-800 text-left active:bg-gray-50 dark:active:bg-gray-800 transition-colors ${
-              isToday ? 'bg-sky-50 dark:bg-sky-900/20' : ''
+              isToday
+                ? 'bg-sky-50 dark:bg-sky-900/20'
+                : !hasEntries ? 'opacity-60' : ''
             }`}
           >
+            {/* Day number circle */}
+            <div className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm ${
+              isToday
+                ? 'bg-sky-500 text-white'
+                : hasEntries
+                  ? 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200'
+                  : 'bg-gray-50 dark:bg-gray-800/50 text-gray-400 dark:text-gray-500'
+            }`}>
+              {day}
+            </div>
+
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">
-                  Day {day}
+                <span className={`text-sm font-semibold ${
+                  hasEntries ? 'text-gray-800 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'
+                }`}>
+                  {formatDayLabel(day)}
                 </span>
                 {isToday && (
-                  <span className="text-[10px] font-bold text-white bg-sky-500 rounded-full px-1.5 py-0.5 leading-none">
+                  <span className="text-[9px] font-bold text-sky-500 leading-none">
                     TODAY
                   </span>
                 )}
               </div>
-              <span className="text-xs text-gray-400 dark:text-gray-500">
-                {formatDayLabel(day)}
-              </span>
+              {/* Hotel name or entry summary */}
+              {hotelEntry && (
+                <p className="text-[11px] text-violet-500 dark:text-violet-400 truncate mt-0.5">
+                  {hotelEntry.name}
+                </p>
+              )}
+              {!hotelEntry && hasEntries && (
+                <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
+                  {count} {count === 1 ? 'entry' : 'entries'}
+                </p>
+              )}
             </div>
-            {count > 0 && (
+
+            {/* Type badges */}
+            {typeSet.size > 0 && (
+              <div className="flex gap-0.5 shrink-0">
+                {[...typeSet].slice(0, 3).map((t) => (
+                  <TypeBadge key={t} type={t} />
+                ))}
+              </div>
+            )}
+
+            {/* Count pill for locations */}
+            {dayEntries.filter((e) => e.type === 'location').length > 0 && (
               <span className="shrink-0 text-[11px] font-semibold text-sky-600 dark:text-sky-400 bg-sky-100 dark:bg-sky-900/40 rounded-full px-2 py-0.5">
-                {count}
+                {dayEntries.filter((e) => e.type === 'location').length}
               </span>
             )}
+
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
               className="w-4 h-4 text-gray-300 dark:text-gray-600 shrink-0">
               <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
@@ -367,7 +430,7 @@ function haversineDistance(a, b) {
 }
 
 function TodayView() {
-  const { tripDays, tripStart, tripEnd, getTodayDayNumber } = useTripConfig()
+  const { tripDays, formatDayLabel } = useTripConfig()
   const routesLib            = useMapsLibrary('routes')
   const planEntries          = useAppStore((s) => s.planEntries)
   const position             = useAppStore((s) => s.position)
@@ -377,6 +440,8 @@ function TodayView() {
   const setPlannerTravelMode = useAppStore((s) => s.setPlannerTravelMode)
   const setRouteLines        = useAppStore((s) => s.setRouteLines)
   const clearRouteLines      = useAppStore((s) => s.clearRouteLines)
+  const planFocusDay         = useAppStore((s) => s.planFocusDay)
+  const setPlanFocusDay      = useAppStore((s) => s.setPlanFocusDay)
 
   const [travelTimes, setTravelTimes]     = useState({})
   const [travelLoading, setTravelLoading] = useState(false)
@@ -387,11 +452,19 @@ function TodayView() {
   const [editMode, setEditMode]                   = useState(false)
   const lastFetchPos = useRef(null)
   const inJapan      = position ? isInJapan(position) : true // default Japan for this trip
-  const todayDay     = getTodayDayNumber()
+  const activeDay    = planFocusDay ?? 1
   const todayEntries = planEntries
-    .filter((e) => e.day === todayDay)
+    .filter((e) => e.day === activeDay)
     .sort((a, b) => a.order - b.order)
   const todayEntryIds = todayEntries.map((e) => e.id).join(',')
+
+  function navDay(delta) {
+    const next = activeDay + delta
+    if (next >= 1 && next <= tripDays) {
+      setPlanFocusDay(next)
+      lastFetchPos.current = null // re-fetch routes for new day
+    }
+  }
 
   // Clear routes on unmount
   useEffect(() => {
@@ -579,9 +652,9 @@ function TodayView() {
   }
 
   async function handleToTomorrow(entry) {
-    if (!todayDay || todayDay >= tripDays) return
-    const tomorrowCount = planEntries.filter((e) => e.day === todayDay + 1).length
-    const updated = { ...entry, day: todayDay + 1, order: tomorrowCount + 1 }
+    if (activeDay >= tripDays) return
+    const tomorrowCount = planEntries.filter((e) => e.day === activeDay + 1).length
+    const updated = { ...entry, day: activeDay + 1, order: tomorrowCount + 1 }
     await dbUpdatePlanEntry(updated)
     updatePlanEntryStore(updated)
   }
@@ -609,23 +682,39 @@ function TodayView() {
     updatePlanEntryStore(updB)
   }
 
-  if (todayDay === null) {
-    const now          = new Date()
-    const isBeforeTrip = now < new Date(tripStart)
-    const startLabel   = new Date(tripStart).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-    const endLabel     = new Date(tripEnd).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-    return (
-      <div className="flex-1 flex items-center justify-center px-6 text-center">
-        <p className="text-sm text-gray-400 dark:text-gray-500">
-          {isBeforeTrip ? `Trip starts ${startLabel}` : `Trip ended ${endLabel}`}
-        </p>
-      </div>
-    )
-  }
-
   return (
     <>
       <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Day navigation */}
+        <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100 dark:border-gray-800">
+          <button
+            onClick={() => navDay(-1)}
+            disabled={activeDay <= 1}
+            className="p-1.5 rounded-lg text-gray-400 disabled:opacity-30 active:bg-gray-100 dark:active:bg-gray-800"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
+              <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+          <div className="text-center">
+            <span className="text-sm font-bold text-gray-800 dark:text-gray-100">
+              Day {activeDay}
+            </span>
+            <p className="text-[11px] text-gray-400 dark:text-gray-500">
+              {formatDayLabel(activeDay)}
+            </p>
+          </div>
+          <button
+            onClick={() => navDay(1)}
+            disabled={activeDay >= tripDays}
+            className="p-1.5 rounded-lg text-gray-400 disabled:opacity-30 active:bg-gray-100 dark:active:bg-gray-800"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
+              <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        </div>
+
         {/* Transit / Drive toggle */}
         <div className="px-4 pt-2 pb-1 border-b border-gray-100 dark:border-gray-800 space-y-1.5">
           <div className="flex gap-2">
@@ -683,7 +772,7 @@ function TodayView() {
         {/* Stop list */}
         <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2">
           {/* My Bookings (private entries) */}
-          <BookingsSection dayNumber={todayDay} />
+          <BookingsSection dayNumber={activeDay} />
 
           {sharedEntries.length === 0 && (
             <p className="text-sm text-gray-400 dark:text-gray-500 text-center pt-6">
@@ -765,13 +854,13 @@ function TodayView() {
 
       {pickerOpen && (
         <LocationPickerSheet
-          targetDay={todayDay}
+          targetDay={activeDay}
           onClose={() => setPickerOpen(false)}
         />
       )}
       {entryCreatorOpen && (
         <EntryCreatorSheet
-          targetDay={todayDay}
+          targetDay={activeDay}
           onClose={() => setEntryCreatorOpen(false)}
         />
       )}
@@ -788,6 +877,7 @@ export default function PlannerOverlay() {
   const setIsPlannerOpen = useAppStore((s) => s.setIsPlannerOpen)
   const plannerView      = useAppStore((s) => s.plannerView)
   const setPlannerView   = useAppStore((s) => s.setPlannerView)
+  const planFocusDay     = useAppStore((s) => s.planFocusDay)
   const [panelH, setPanelH] = useState(65)       // % of viewport
   const dragRef = useRef(null)
 
@@ -851,7 +941,7 @@ export default function PlannerOverlay() {
 
       {/* View tabs */}
       <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-800">
-        <ViewTabs view={plannerView} onSet={setPlannerView} tripDays={tripDays} />
+        <ViewTabs view={plannerView} onSet={setPlannerView} tripDays={tripDays} focusDayLabel={planFocusDay ? `Day ${planFocusDay}` : 'Day'} />
       </div>
 
       {/* Content */}
