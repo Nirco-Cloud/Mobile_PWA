@@ -147,8 +147,20 @@ export default function App() {
           readAllPlanEntries(),
         ])
         setImportedLocations(importedRecords)
-        setLocations([...records, ...importedRecords])
-        setPlanEntries(planRecords)
+        const allLocs = [...records, ...importedRecords]
+        setLocations(allLocs)
+        // Enrich plan entries with coords from locations when locationId exists
+        const locMap = new Map(allLocs.map((l) => [l.id, l]))
+        const enrichedPlan = planRecords.map((e) => {
+          if (e.lat == null && e.lng == null && e.locationId) {
+            const loc = locMap.get(e.locationId)
+            if (loc?.lat != null && loc?.lng != null) {
+              return { ...e, lat: loc.lat, lng: loc.lng }
+            }
+          }
+          return e
+        })
+        setPlanEntries(enrichedPlan)
         // Validate saved passphrase against encrypted data
         const savedPass = await idbGet('encPassphrase')
         if (savedPass) {
@@ -180,8 +192,16 @@ export default function App() {
             readAllPlanEntries(),
           ])
           setImportedLocations(importedRecords)
-          setLocations([...records, ...importedRecords])
-          setPlanEntries(planRecords)
+          const allLocs = [...records, ...importedRecords]
+          setLocations(allLocs)
+          const locMap = new Map(allLocs.map((l) => [l.id, l]))
+          setPlanEntries(planRecords.map((e) => {
+            if (e.lat == null && e.lng == null && e.locationId) {
+              const loc = locMap.get(e.locationId)
+              if (loc?.lat != null && loc?.lng != null) return { ...e, lat: loc.lat, lng: loc.lng }
+            }
+            return e
+          }))
         } catch {
           // Nothing we can do
         }

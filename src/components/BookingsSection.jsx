@@ -58,7 +58,7 @@ function formatDate(val) {
   } catch { return val }
 }
 
-function BookingCard({ entry, onDelete }) {
+function BookingCard({ entry, onDelete, mapsUrl }) {
   const typeDef = ENTRY_TYPES[entry.type] ?? ENTRY_TYPES.location
   const meta = entry.meta
 
@@ -131,6 +131,22 @@ function BookingCard({ entry, onDelete }) {
               <CopyBadge value={meta.confirmationNumber} />
             </div>
           )}
+
+          {/* Navigate */}
+          {mapsUrl && (
+            <a
+              href={mapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-sky-50 dark:bg-sky-900/20 text-[12px] font-medium text-sky-600 dark:text-sky-400 active:bg-sky-100 dark:active:bg-sky-800/30"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" strokeLinecap="round" strokeLinejoin="round" />
+                <circle cx="12" cy="9" r="2.5" />
+              </svg>
+              Navigate
+            </a>
+          )}
         </div>
 
         {/* Delete */}
@@ -152,6 +168,7 @@ export default function BookingsSection({ dayNumber }) {
   const planEntries           = useAppStore((s) => s.planEntries)
   const encPassphrase         = useAppStore((s) => s.encPassphrase)
   const removePlanEntry       = useAppStore((s) => s.removePlanEntry)
+  const position              = useAppStore((s) => s.position)
 
   // Hide entire section when locked
   if (!encPassphrase) return null
@@ -194,13 +211,21 @@ export default function BookingsSection({ dayNumber }) {
       {/* Content */}
       {isOpen && (
         <div className="space-y-2 pb-2">
-          {bookings.map((entry) => (
-            <BookingCard
-              key={entry.id}
-              entry={entry}
-              onDelete={() => handleDelete(entry.id)}
-            />
-          ))}
+          {bookings.map((entry) => {
+            const origin = position ? `${position.lat},${position.lng}` : null
+            const dest = entry.lat != null && entry.lng != null ? `${entry.lat},${entry.lng}` : null
+            const mapsUrl = origin && dest
+              ? `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}&travelmode=driving`
+              : null
+            return (
+              <BookingCard
+                key={entry.id}
+                entry={entry}
+                onDelete={() => handleDelete(entry.id)}
+                mapsUrl={mapsUrl}
+              />
+            )
+          })}
         </div>
       )}
     </div>
