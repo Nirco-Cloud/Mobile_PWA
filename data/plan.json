@@ -57,6 +57,7 @@
       "note": "Limousine bus stops at hotel",
       "owner": "nirco",
       "meta": {
+        "confirmationNumber": "T011F757B6C57",
         "checkIn": "2026-11-03",
         "checkOut": "2026-11-06",
         "nights": "3",
@@ -76,6 +77,7 @@
       "note": null,
       "owner": "nirco",
       "meta": {
+        "confirmationNumber": "5049728576",
         "checkIn": "2026-11-06",
         "checkOut": "2026-11-07",
         "nights": "1",
@@ -95,6 +97,7 @@
       "note": null,
       "owner": "nirco",
       "meta": {
+        "confirmationNumber": "5020261102",
         "checkIn": "2026-11-07",
         "checkOut": "2026-11-09",
         "nights": "2",
@@ -114,6 +117,7 @@
       "note": null,
       "owner": "nirco",
       "meta": {
+        "confirmationNumber": "6474867538",
         "checkIn": "2026-11-09",
         "checkOut": "2026-11-11",
         "nights": "2",
@@ -133,6 +137,7 @@
       "note": null,
       "owner": "nirco",
       "meta": {
+        "confirmationNumber": "5720697435",
         "checkIn": "2026-11-11",
         "checkOut": "2026-11-13",
         "nights": "2",
@@ -152,6 +157,7 @@
       "note": null,
       "owner": "nirco",
       "meta": {
+        "confirmationNumber": "5739606766",
         "checkIn": "2026-11-13",
         "checkOut": "2026-11-17",
         "nights": "4",
@@ -171,6 +177,7 @@
       "note": null,
       "owner": "nirco",
       "meta": {
+        "confirmationNumber": "70179SF050244",
         "checkIn": "2026-11-17",
         "checkOut": "2026-11-19",
         "nights": "2",
