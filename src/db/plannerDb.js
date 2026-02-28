@@ -1,32 +1,52 @@
-import { set, del, keys, getMany, clear, setMany } from 'idb-keyval'
+import { get, set, keys, getMany, clear, setMany } from 'idb-keyval'
 import { planStore } from './db.js'
 
-// Normalize legacy entries (v1) to include owner, meta, and valid type
+// Normalize legacy entries (v1/v2) to include owner, meta, valid type, updatedAt, deletedAt
 export function normalizePlanEntry(entry) {
+  const now = new Date().toISOString()
   return {
     ...entry,
     owner: entry.owner ?? 'shared',
     meta: entry.meta ?? null,
     type: entry.type ?? 'location',
+    updatedAt: entry.updatedAt ?? entry.createdAt ?? now,
+    deletedAt: entry.deletedAt ?? null,
   }
 }
 
 export async function savePlanEntry(entry) {
-  await set(entry.id, entry, planStore)
+  const now = new Date().toISOString()
+  const full = { ...entry, createdAt: entry.createdAt ?? now, updatedAt: now }
+  await set(full.id, full, planStore)
+  return full
 }
 
 export async function readAllPlanEntries() {
+  const allKeys = await keys(planStore)
+  const allValues = await getMany(allKeys, planStore)
+  return allValues.filter(Boolean).map(normalizePlanEntry).filter((e) => !e.deletedAt)
+}
+
+export async function readAllPlanEntriesIncludingDeleted() {
   const allKeys = await keys(planStore)
   const allValues = await getMany(allKeys, planStore)
   return allValues.filter(Boolean).map(normalizePlanEntry)
 }
 
 export async function updatePlanEntry(entry) {
-  await set(entry.id, entry, planStore)
+  const now = new Date().toISOString()
+  const full = { ...entry, updatedAt: now }
+  await set(full.id, full, planStore)
+  return full
 }
 
 export async function deletePlanEntry(id) {
-  await del(id, planStore)
+  const existing = await get(id, planStore)
+  if (existing) {
+    const now = new Date().toISOString()
+    const tombstone = { ...existing, deletedAt: now, updatedAt: now }
+    await set(id, tombstone, planStore)
+  }
 }
 
 export async function clearAllPlanEntries() {

@@ -7,6 +7,8 @@ import { initializeData, initializePlan } from './db/sync.js'
 import { readAllLocations } from './db/locations.js'
 import { readAllImportedLocations, deleteImportedLocation, updateImportedLocation } from './db/importedLocations.js'
 import { readAllPlanEntries } from './db/plannerDb.js'
+import { getGithubConfig, setGithubConfig, getLastSyncTime } from './db/githubSync.js'
+import { useGithubSync } from './hooks/useGithubSync.js'
 import { toDateInput, fromDateInput } from './config/trip.js'
 import { decryptValue, isEncrypted } from './utils/crypto.js'
 import { resetSync } from './db/sync.js'
@@ -42,6 +44,7 @@ export default function App() {
   const [showImport, setShowImport] = useState(false)
   const [importInitialUrl, setImportInitialUrl] = useState('')
   const [importAutoResolve, setImportAutoResolve] = useState(false)
+  const [qrConfigReceived, setQrConfigReceived] = useState(false)
   const setLocations = useAppStore((s) => s.setLocations)
   const setSyncStatus = useAppStore((s) => s.setSyncStatus)
   const batteryLevel = useAppStore((s) => s.batteryLevel)
@@ -52,7 +55,9 @@ export default function App() {
   const setPlanEntries   = useAppStore((s) => s.setPlanEntries)
   const isPlannerOpen    = useAppStore((s) => s.isPlannerOpen)
   const setIsPlannerOpen = useAppStore((s) => s.setIsPlannerOpen)
-  const setTripDates     = useAppStore((s) => s.setTripDates)
+  const setTripDates       = useAppStore((s) => s.setTripDates)
+  const setGithubConfigured = useAppStore((s) => s.setGithubConfigured)
+  const setGithubLastSync   = useAppStore((s) => s.setGithubLastSync)
 
   // Load persisted default categories on mount — always ensure 'custom' is included
   useEffect(() => {
@@ -96,6 +101,33 @@ export default function App() {
     }
   }, [])
 
+  // Detect QR config share — URL fragment #ghsync=BASE64_JSON
+  useEffect(() => {
+    const hash = window.location.hash
+    if (!hash.startsWith('#ghsync=')) return
+    try {
+      const b64 = hash.slice('#ghsync='.length)
+      const json = decodeURIComponent(escape(atob(b64)))
+      const cfg = JSON.parse(json)
+      if (!cfg.token) return
+      const full = {
+        token: cfg.token,
+        owner: cfg.owner || 'Nirco-Cloud',
+        repo: cfg.repo || 'trip-data',
+        branch: cfg.branch || 'main',
+        filePath: cfg.filePath || 'plan.json',
+      }
+      setGithubConfig(full).then(() => {
+        setGithubConfigured(true)
+        setQrConfigReceived(true)
+        setShowSettings(true)
+      })
+    } catch (e) {
+      console.error('QR config parse error:', e)
+    }
+    window.history.replaceState(null, '', window.location.pathname + window.location.search)
+  }, [setGithubConfigured])
+
   // Top-level hooks
   useServiceWorker()
   useGPS()
@@ -132,6 +164,12 @@ export default function App() {
             setEncPassphrase(savedPass)
           }
         }
+        // Load GitHub sync config
+        const ghConfig = await getGithubConfig()
+        if (ghConfig.token) setGithubConfigured(true)
+        const ghLastSync = await getLastSyncTime()
+        if (ghLastSync) setGithubLastSync(ghLastSync)
+
         setSyncStatus('done')
       } catch (err) {
         console.error('Boot error:', err)
@@ -228,6 +266,8 @@ export default function App() {
           onResync={handleResync}
           onClose={() => setShowSettings(false)}
           bottomNavHeight={BOTTOM_NAV_HEIGHT}
+          qrConfigReceived={qrConfigReceived}
+          onDismissQrBanner={() => setQrConfigReceived(false)}
           onSaveTripDates={async (start, end) => {
             setTripDates(start, end)
             await idbSet('tripDates', { start: start.toISOString(), end: end.toISOString() })
@@ -256,7 +296,7 @@ export default function App() {
   )
 }
 
-function SettingsPanel({ batteryLevel, position, onResync, onClose, bottomNavHeight, onSaveTripDates }) {
+function SettingsPanel({ batteryLevel, position, onResync, onClose, bottomNavHeight, qrConfigReceived, onDismissQrBanner, onSaveTripDates }) {
   const syncStatus = useAppStore((s) => s.syncStatus)
   const locations  = useAppStore((s) => s.locations)
   const demoMode   = useAppStore((s) => s.demoMode)
@@ -269,9 +309,30 @@ function SettingsPanel({ batteryLevel, position, onResync, onClose, bottomNavHei
   const setPlanEntries = useAppStore((s) => s.setPlanEntries)
   const encPassphrase    = useAppStore((s) => s.encPassphrase)
   const setEncPassphrase = useAppStore((s) => s.setEncPassphrase)
+  const setGithubConfigured = useAppStore((s) => s.setGithubConfigured)
   const [passInput, setPassInput] = useState('')
   const [passSaved, setPassSaved] = useState(false)
   const [passError, setPassError] = useState('')
+  const [ghToken, setGhToken] = useState('')
+  const [ghShowToken, setGhShowToken] = useState(false)
+  const [ghSaveMsg, setGhSaveMsg] = useState('')
+  const { triggerSync, status: ghStatus, error: ghError, lastSync: ghLastSync, isOnline } = useGithubSync()
+
+  const [showQrModal, setShowQrModal] = useState(false)
+  const [qrDataUrl, setQrDataUrl] = useState('')
+  const [qrLoading, setQrLoading] = useState(false)
+
+  // Load saved token on mount
+  useEffect(() => {
+    getGithubConfig().then((cfg) => { if (cfg.token) setGhToken(cfg.token) })
+  }, [])
+
+  // Auto-dismiss QR config banner after 8s
+  useEffect(() => {
+    if (!qrConfigReceived) return
+    const t = setTimeout(onDismissQrBanner, 8000)
+    return () => clearTimeout(t)
+  }, [qrConfigReceived, onDismissQrBanner])
   const tripStart  = useAppStore((s) => s.tripStart)
   const tripEnd    = useAppStore((s) => s.tripEnd)
   const [startVal, setStartVal] = useState(() => toDateInput(tripStart))
@@ -296,6 +357,17 @@ function SettingsPanel({ batteryLevel, position, onResync, onClose, bottomNavHei
     >
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
         <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Settings</h2>
+
+        {qrConfigReceived && (
+          <div className="flex items-center justify-between bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-lg px-3 py-2">
+            <span className="text-sm text-emerald-700 dark:text-emerald-300">Sync configured via QR code!</span>
+            <button onClick={onDismissQrBanner} className="text-emerald-400 hover:text-emerald-600 ml-2">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
+        )}
 
         {/* Encryption Passphrase */}
         <section className="space-y-2">
@@ -353,6 +425,102 @@ function SettingsPanel({ batteryLevel, position, onResync, onClose, bottomNavHei
           {passSaved && <p className="text-xs text-green-500">Saved!</p>}
           <p className="text-xs text-gray-400 dark:text-gray-500">
             Unlocks encrypted confirmation numbers in bookings
+          </p>
+        </section>
+
+        {/* GitHub Sync */}
+        <section className="space-y-2">
+          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+            GitHub Sync
+          </h3>
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <input
+                type={ghShowToken ? 'text' : 'password'}
+                value={ghToken}
+                onChange={(e) => { setGhToken(e.target.value); setGhSaveMsg('') }}
+                placeholder="GitHub PAT"
+                className="flex-1 px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-400 font-mono"
+              />
+              <button
+                onClick={() => setGhShowToken(!ghShowToken)}
+                className="px-2 py-1.5 text-xs text-gray-400 border border-gray-200 dark:border-gray-700 rounded-lg"
+              >
+                {ghShowToken ? 'Hide' : 'Show'}
+              </button>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={async () => {
+                  const config = await getGithubConfig()
+                  await setGithubConfig({ ...config, token: ghToken.trim() })
+                  setGithubConfigured(!!ghToken.trim())
+                  setGhSaveMsg('Saved!')
+                  setTimeout(() => setGhSaveMsg(''), 2000)
+                }}
+                className="px-4 py-1.5 bg-gray-600 text-white rounded-lg text-sm font-medium active:bg-gray-700"
+              >
+                Save Token
+              </button>
+              <button
+                onClick={triggerSync}
+                disabled={ghStatus === 'syncing' || !isOnline || !ghToken.trim()}
+                className="flex-1 py-1.5 bg-emerald-500 text-white rounded-lg text-sm font-medium disabled:opacity-50 active:bg-emerald-600 flex items-center justify-center gap-2"
+              >
+                {ghStatus === 'syncing' ? (
+                  <>
+                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" className="opacity-25" />
+                      <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" className="opacity-75" />
+                    </svg>
+                    Syncing…
+                  </>
+                ) : 'Sync Now'}
+              </button>
+            </div>
+            {ghSaveMsg && <p className="text-xs text-green-500">{ghSaveMsg}</p>}
+            {ghStatus === 'success' && <p className="text-xs text-emerald-500">Sync complete!</p>}
+            {ghStatus === 'error' && <p className="text-xs text-red-500">{ghError}</p>}
+            {!isOnline && <p className="text-xs text-orange-400">Offline — sync unavailable</p>}
+            {ghLastSync && (
+              <p className="text-xs text-gray-400 dark:text-gray-500">
+                Last sync: {new Date(ghLastSync).toLocaleString()}
+              </p>
+            )}
+            {ghToken.trim() && (
+              <button
+                onClick={async () => {
+                  setQrLoading(true)
+                  try {
+                    const config = await getGithubConfig()
+                    const payload = { token: config.token, owner: config.owner, repo: config.repo, branch: config.branch, filePath: config.filePath }
+                    const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(payload))))
+                    const url = `https://nirco-cloud.github.io/Mobile_PWA/#ghsync=${b64}`
+                    const QRCode = (await import('qrcode')).default
+                    const dataUrl = await QRCode.toDataURL(url, { width: 768, margin: 2, color: { dark: '#000000', light: '#ffffff' } })
+                    setQrDataUrl(dataUrl)
+                    setShowQrModal(true)
+                  } catch (e) {
+                    console.error('QR generation error:', e)
+                  }
+                  setQrLoading(false)
+                }}
+                disabled={qrLoading}
+                className="w-full py-1.5 bg-indigo-500 text-white rounded-lg text-sm font-medium disabled:opacity-50 active:bg-indigo-600 flex items-center justify-center gap-2"
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                  <rect x="3" y="3" width="3" height="3" /><rect x="9" y="3" width="3" height="3" />
+                  <rect x="3" y="9" width="3" height="3" /><rect x="6" y="6" width="3" height="3" />
+                  <rect x="18" y="3" width="3" height="3" /><rect x="15" y="6" width="3" height="3" />
+                  <rect x="3" y="18" width="3" height="3" /><rect x="6" y="15" width="3" height="3" />
+                  <rect x="15" y="15" width="3" height="3" /><rect x="18" y="18" width="3" height="3" />
+                </svg>
+                {qrLoading ? 'Generating...' : 'Share Setup (QR)'}
+              </button>
+            )}
+          </div>
+          <p className="text-xs text-gray-400 dark:text-gray-500">
+            Two-way sync plan entries via Nirco-Cloud/trip-data
           </p>
         </section>
 
@@ -530,6 +698,23 @@ function SettingsPanel({ batteryLevel, position, onResync, onClose, bottomNavHei
         <LocationManager />
       </div>
 
+      {showQrModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowQrModal(false)}>
+          <div className="bg-white rounded-2xl p-6 mx-4 max-w-xs w-full flex flex-col items-center gap-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-gray-800">Scan to Configure Sync</h3>
+            <div className="bg-white p-2 rounded-xl">
+              <img src={qrDataUrl} alt="QR Code" className="w-64 h-64" />
+            </div>
+            <p className="text-xs text-gray-400 text-center">Scan with phone camera to auto-configure GitHub sync</p>
+            <button
+              onClick={() => setShowQrModal(false)}
+              className="w-full py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium active:bg-gray-200"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -87,6 +87,16 @@ export const useAppStore = create(
     encPassphrase: null,
     setEncPassphrase: (p) => set({ encPassphrase: p }),
 
+    // GitHub sync
+    githubSyncStatus: 'idle', // 'idle' | 'syncing' | 'success' | 'error'
+    githubSyncError: null,
+    githubLastSync: null,
+    githubConfigured: false,
+    setGithubSyncStatus: (githubSyncStatus) => set({ githubSyncStatus }),
+    setGithubSyncError: (githubSyncError) => set({ githubSyncError }),
+    setGithubLastSync: (githubLastSync) => set({ githubLastSync }),
+    setGithubConfigured: (githubConfigured) => set({ githubConfigured }),
+
     // Imported locations (from Google Maps links)
     importedLocations: [],
     addImportedLocation: (loc) =>

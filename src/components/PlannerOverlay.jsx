@@ -14,6 +14,7 @@ import EntryCreatorSheet from './EntryCreatorSheet.jsx'
 import BookingsSection from './BookingsSection.jsx'
 import { ENTRY_TYPES } from '../config/entryTypes.js'
 import { useVisiblePlanEntries } from '../hooks/useVisiblePlanEntries.js'
+import { useGithubSync } from '../hooks/useGithubSync.js'
 
 // ─── View switcher tabs ──────────────────────────────────────────────────────
 
@@ -70,8 +71,8 @@ function LocationPickerSheet({ targetDay, onClose }) {
       meta: null,
       createdAt: new Date().toISOString(),
     }
-    await savePlanEntry(entry)
-    addPlanEntry(entry)
+    const saved = await savePlanEntry(entry)
+    addPlanEntry(saved)
     onClose()
   }
 
@@ -291,8 +292,8 @@ function ThreeDayView() {
   async function handleMove(entry, targetDay) {
     const targetCount = allPlanEntries.filter((e) => e.day === targetDay).length
     const updated = { ...entry, day: targetDay, order: targetCount + 1 }
-    await dbUpdatePlanEntry(updated)
-    updatePlanEntryStore(updated)
+    const saved = await dbUpdatePlanEntry(updated)
+    updatePlanEntryStore(saved)
   }
 
   function nav(delta) {
@@ -660,8 +661,8 @@ function TodayView() {
     if (activeDay >= tripDays) return
     const tomorrowCount = allPlanEntries.filter((e) => e.day === activeDay + 1).length
     const updated = { ...entry, day: activeDay + 1, order: tomorrowCount + 1 }
-    await dbUpdatePlanEntry(updated)
-    updatePlanEntryStore(updated)
+    const saved = await dbUpdatePlanEntry(updated)
+    updatePlanEntryStore(saved)
   }
 
   function handleModeSwitch(mode) {
@@ -681,10 +682,10 @@ function TodayView() {
     if (!entryA || !entryB) return
     const updA = { ...entryA, order: entryB.order }
     const updB = { ...entryB, order: entryA.order }
-    await dbUpdatePlanEntry(updA)
-    await dbUpdatePlanEntry(updB)
-    updatePlanEntryStore(updA)
-    updatePlanEntryStore(updB)
+    const savedA = await dbUpdatePlanEntry(updA)
+    const savedB = await dbUpdatePlanEntry(updB)
+    updatePlanEntryStore(savedA)
+    updatePlanEntryStore(savedB)
   }
 
   return (
@@ -883,6 +884,7 @@ export default function PlannerOverlay({ onImportLink }) {
   const plannerView      = useAppStore((s) => s.plannerView)
   const setPlannerView   = useAppStore((s) => s.setPlannerView)
   const planFocusDay     = useAppStore((s) => s.planFocusDay)
+  const { triggerSync, status: ghStatus, configured: ghConfigured } = useGithubSync()
   const [panelH, setPanelH] = useState(65)       // % of viewport
   const dragRef = useRef(null)
   const panelHRef = useRef(panelH)
@@ -962,6 +964,25 @@ export default function PlannerOverlay({ onImportLink }) {
         <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100 flex-1">
           Trip Planner
         </h2>
+        {ghConfigured && (
+          <button
+            onClick={triggerSync}
+            disabled={ghStatus === 'syncing'}
+            className={`p-1.5 rounded-lg active:bg-gray-100 dark:active:bg-gray-800 ${
+              ghStatus === 'success' ? 'text-emerald-500'
+                : ghStatus === 'error' ? 'text-red-500'
+                : 'text-emerald-500'
+            }`}
+            aria-label="Sync plan entries"
+          >
+            <svg
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+              className={`w-5 h-5 ${ghStatus === 'syncing' ? 'animate-spin' : ''}`}
+            >
+              <path d="M21 2v6h-6M3 12a9 9 0 0115.36-6.36L21 8M3 22v-6h6M21 12a9 9 0 01-15.36 6.36L3 16" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        )}
         {onImportLink && (
           <button
             onClick={onImportLink}

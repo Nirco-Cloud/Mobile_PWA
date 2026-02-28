@@ -52,8 +52,8 @@ export default function EntryCreatorSheet({ targetDay, onClose }) {
       createdAt: new Date().toISOString(),
     }
 
-    await savePlanEntry(entry)
-    addPlanEntry(entry)
+    const saved = await savePlanEntry(entry)
+    addPlanEntry(saved)
     onClose()
   }
 
