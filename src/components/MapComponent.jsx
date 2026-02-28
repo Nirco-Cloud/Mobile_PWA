@@ -94,6 +94,7 @@ function PlanMapLayer() {
   const routePolysRef = useRef([])         // colored route polylines (today view)
 
   const active     = isPlannerOpen
+  const isDayView  = plannerView === 'today'
   const displayDay = planFocusDay ?? 1
 
   const stops = planEntries
@@ -141,7 +142,7 @@ function PlanMapLayer() {
     routePolysRef.current.forEach((p) => p.setMap(null))
     routePolysRef.current = []
 
-    if (!map || !active || !isToday || routeLines.length === 0) return
+    if (!map || !active || !isDayView || routeLines.length === 0) return
 
     const polys = routeLines.map((route) => {
       const polyline = new window.google.maps.Polyline({
@@ -160,7 +161,7 @@ function PlanMapLayer() {
       polys.forEach((p) => p.setMap(null))
       routePolysRef.current = []
     }
-  }, [map, active, isToday, routeKey]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [map, active, isDayView, routeKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!active) return null
 
@@ -181,7 +182,7 @@ function PlanMapLayer() {
         </AdvancedMarker>
       )}
       {stops.map((entry, idx) => {
-        const bgColor = isToday ? getRouteColor(idx) : '#0ea5e9'
+        const bgColor = isDayView ? getRouteColor(idx) : '#0ea5e9'
         return (
           <AdvancedMarker
             key={entry.id}
