@@ -8,6 +8,7 @@ import { readAllLocations } from './db/locations.js'
 import { readAllImportedLocations, deleteImportedLocation, updateImportedLocation } from './db/importedLocations.js'
 import { readAllPlanEntries, clearAllPlanEntries, writeAllPlanEntries, exportPlanToFile, parsePlanFile } from './db/plannerDb.js'
 import { toDateInput, fromDateInput } from './config/trip.js'
+import { decryptValue, isEncrypted } from './utils/crypto.js'
 import { resetSync } from './db/sync.js'
 import { useGPS } from './hooks/useGPS.js'
 import { useBattery } from './hooks/useBattery.js'
@@ -285,6 +286,7 @@ function SettingsPanel({ batteryLevel, position, onResync, onClose, bottomNavHei
   const setEncPassphrase = useAppStore((s) => s.setEncPassphrase)
   const [passInput, setPassInput] = useState('')
   const [passSaved, setPassSaved] = useState(false)
+  const [passError, setPassError] = useState('')
   const tripStart  = useAppStore((s) => s.tripStart)
   const tripEnd    = useAppStore((s) => s.tripEnd)
   const [startVal, setStartVal] = useState(() => toDateInput(tripStart))
@@ -371,13 +373,23 @@ function SettingsPanel({ batteryLevel, position, onResync, onClose, bottomNavHei
               <input
                 type="password"
                 value={passInput}
-                onChange={(e) => { setPassInput(e.target.value); setPassSaved(false) }}
+                onChange={(e) => { setPassInput(e.target.value); setPassSaved(false); setPassError('') }}
                 placeholder="Enter passphrase"
                 className="flex-1 px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
               />
               <button
                 onClick={async () => {
                   if (!passInput) return
+                  setPassError('')
+                  // Find an encrypted confirmation to test against
+                  const testEntry = planEntries.find((e) => isEncrypted(e.meta?.confirmationNumber))
+                  if (testEntry) {
+                    const result = await decryptValue(testEntry.meta.confirmationNumber, passInput)
+                    if (result === null) {
+                      setPassError('Wrong passphrase')
+                      return
+                    }
+                  }
                   setEncPassphrase(passInput)
                   await idbSet('encPassphrase', passInput)
                   setPassInput('')
@@ -390,6 +402,7 @@ function SettingsPanel({ batteryLevel, position, onResync, onClose, bottomNavHei
               </button>
             </div>
           )}
+          {passError && <p className="text-xs text-red-500">{passError}</p>}
           {passSaved && <p className="text-xs text-green-500">Saved!</p>}
           <p className="text-xs text-gray-400 dark:text-gray-500">
             Unlocks encrypted confirmation numbers in bookings
