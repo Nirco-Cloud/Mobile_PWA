@@ -8449,6 +8449,90 @@
       "icon": "#icon-1647-0288D1",
       "source": "kmz",
       "created_at": "2026-02-24T04:53:04.299Z"
+    },
+    {
+      "id": "hotel-sunroute-plaza-shinjuku",
+      "name": "Hotel Sunroute Plaza Shinjuku",
+      "latitude": 35.687244,
+      "longitude": 139.699458,
+      "category": "מלונות",
+      "description": "Check-in: Nov 3 | Check-out: Nov 6 | 3 nights\nDeluxe room 28m², Pure Wellness\nLimousine bus stops at hotel",
+      "images": [],
+      "icon": "#icon-hotel",
+      "source": "manual",
+      "created_at": "2026-02-28T07:00:00.000Z"
+    },
+    {
+      "id": "hotel-hakone-ashinoko-hanaori",
+      "name": "Hakone Ashinoko Hanaori",
+      "latitude": 35.237761,
+      "longitude": 138.997506,
+      "category": "מלונות",
+      "description": "Check-in: Nov 6 | Check-out: Nov 7 | 1 night\nCasual twin, open-air bath 23m², half board",
+      "images": [],
+      "icon": "#icon-hotel",
+      "source": "manual",
+      "created_at": "2026-02-28T07:00:00.000Z"
+    },
+    {
+      "id": "hotel-onn-nakatsugawa",
+      "name": "Onn Nakatsugawa",
+      "latitude": 35.497499,
+      "longitude": 137.504838,
+      "category": "מלונות",
+      "description": "Check-in: Nov 7 | Check-out: Nov 9 | 2 nights\nTwin room, breakfast included",
+      "images": [],
+      "icon": "#icon-hotel",
+      "source": "manual",
+      "created_at": "2026-02-28T07:00:00.000Z"
+    },
+    {
+      "id": "hotel-miyama-ouan-kyoritsu",
+      "name": "Miyama Ouan Kyoritsu Resort",
+      "latitude": 36.194382,
+      "longitude": 137.552862,
+      "category": "מלונות",
+      "description": "Check-in: Nov 9 | Check-out: Nov 11 | 2 nights\nJapanese-western renovated room 45m²",
+      "images": [],
+      "icon": "#icon-hotel",
+      "source": "manual",
+      "created_at": "2026-02-28T07:00:00.000Z"
+    },
+    {
+      "id": "hotel-sanraku-kanazawa",
+      "name": "The Hotel Sanraku Kanazawa",
+      "latitude": 36.570838,
+      "longitude": 136.658829,
+      "category": "מלונות",
+      "description": "Check-in: Nov 11 | Check-out: Nov 13 | 2 nights\nSuperior Hollywood Twin",
+      "images": [],
+      "icon": "#icon-hotel",
+      "source": "manual",
+      "created_at": "2026-02-28T07:00:00.000Z"
+    },
+    {
+      "id": "hotel-cross-kyoto",
+      "name": "Cross Hotel Kyoto",
+      "latitude": 35.008166,
+      "longitude": 135.769575,
+      "category": "מלונות",
+      "description": "Check-in: Nov 13 | Check-out: Nov 17 | 4 nights\nSuperior Twin",
+      "images": [],
+      "icon": "#icon-hotel",
+      "source": "manual",
+      "created_at": "2026-02-28T07:00:00.000Z"
+    },
+    {
+      "id": "hotel-grand-nikko-tokyo-daiba",
+      "name": "Grand Nikko Tokyo Daiba",
+      "latitude": 35.625144,
+      "longitude": 139.771569,
+      "category": "מלונות",
+      "description": "Check-in: Nov 17 | Check-out: Nov 19 | 2 nights\nSuperior 33m², Premier Rainbow view (floor 23)",
+      "images": [],
+      "icon": "#icon-hotel",
+      "source": "manual",
+      "created_at": "2026-02-28T07:00:00.000Z"
     }
   ]
 }
