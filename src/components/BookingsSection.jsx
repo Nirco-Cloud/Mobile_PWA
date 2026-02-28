@@ -98,6 +98,29 @@ function BookingCard({ entry, onDelete, mapsUrl, travelTime }) {
             {typeDef.label}
           </p>
 
+          {/* Action row — Confirmation + Navigate */}
+          {(mapsUrl || meta?.confirmationNumber) && (
+            <div className="flex flex-wrap items-center gap-3 mt-2">
+              {meta?.confirmationNumber && (
+                <CopyBadge value={meta.confirmationNumber} />
+              )}
+              {mapsUrl && (
+                <a
+                  href={mapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-500 text-white text-[12px] font-semibold shadow-sm active:bg-sky-600 transition-colors"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" strokeLinecap="round" strokeLinejoin="round" />
+                    <circle cx="12" cy="9" r="2.5" />
+                  </svg>
+                  Navigate
+                </a>
+              )}
+            </div>
+          )}
+
           {/* Meta details */}
           {meta && entry.type === 'flight' && (
             <div className="mt-1.5 space-y-0.5">
@@ -129,29 +152,6 @@ function BookingCard({ entry, onDelete, mapsUrl, travelTime }) {
           )}
           {entry.type === 'note' && entry.note && (
             <p className="mt-1 text-[12px] text-gray-500 dark:text-gray-400 line-clamp-2">{entry.note}</p>
-          )}
-
-          {/* Confirmation number — prominent tap-to-copy */}
-          {meta?.confirmationNumber && (
-            <div className="mt-2">
-              <CopyBadge value={meta.confirmationNumber} />
-            </div>
-          )}
-
-          {/* Navigate */}
-          {mapsUrl && (
-            <a
-              href={mapsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-2 inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-sky-50 dark:bg-sky-900/20 text-[12px] font-medium text-sky-600 dark:text-sky-400 active:bg-sky-100 dark:active:bg-sky-800/30"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
-                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" strokeLinecap="round" strokeLinejoin="round" />
-                <circle cx="12" cy="9" r="2.5" />
-              </svg>
-              Navigate
-            </a>
           )}
         </div>
 

@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, Fragment } from 'react'
 import { Map, useMap, useApiIsLoaded, AdvancedMarker } from '@vis.gl/react-google-maps'
 import { useAppStore } from '../store/appStore.js'
 import MapMarker from './MapMarker.jsx'
-import { getRouteColor } from '../config/routeColors.js'
+import { getRouteColor, getDayColor } from '../config/routeColors.js'
 import { useVisiblePlanEntries } from '../hooks/useVisiblePlanEntries.js'
 
 const DEFAULT_ZOOM = 12
@@ -25,16 +25,24 @@ function MapController() {
   const isPlannerOpen = useAppStore((s) => s.isPlannerOpen)
   const planFocusDay  = useAppStore((s) => s.planFocusDay)
   const plannerView   = useAppStore((s) => s.plannerView)
+  const planRecapDay  = useAppStore((s) => s.planRecapDay)
+  const planRecapMode = useAppStore((s) => s.planRecapMode)
   const planEntries   = useVisiblePlanEntries()
   const userHasPanned = useRef(false)
 
   // Fit map to planned stops when planner opens or focused day changes
   useEffect(() => {
     if (!map || !isPlannerOpen) return
-    const displayDay = planFocusDay ?? 1
-    const stops      = planEntries.filter(
-      (e) => e.day === displayDay && e.lat != null && e.lng != null,
-    )
+    let stops
+    if (planRecapDay !== null && planRecapMode === 'single') {
+      stops = planEntries.filter((e) => e.day === planRecapDay && e.lat != null && e.lng != null)
+    } else if (planRecapDay !== null) {
+      stops = planEntries.filter((e) => e.day >= planRecapDay && e.lat != null && e.lng != null)
+    } else if (plannerView === 'full') {
+      stops = planEntries.filter((e) => e.lat != null && e.lng != null)
+    } else {
+      stops = planEntries.filter((e) => e.day === (planFocusDay ?? 1) && e.lat != null && e.lng != null)
+    }
     if (stops.length === 0) return
     if (stops.length === 1) {
       map.panTo({ lat: stops[0].lat, lng: stops[0].lng })
@@ -44,7 +52,7 @@ function MapController() {
     const bounds = new window.google.maps.LatLngBounds()
     stops.forEach((s) => bounds.extend({ lat: s.lat, lng: s.lng }))
     map.fitBounds(bounds, { top: 20, bottom: 20, left: 20, right: 20 })
-  }, [map, isPlannerOpen, planFocusDay, plannerView, planEntries])
+  }, [map, isPlannerOpen, planFocusDay, plannerView, planEntries, planRecapDay, planRecapMode])
 
   // Auto-center when position updates (unless user has panned)
   useEffect(() => {
@@ -83,121 +91,179 @@ function MapController() {
 }
 
 function PlanMapLayer() {
-  const map           = useMap()
-  const isPlannerOpen = useAppStore((s) => s.isPlannerOpen)
-  const plannerView   = useAppStore((s) => s.plannerView)
-  const planEntries   = useVisiblePlanEntries()
-  const routeLines    = useAppStore((s) => s.routeLines)
-  const planFocusDay  = useAppStore((s) => s.planFocusDay)
+  const map            = useMap()
+  const isPlannerOpen  = useAppStore((s) => s.isPlannerOpen)
+  const plannerView    = useAppStore((s) => s.plannerView)
+  const planEntries    = useVisiblePlanEntries()
+  const routeLines     = useAppStore((s) => s.routeLines)
+  const planFocusDay   = useAppStore((s) => s.planFocusDay)
   const showConnectors = useAppStore((s) => s.showTripConnectors)
-  const position      = useAppStore((s) => s.position)
-  const seqPolyRef    = useRef(null)      // red connector polyline (all views)
-  const routePolysRef = useRef([])         // colored route polylines (today view)
+  const position       = useAppStore((s) => s.position)
+  const planRecapDay   = useAppStore((s) => s.planRecapDay)
+  const planRecapMode  = useAppStore((s) => s.planRecapMode)
+  const dayPolysRef    = useRef([])
+  const seqPolyRef     = useRef(null)
+  const routePolysRef  = useRef([])
 
   const active     = isPlannerOpen
   const isDayView  = plannerView === 'today'
   const displayDay = planFocusDay ?? 1
+  const recapActive = planRecapDay !== null
 
-  const stops = planEntries
-    .filter((e) => e.day === displayDay && e.lat != null && e.lng != null)
-    .sort((a, b) => a.order - b.order)
-  const stopsKey = stops.map((e) => `${e.id}:${e.lat}:${e.lng}`).join('|')
-  const routeKey = routeLines.map((r) => `${r.entryId}:${r.path.length}`).join('|')
-
-  // Red connector lines between stops (all planner views)
-  useEffect(() => {
-    if (seqPolyRef.current) {
-      seqPolyRef.current.setMap(null)
-      seqPolyRef.current = null
+  // Build day groups for multi-day views (full/3day) OR recap mode from any view
+  function buildDayGroups() {
+    const withCoords = planEntries.filter((e) => e.lat != null && e.lng != null)
+    const grouped = {}
+    withCoords.forEach((e) => {
+      if (!grouped[e.day]) grouped[e.day] = []
+      grouped[e.day].push(e)
+    })
+    Object.values(grouped).forEach((arr) => arr.sort((a, b) => a.order - b.order))
+    let days = Object.keys(grouped).map(Number).sort((a, b) => a - b)
+    // Recap filtering
+    if (recapActive) {
+      if (planRecapMode === 'single') {
+        // "D9 Route" — only this day
+        days = days.filter((d) => d === planRecapDay)
+      } else {
+        // "D9+ On Map" — from selected day onward
+        days = days.filter((d) => d >= planRecapDay)
+      }
     }
-    if (!map || !active || !showConnectors || stops.length === 0) return
-    if (!position && stops.length < 2) return
+    return days.map((d) => ({ day: d, stops: grouped[d] }))
+  }
+
+  // Today view: single focused day stops (only when recap is NOT active)
+  const showTodayView = isDayView && !recapActive
+  const todayStops = showTodayView ? planEntries
+    .filter((e) => e.day === displayDay && e.lat != null && e.lng != null)
+    .sort((a, b) => a.order - b.order) : []
+
+  // Multi-day groups: active for full/3day views OR when recap toggle is on
+  const showMultiDay = !isDayView || recapActive
+  const dayGroups = showMultiDay ? buildDayGroups() : []
+
+  const todayKey  = todayStops.map((e) => `${e.id}:${e.lat}:${e.lng}`).join('|')
+  const routeKey  = routeLines.map((r) => `${r.entryId}:${r.path.length}`).join('|')
+  const multiKey  = dayGroups.map((g) => `${g.day}:${g.stops.length}`).join('|')
+
+  // Multi-day solid polylines — chain across days (prev day's last stop → this day's stops)
+  useEffect(() => {
+    dayPolysRef.current.forEach((p) => p.setMap(null))
+    dayPolysRef.current = []
+    if (!map || !active || !showMultiDay || dayGroups.length === 0) return
+    if (!window.google?.maps?.Polyline) return
+
+    const polys = []
+    let prevLastStop = null
+    for (const g of dayGroups) {
+      const path = []
+      if (prevLastStop) path.push({ lat: prevLastStop.lat, lng: prevLastStop.lng })
+      g.stops.forEach((e) => path.push({ lat: e.lat, lng: e.lng }))
+      if (path.length >= 2) {
+        const pl = new window.google.maps.Polyline({
+          path, geodesic: true,
+          strokeColor: getDayColor(g.day), strokeOpacity: 0.8, strokeWeight: 3,
+        })
+        pl.setMap(map)
+        polys.push(pl)
+      }
+      prevLastStop = g.stops[g.stops.length - 1]
+    }
+    dayPolysRef.current = polys
+    return () => { polys.forEach((p) => p.setMap(null)); dayPolysRef.current = [] }
+  }, [map, active, showMultiDay, multiKey]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Today view: dashed red connector from GPS to stops (hidden during recap)
+  useEffect(() => {
+    if (seqPolyRef.current) { seqPolyRef.current.setMap(null); seqPolyRef.current = null }
+    if (!map || !active || !showTodayView || !showConnectors || todayStops.length === 0) return
+    if (!window.google?.maps?.Polyline) return
+    if (!position && todayStops.length < 2) return
 
     const path = [
       ...(position ? [{ lat: position.lat, lng: position.lng }] : []),
-      ...stops.map((e) => ({ lat: e.lat, lng: e.lng })),
+      ...todayStops.map((e) => ({ lat: e.lat, lng: e.lng })),
     ]
     if (path.length < 2) return
 
     const dashSymbol = { path: 'M 0,-1 0,1', strokeOpacity: 0.75, scale: 2.4 }
     const polyline = new window.google.maps.Polyline({
-      path,
-      geodesic: true,
-      strokeOpacity: 0,
-      strokeWeight: 2.4,
-      icons: [{ icon: dashSymbol, offset: '0', repeat: '12px' }],
-      strokeColor: '#ef4444',
+      path, geodesic: true, map, strokeOpacity: 0, strokeWeight: 2.4,
+      icons: [{ icon: dashSymbol, offset: '0', repeat: '12px' }], strokeColor: '#ef4444',
     })
-    polyline.setMap(map)
     seqPolyRef.current = polyline
+    return () => { polyline.setMap(null); seqPolyRef.current = null }
+  }, [map, active, showTodayView, showConnectors, todayKey, position]) // eslint-disable-line react-hooks/exhaustive-deps
 
-    return () => {
-      polyline.setMap(null)
-      seqPolyRef.current = null
-    }
-  }, [map, active, showConnectors, stopsKey, position]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Colored route polylines for today view
+  // Today view: colored route polylines from Google Directions API (hidden during recap)
   useEffect(() => {
-    // Clean up previous route polylines
     routePolysRef.current.forEach((p) => p.setMap(null))
     routePolysRef.current = []
+    if (!map || !active || !showTodayView || routeLines.length === 0) return
+    if (!window.google?.maps?.Polyline) return
 
-    if (!map || !active || !isDayView || routeLines.length === 0) return
-
-    const polys = routeLines.map((route) => {
-      const polyline = new window.google.maps.Polyline({
-        path: route.path,
-        geodesic: true,
-        strokeColor: route.color,
-        strokeOpacity: 0.8,
-        strokeWeight: 4,
+    const polys = routeLines.map((route) =>
+      new window.google.maps.Polyline({
+        path: route.path, geodesic: true, map,
+        strokeColor: route.color, strokeOpacity: 0.8, strokeWeight: 4,
       })
-      polyline.setMap(map)
-      return polyline
-    })
+    )
     routePolysRef.current = polys
-
-    return () => {
-      polys.forEach((p) => p.setMap(null))
-      routePolysRef.current = []
-    }
-  }, [map, active, isDayView, routeKey]) // eslint-disable-line react-hooks/exhaustive-deps
+    return () => { polys.forEach((p) => p.setMap(null)); routePolysRef.current = [] }
+  }, [map, active, showTodayView, routeKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!active) return null
 
   return (
     <>
-      {/* Starting point marker (0) at GPS position */}
-      {position && stops.length > 0 && (
-        <AdvancedMarker
-          key="origin-0"
-          position={{ lat: position.lat, lng: position.lng }}
-        >
-          <div
-            className="flex items-center justify-center w-7 h-7 rounded-full border-2 border-white shadow-md"
-            style={{ backgroundColor: '#6b7280' }}
-          >
-            <span className="text-white text-xs font-bold leading-none">0</span>
-          </div>
-        </AdvancedMarker>
-      )}
-      {stops.map((entry, idx) => {
-        const bgColor = isDayView ? getRouteColor(idx) : '#0ea5e9'
+      {/* === MULTI-DAY (Big Picture or Recap from day N onward) === */}
+      {showMultiDay && dayGroups.map((group) => {
+        const color = getDayColor(group.day)
         return (
-          <AdvancedMarker
-            key={entry.id}
-            position={{ lat: entry.lat, lng: entry.lng }}
-          >
-            <div
-              className="flex items-center justify-center w-7 h-7 rounded-full border-2 border-white shadow-md"
-              style={{ backgroundColor: bgColor }}
-            >
-              <span className="text-white text-xs font-bold leading-none">{idx + 1}</span>
-            </div>
-          </AdvancedMarker>
+          <Fragment key={`day-${group.day}`}>
+            {group.stops.map((entry) => (
+              <AdvancedMarker key={entry.id} position={{ lat: entry.lat, lng: entry.lng }}>
+                <div
+                  className="flex items-center justify-center rounded-full border-2 border-white shadow-md px-1.5 h-6 min-w-[1.5rem]"
+                  style={{ backgroundColor: color }}
+                >
+                  <span className="text-white text-[10px] font-bold leading-none">D{group.day}</span>
+                </div>
+              </AdvancedMarker>
+            ))}
+          </Fragment>
         )
       })}
+
+      {/* === TODAY VIEW (single day, hidden during recap) === */}
+      {showTodayView && (
+        <>
+          {position && todayStops.length > 0 && (
+            <AdvancedMarker key="origin-0" position={{ lat: position.lat, lng: position.lng }}>
+              <div
+                className="flex items-center justify-center w-7 h-7 rounded-full border-2 border-white shadow-md"
+                style={{ backgroundColor: '#6b7280' }}
+              >
+                <span className="text-white text-xs font-bold leading-none">0</span>
+              </div>
+            </AdvancedMarker>
+          )}
+          {todayStops.map((entry, idx) => {
+            const bgColor = getRouteColor(idx)
+            return (
+              <AdvancedMarker key={entry.id} position={{ lat: entry.lat, lng: entry.lng }}>
+                <div
+                  className="flex items-center justify-center w-7 h-7 rounded-full border-2 border-white shadow-md"
+                  style={{ backgroundColor: bgColor }}
+                >
+                  <span className="text-white text-xs font-bold leading-none">{idx + 1}</span>
+                </div>
+              </AdvancedMarker>
+            )
+          })}
+        </>
+      )}
     </>
   )
 }

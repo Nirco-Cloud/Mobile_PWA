@@ -82,6 +82,9 @@ export const useAppStore = create(
     clearRouteLines: () => set({ routeLines: [] }),
     showTripConnectors: true,
     setShowTripConnectors: (v) => set({ showTripConnectors: v }),
+    planRecapDay: null,  // null = off, number = active recap for that day
+    planRecapMode: null, // null = off, 'single' = this day only, 'onward' = day N+
+    setPlanRecap: (day, mode) => set({ planRecapDay: day, planRecapMode: mode }),
 
     // Encryption passphrase (stored in memory only, loaded from IDB on boot)
     encPassphrase: null,
