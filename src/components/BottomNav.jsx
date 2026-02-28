@@ -5,6 +5,7 @@ const BOTTOM_NAV_HEIGHT = 56
 
 export default function BottomNav({ activeTab, onTabChange }) {
   const activeCategories = useAppStore((s) => s.activeCategories)
+  const isPlannerOpen    = useAppStore((s) => s.isPlannerOpen)
   const isFiltered = activeCategories.length < ALL_CATEGORY_KEYS.length
 
   const tabs = [
@@ -14,6 +15,18 @@ export default function BottomNav({ activeTab, onTabChange }) {
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
           <path d="M9 20l-5.447-2.724A1 1 0 0 1 3 16.382V5.618a1 1 0 0 1 1.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0 0 21 18.382V7.618a1 1 0 0 0-1.447-.894L15 9m0 8V9m0 0L9 7" />
+        </svg>
+      ),
+    },
+    {
+      id: 'plan',
+      label: 'Plan',
+      isActive: isPlannerOpen,
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
+          <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" strokeLinecap="round" strokeLinejoin="round" />
+          <rect x="9" y="3" width="6" height="4" rx="1" />
+          <path d="M9 12h6M9 16h6" strokeLinecap="round" />
         </svg>
       ),
     },
@@ -48,7 +61,7 @@ export default function BottomNav({ activeTab, onTabChange }) {
       }}
     >
       {tabs.map((tab) => {
-        const isActive = activeTab === tab.id
+        const isActive = tab.isActive != null ? tab.isActive : activeTab === tab.id
         return (
           <button
             key={tab.id}

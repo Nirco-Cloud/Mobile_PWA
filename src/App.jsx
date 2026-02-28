@@ -157,15 +157,22 @@ export default function App() {
   }, [setLocations, setSyncStatus, setImportedLocations, setPlanEntries])
 
   function handleTabChange(tab) {
-    if (tab === 'settings') {
+    if (tab === 'plan') {
+      setIsPlannerOpen(!isPlannerOpen)
+      setShowSettings(false)
+      setShowFilter(false)
+    } else if (tab === 'settings') {
       setShowSettings(true)
       setShowFilter(false)
+      setIsPlannerOpen(false)
     } else if (tab === 'filter') {
       setShowFilter((prev) => !prev)
+      setIsPlannerOpen(false)
     } else {
       setActiveTab(tab)
       setShowSettings(false)
       setShowFilter(false)
+      setIsPlannerOpen(false)
     }
   }
 
@@ -211,22 +218,7 @@ export default function App() {
       {!showSettings ? (
         <SplitLayout
           bottomNavHeight={BOTTOM_NAV_HEIGHT}
-          mapSlot={
-            <div className="relative w-full h-full">
-              <MapComponent />
-              {/* Planner hamburger — top-left of map */}
-              <button
-                onClick={() => setIsPlannerOpen(true)}
-                className="absolute top-3 left-3 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-white dark:bg-gray-800 shadow-lg active:scale-95 transition-transform"
-                aria-label="Open trip planner"
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                  className="w-5 h-5 text-gray-700 dark:text-gray-200">
-                  <path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-            </div>
-          }
+          mapSlot={<MapComponent />}
           listSlot={isPlannerOpen ? null : <ListComponent />}
         />
       ) : (
