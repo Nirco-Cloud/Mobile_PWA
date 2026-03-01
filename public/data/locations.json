@@ -1,17 +1,19 @@
 {
   "version": "1.0.0",
-  "updated_at": "2026-02-24T04:53:17.381Z",
+  "updated_at": "2026-03-01T22:24:15.980Z",
   "categories": [
-    "Izakaya",
-    "Ramen",
     "איזורים ואתרים",
+    "מסעדות ואוכל רחוב",
+    "מסעדות גבוהות / הזמנה",
+    "Ramen",
+    "Izakaya",
+    "סושי עממי ולא יקר",
+    "סושי יקר ומוקפד",
+    "קפה/תה/אלכוהול",
     "חטיפים ומלוחים",
     "חנויות",
-    "מסעדות גבוהות / הזמנה",
-    "מסעדות ואוכל רחוב",
-    "סושי יקר ומוקפד",
-    "סושי עממי ולא יקר",
-    "קפה/תה/אלכוהול"
+    "מלונות",
+    "attraction"
   ],
   "locations": [
     {
@@ -8533,6 +8535,18 @@
       "icon": "#icon-hotel",
       "source": "manual",
       "created_at": "2026-02-28T07:00:00.000Z"
+    },
+    {
+      "name": "teamLab Planets TOKYO DMM",
+      "latitude": 35.6491207,
+      "longitude": 139.7897739,
+      "category": "attraction",
+      "description": "",
+      "created_at": "2026-03-01T20:38:20.299Z",
+      "source": "builder",
+      "images": [],
+      "icon": "",
+      "id": "teamlab-planets-tokyo-dmm--356491207-1397897739"
     }
   ]
 }
