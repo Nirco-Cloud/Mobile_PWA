@@ -6,19 +6,24 @@ import { useTripConfig } from '../hooks/useTripConfig.js'
 const DAYS_SHORT   = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-export default function DayPicker({ location, onClose, onDone, pickerOnly = false }) {
+export default function DayPicker({ location, onClose, onDone, pickerOnly = false, jumpMode = false }) {
   const planEntries  = useAppStore((s) => s.planEntries)
   const addPlanEntry = useAppStore((s) => s.addPlanEntry)
   const { tripDays, dayToDate, getTodayDayNumber } = useTripConfig()
   const todayDay = getTodayDayNumber()
   const [toast, setToast] = useState(null)
 
-  // Hard cutoff — only show today and future days
-  // If trip hasn't started yet (todayDay null) → show all days from Day 1
-  const startDay   = todayDay ?? 1
+  // jumpMode shows all 17 days; otherwise hard-cut to today and future
+  const startDay    = (todayDay && !jumpMode) ? todayDay : 1
   const visibleDays = Array.from({ length: tripDays }, (_, i) => i + 1).filter((d) => d >= startDay)
 
   async function handleSelectDay(day) {
+    if (jumpMode) {
+      // Instant navigation — no toast delay
+      navigator.vibrate?.(15)
+      onDone ? onDone(day) : onClose()
+      return
+    }
     if (pickerOnly) {
       // Just pick a day — no new entry created; caller handles the action
       navigator.vibrate?.(15)
@@ -69,11 +74,13 @@ export default function DayPicker({ location, onClose, onDone, pickerOnly = fals
         {/* Header */}
         <div className="px-5 pb-3">
           <p className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5">
-            {pickerOnly ? 'Move to day' : 'Add to itinerary'}
+            {jumpMode ? 'Jump to day' : pickerOnly ? 'Move to day' : 'Add to itinerary'}
           </p>
-          <p className="text-base font-semibold text-gray-800 dark:text-gray-100 truncate">
-            {location?.name}
-          </p>
+          {!jumpMode && (
+            <p className="text-base font-semibold text-gray-800 dark:text-gray-100 truncate">
+              {location?.name}
+            </p>
+          )}
         </div>
 
         {/* Success toast */}

@@ -9,6 +9,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.7.5] — 2026-03-01 19:01
+
+### Added
+- **Jump to day** — tap the "Day X" label in TodayView to open a day picker sheet showing all 17 trip days; instant navigation with no toast delay
+- **Empty day CTA** — days with no stops now show "+ Location" (sky filled) and "+ Entry" (violet outlined) action buttons instead of plain text
+- **LocationPickerSheet wired** — "+ Location" button is now functional; previously the sheet existed but was never rendered
+- **Category dot in location picker** — each location row in the picker shows a colored dot matching its category (consistent with the main list view)
+
+### Changed
+- **TypeBadge sizes** (FullTripView row) — icon `w-3→w-3.5`, text `text-[9px]→text-[11px]`, padding `px-1.5→px-2`; badges are now properly legible at arm's length
+- **FullTripView empty days** — faint `+` hint appears before the chevron on days with no entries to communicate tap affordance
+- **DayPicker** — new `jumpMode` prop shows all trip days (not just future), closes instantly on selection
+
+---
+
 ## [1.7.4] — 2026-03-01 16:00
 
 ### Added

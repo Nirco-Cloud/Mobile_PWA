@@ -13,6 +13,7 @@ import { BOTTOM_NAV_HEIGHT } from './BottomNav.jsx'
 import { getRouteColor, getDayColor } from '../config/routeColors.js'
 import EntryCard from './EntryCard.jsx'
 import EntryCreatorSheet from './EntryCreatorSheet.jsx'
+import DayPicker from './DayPicker.jsx'
 import BookingsSection from './BookingsSection.jsx'
 import { ENTRY_TYPES } from '../config/entryTypes.js'
 import { useVisiblePlanEntries } from '../hooks/useVisiblePlanEntries.js'
@@ -41,6 +42,28 @@ function ViewTabs({ view, onSet, tripDays, focusDayLabel }) {
         </button>
       ))}
     </div>
+  )
+}
+
+// ─── Category color dot ───────────────────────────────────────────────────────
+
+const CATEGORY_COLORS = {
+  'Izakaya': '#f59e0b', 'Ramen': '#ef4444',
+  'סושי יקר ומוקפד': '#14b8a6', 'סושי עממי ולא יקר': '#2dd4bf',
+  'מסעדות גבוהות / הזמנה': '#8b5cf6',
+  'מסעדות ואוכל רחוב': '#f97316', 'restaurant': '#f97316',
+  'קפה/תה/אלכוהול': '#ec4899', 'cafe': '#ec4899',
+  'חטיפים ומלוחים': '#eab308',
+  'חנויות': '#10b981', 'shop': '#10b981',
+  'איזורים ואתרים': '#3b82f6', 'attraction': '#3b82f6', 'location': '#3b82f6',
+  'מלונות': '#6366f1', 'hotel': '#6366f1',
+  'custom': '#0ea5e9', 'train': '#6b7280',
+}
+
+function LocDot({ category }) {
+  const color = CATEGORY_COLORS[category] ?? '#9ca3af'
+  return (
+    <span style={{ width: 8, height: 8, minWidth: 8, borderRadius: '50%', backgroundColor: color, display: 'inline-block' }} />
   )
 }
 
@@ -118,12 +141,13 @@ function LocationPickerSheet({ targetDay, onClose }) {
               onClick={() => handlePick(loc)}
               className="w-full flex items-center gap-3 px-4 py-2.5 text-left active:bg-gray-50 dark:active:bg-gray-800"
             >
+              <LocDot category={loc.category} />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">
                   {loc.name}
                 </p>
                 {loc.category && (
-                  <p className="text-[11px] text-gray-400 dark:text-gray-500">
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400">
                     {loc.category}
                   </p>
                 )}
@@ -153,17 +177,17 @@ function TypeBadge({ type }) {
   if (!def) return null
   return (
     <div
-      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full shrink-0"
+      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full shrink-0"
       style={{ backgroundColor: def.accentColor + '18' }}
     >
       <svg
         viewBox="0 0 24 24" fill="none" stroke={def.accentColor}
         strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-        className="w-3 h-3"
+        className="w-3.5 h-3.5"
       >
         <path d={def.icon} />
       </svg>
-      <span className="text-[9px] font-semibold" style={{ color: def.accentColor }}>{def.label}</span>
+      <span className="text-[11px] font-semibold" style={{ color: def.accentColor }}>{def.label}</span>
     </div>
   )
 }
@@ -288,6 +312,11 @@ function FullTripView() {
               </span>
             )}
 
+            {/* Faint "+" hint for empty days */}
+            {!hasEntries && (
+              <span className="text-gray-300 dark:text-gray-600 text-base font-light shrink-0">+</span>
+            )}
+
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
               className="w-4 h-4 text-gray-300 dark:text-gray-600 shrink-0">
               <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
@@ -347,9 +376,11 @@ function TodayView() {
   const [travelTimes, setTravelTimes]     = useState({})
   const [travelLoading, setTravelLoading] = useState(false)
   const [travelError, setTravelError]     = useState(null)
-  const [entryCreatorOpen, setEntryCreatorOpen]   = useState(false)
-  const [transitLegsOpen, setTransitLegsOpen]     = useState(false)
-  const [editMode, setEditMode]                   = useState(false)
+  const [entryCreatorOpen, setEntryCreatorOpen]       = useState(false)
+  const [locationPickerOpen, setLocationPickerOpen]   = useState(false)
+  const [showDayJumper, setShowDayJumper]             = useState(false)
+  const [transitLegsOpen, setTransitLegsOpen]         = useState(false)
+  const [editMode, setEditMode]                       = useState(false)
   const lastFetchPos = useRef(null)
   const cardRefs     = useRef({})
   const inJapan      = position ? isInJapan(position) : true // default Japan for this trip
@@ -643,9 +674,13 @@ function TodayView() {
             </svg>
           </button>
           <div className="flex items-center gap-2">
-            <span className="text-sm font-bold text-gray-800 dark:text-gray-100">
+            <button
+              onClick={() => setShowDayJumper(true)}
+              className="text-sm font-bold text-gray-800 dark:text-gray-100 py-1 px-2 rounded-lg active:bg-gray-100 dark:active:bg-gray-800"
+              aria-label="Jump to day"
+            >
               Day {activeDay}
-            </span>
+            </button>
             <button
               onClick={() => {
                 if (planRecapMode === 'onward' && planRecapDay === activeDay) {
@@ -756,9 +791,23 @@ function TodayView() {
           <BookingsSection dayNumber={activeDay} travelTimes={travelTimes} travelMode={travelMode} transitLegsOpen={transitLegsOpen} />
 
           {sharedEntries.length === 0 && todayEntries.filter((e) => e.owner === 'nirco').length === 0 && (
-            <p className="text-sm text-gray-500 dark:text-gray-400 text-center pt-6">
-              No stops for today yet.
-            </p>
+            <div className="flex flex-col items-center gap-4 pt-8 pb-4">
+              <p className="text-sm text-gray-400 dark:text-gray-500">No stops for Day {activeDay} yet</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setLocationPickerOpen(true)}
+                  className="px-4 py-2.5 text-sm font-semibold bg-sky-500 text-white rounded-xl active:bg-sky-600 min-h-[44px]"
+                >
+                  + Location
+                </button>
+                <button
+                  onClick={() => setEntryCreatorOpen(true)}
+                  className="px-4 py-2.5 text-sm font-semibold border border-violet-300 dark:border-violet-700 text-violet-500 rounded-xl active:bg-violet-50 dark:active:bg-violet-900/20 min-h-[44px]"
+                >
+                  + Entry
+                </button>
+              </div>
+            </div>
           )}
           {sharedEntries.map((entry, idx) => {
             // Color index is based on position among geo-valid entries
@@ -832,6 +881,21 @@ function TodayView() {
         <EntryCreatorSheet
           targetDay={activeDay}
           onClose={() => setEntryCreatorOpen(false)}
+        />
+      )}
+
+      {locationPickerOpen && (
+        <LocationPickerSheet
+          targetDay={activeDay}
+          onClose={() => setLocationPickerOpen(false)}
+        />
+      )}
+
+      {showDayJumper && (
+        <DayPicker
+          jumpMode
+          onClose={() => setShowDayJumper(false)}
+          onDone={(day) => { setShowDayJumper(false); setPlanFocusDay(day) }}
         />
       )}
 
