@@ -709,6 +709,11 @@ function SettingsPanel({ batteryLevel, position, onResync, onClose, bottomNavHei
 
         {/* Location Manager */}
         <LocationManager />
+
+        {/* Version */}
+        <p className="text-xs text-gray-400 dark:text-gray-600 text-center pt-2 pb-1">
+          v{__APP_VERSION__}
+        </p>
       </div>
 
       {showQrModal && (
