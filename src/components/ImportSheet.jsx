@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAppStore } from '../store/appStore.js'
 import { saveImportedLocation, deleteImportedLocation } from '../db/importedLocations.js'
+import { deletePlanEntry } from '../db/plannerDb.js'
 import DayPicker from './DayPicker.jsx'
 
 // Import categories — canonical keys matching categories.js
@@ -90,6 +91,8 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
   const addImportedLocation = useAppStore((s) => s.addImportedLocation)
   const removeImportedLocation = useAppStore((s) => s.removeImportedLocation)
   const setSelection        = useAppStore((s) => s.setSelection)
+  const planEntries         = useAppStore((s) => s.planEntries)
+  const removePlanEntry     = useAppStore((s) => s.removePlanEntry)
 
   // Sync initialUrl when sheet opens with a pre-filled URL
   useEffect(() => {
@@ -217,6 +220,11 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
   async function handleDelete(id) {
     await deleteImportedLocation(id)
     removeImportedLocation(id)
+    const linked = planEntries.filter((e) => e.locationId === id && !e.deletedAt)
+    for (const e of linked) {
+      await deletePlanEntry(e.id)
+      removePlanEntry(e.id)
+    }
   }
 
   function handleSelectImported(loc) {

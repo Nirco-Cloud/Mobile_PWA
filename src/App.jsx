@@ -6,7 +6,7 @@ import { CATEGORIES, ALL_CATEGORY_KEYS, migrateLocations } from './config/catego
 import { initializeData, initializePlan } from './db/sync.js'
 import { readAllLocations } from './db/locations.js'
 import { readAllImportedLocations, deleteImportedLocation, updateImportedLocation } from './db/importedLocations.js'
-import { readAllPlanEntries, enrichPlanEntries } from './db/plannerDb.js'
+import { readAllPlanEntries, enrichPlanEntries, deletePlanEntry } from './db/plannerDb.js'
 import { getGithubConfig, setGithubConfig, getLastSyncTime } from './db/githubSync.js'
 import { useGithubSync } from './hooks/useGithubSync.js'
 import { toDateInput, fromDateInput } from './config/trip.js'
@@ -738,6 +738,8 @@ function LocationManager() {
   const importedLocations = useAppStore((s) => s.importedLocations)
   const removeImportedLocation = useAppStore((s) => s.removeImportedLocation)
   const updateImportedLocationStore = useAppStore((s) => s.updateImportedLocation)
+  const planEntries = useAppStore((s) => s.planEntries)
+  const removePlanEntry = useAppStore((s) => s.removePlanEntry)
   const [editingId, setEditingId] = useState(null)
   const [editName, setEditName] = useState('')
   const [editCategory, setEditCategory] = useState('location')
@@ -762,6 +764,11 @@ function LocationManager() {
   async function handleDelete(id) {
     await deleteImportedLocation(id)
     removeImportedLocation(id)
+    const linked = planEntries.filter((e) => e.locationId === id && !e.deletedAt)
+    for (const e of linked) {
+      await deletePlanEntry(e.id)
+      removePlanEntry(e.id)
+    }
   }
 
   return (
