@@ -9,6 +9,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.7.3] — 2026-03-01 15:30
+
+### Added
+- **Skeleton loading screens** — list panel shows 8 shimmer placeholder rows while location data loads from IndexedDB (visible during explicit re-sync)
+- **Offline/online toast** — amber toast when going offline, green toast (4 s auto-dismiss) when connection returns; floats above bottom nav
+- **Google Maps dark mode** — map renders in dark style when dark mode is active: uses `colorScheme` API when `mapId` is configured; falls back to a custom 19-rule dark styles array otherwise
+
+### Changed
+- **Category chips** — `min-h-[44px]` ensures all chips meet WCAG 2.5.5 tap target minimum
+- **Re-center FAB** — bumped from 40 × 40 px to **48 × 48 px**
+- **Map markers** — invisible padding wrapper extends tappable area to 48 × 48 dp for both normal (28 px) and selected (40 px) icons
+- **CSS shimmer animation** added (`@keyframes shimmer`) for skeleton rows, with dark mode variant
+- **`prefers-reduced-motion`** media query added globally — disables all transitions and animations for users who opt out of motion
+
+---
+
 ## [1.7.2] — 2026-03-01 14:30
 
 ### Changed

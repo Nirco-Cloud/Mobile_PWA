@@ -4,6 +4,7 @@ import { useAppStore } from '../store/appStore.js'
 import { ALL_CATEGORY_KEYS } from '../config/categories.js'
 import { haversine } from '../utils/haversine.js'
 import LocationRow from './LocationRow.jsx'
+import SkeletonList from './SkeletonList.jsx'
 
 // ── Chip groups — each merges related category keys into one chip ─────────────
 const CHIP_GROUPS = [
@@ -22,6 +23,7 @@ const CHIP_GROUPS = [
 
 export default function ListComponent() {
   const locations          = useAppStore((s) => s.locations)
+  const syncStatus         = useAppStore((s) => s.syncStatus)
   const position           = useAppStore((s) => s.position)
   const activeCategories   = useAppStore((s) => s.activeCategories)
   const setActiveCategories = useAppStore((s) => s.setActiveCategories)
@@ -115,7 +117,7 @@ export default function ListComponent() {
         {/* All chip */}
         <button
           onClick={() => setActiveCategories(ALL_CATEGORY_KEYS)}
-          className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-semibold border transition-colors ${
+          className={`shrink-0 px-3 py-1.5 min-h-[44px] rounded-full text-sm font-semibold border transition-colors ${
             isAllActive
               ? 'bg-sky-500 text-white border-sky-500'
               : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-300 dark:border-gray-600'
@@ -130,7 +132,7 @@ export default function ListComponent() {
             <button
               key={group.id}
               onClick={() => handleChipToggle(group)}
-              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold border transition-colors"
+              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] rounded-full text-sm font-semibold border transition-colors"
               style={
                 isActive
                   ? { backgroundColor: group.color, borderColor: group.color, color: '#fff' }
@@ -148,7 +150,8 @@ export default function ListComponent() {
 
       {/* List */}
       <div ref={containerRef} className="flex-1 overflow-y-auto overscroll-contain">
-        {sortedLocations.length === 0 && (
+        {locations.length === 0 && syncStatus === 'syncing' && <SkeletonList />}
+        {locations.length > 0 && sortedLocations.length === 0 && (
           <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-8">
             No locations found
           </p>
