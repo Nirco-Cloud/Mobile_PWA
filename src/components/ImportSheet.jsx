@@ -255,7 +255,8 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
           </h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full text-gray-400 active:bg-gray-100 dark:active:bg-gray-800"
+            aria-label="Close"
+            className="p-1.5 rounded-full text-gray-500 active:bg-gray-100 dark:active:bg-gray-800"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
               <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" />
@@ -376,7 +377,7 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
                 {/* Secondary action: Save only */}
                 <button
                   onClick={handleSaveOnly}
-                  className="w-full py-2 text-sm text-gray-400 dark:text-gray-500 active:text-gray-600 dark:active:text-gray-300"
+                  className="w-full py-2 text-sm text-gray-500 dark:text-gray-400 active:text-gray-700 dark:active:text-gray-300"
                 >
                   Save to list only
                 </button>
@@ -387,7 +388,7 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
           {/* Saved imports list */}
           {importedLocations.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide">
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                 Saved imports
               </p>
               <div className="divide-y divide-gray-100 dark:divide-gray-800 border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden">
@@ -398,7 +399,7 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
                       className="flex-1 min-w-0 text-left"
                     >
                       <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{loc.name}</p>
-                      <p className="text-xs text-gray-400 font-mono">
+                      <p className="text-xs text-gray-500 font-mono">
                         {loc.lat.toFixed(5)}, {loc.lng.toFixed(5)}
                       </p>
                     </button>

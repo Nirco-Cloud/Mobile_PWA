@@ -108,7 +108,7 @@ function LocationPickerSheet({ targetDay, onClose }) {
 
         <div className="flex-1 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800">
           {filtered.length === 0 && (
-            <p className="px-4 py-4 text-sm text-gray-400 dark:text-gray-500 text-center">
+            <p className="px-4 py-4 text-sm text-gray-500 dark:text-gray-400 text-center">
               No locations found
             </p>
           )}
@@ -635,7 +635,8 @@ function TodayView() {
           <button
             onClick={() => navDay(-1)}
             disabled={activeDay <= 1}
-            className="p-1.5 rounded-lg text-gray-400 disabled:opacity-30 active:bg-gray-100 dark:active:bg-gray-800"
+            aria-label="Previous day"
+            className="p-1.5 rounded-lg text-gray-500 disabled:opacity-30 active:bg-gray-100 dark:active:bg-gray-800"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
               <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
@@ -672,7 +673,8 @@ function TodayView() {
           <button
             onClick={() => navDay(1)}
             disabled={activeDay >= tripDays}
-            className="p-1.5 rounded-lg text-gray-400 disabled:opacity-30 active:bg-gray-100 dark:active:bg-gray-800"
+            aria-label="Next day"
+            className="p-1.5 rounded-lg text-gray-500 disabled:opacity-30 active:bg-gray-100 dark:active:bg-gray-800"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
               <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
@@ -754,7 +756,7 @@ function TodayView() {
           <BookingsSection dayNumber={activeDay} travelTimes={travelTimes} travelMode={travelMode} transitLegsOpen={transitLegsOpen} />
 
           {sharedEntries.length === 0 && todayEntries.filter((e) => e.owner === 'nirco').length === 0 && (
-            <p className="text-sm text-gray-400 dark:text-gray-500 text-center pt-6">
+            <p className="text-sm text-gray-500 dark:text-gray-400 text-center pt-6">
               No stops for today yet.
             </p>
           )}
@@ -972,7 +974,7 @@ export default function PlannerOverlay({ onImportLink }) {
       <div className="flex items-center gap-3 px-4 py-2 border-b border-gray-100 dark:border-gray-800">
         <button
           onClick={() => { setPlanRecap(null, null); setIsPlannerOpen(false); setPlanFocusEntryId(null) }}
-          className="p-1.5 -ml-1.5 rounded-lg text-gray-400 active:bg-gray-100 dark:active:bg-gray-800"
+          className="p-1.5 -ml-1.5 rounded-lg text-gray-500 active:bg-gray-100 dark:active:bg-gray-800"
           aria-label="Close planner"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">

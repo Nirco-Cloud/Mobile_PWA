@@ -126,7 +126,8 @@ export default function EntryCreatorSheet({ targetDay, onClose }) {
             <div className="flex items-center gap-2 mb-3">
               <button
                 onClick={handleBack}
-                className="p-1 rounded-lg text-gray-400 active:bg-gray-100 dark:active:bg-gray-800"
+                aria-label="Back"
+                className="p-1 rounded-lg text-gray-500 active:bg-gray-100 dark:active:bg-gray-800"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
                   <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />

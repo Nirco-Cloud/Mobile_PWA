@@ -26,17 +26,17 @@ const LocationRow = forwardRef(function LocationRow({ location, distance, isSele
         style={{ willChange: 'transform', backfaceVisibility: 'hidden' }}
       >
         {/* Compact row */}
-        <div className="flex items-center gap-2 px-3 py-1.5">
+        <div className="flex items-center gap-2 px-3 py-3 min-h-[56px]">
           <CategoryDot category={location.category} />
-          <span className="flex-1 truncate text-sm font-medium text-gray-800 dark:text-gray-100">
+          <span className="flex-1 truncate text-base font-medium text-gray-800 dark:text-gray-100">
             {location.name}
           </span>
           {distance != null && (
-            <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">
+            <span className="text-xs text-gray-500 dark:text-gray-400 shrink-0">
               {formatDistance(distance)}
             </span>
           )}
-          <span className="text-xs text-gray-300 dark:text-gray-600 shrink-0">
+          <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">
             {isExpanded ? '▲' : '▼'}
           </span>
         </div>
@@ -58,7 +58,7 @@ const LocationRow = forwardRef(function LocationRow({ location, distance, isSele
               </p>
             )}
             {location.address && (
-              <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
                 {location.address}
               </p>
             )}
@@ -67,7 +67,7 @@ const LocationRow = forwardRef(function LocationRow({ location, distance, isSele
                 href={`https://www.google.com/maps/dir/?api=1${position ? `&origin=${position.lat},${position.lng}` : ''}&destination=${location.lat},${location.lng}`}
                 target="_blank"
                 rel="noreferrer"
-                className="flex-1 text-center py-1.5 px-2 text-xs font-medium bg-sky-500 text-white rounded active:bg-sky-600"
+                className="flex-1 text-center py-2 px-2 text-sm font-medium bg-sky-500 text-white rounded active:bg-sky-600"
                 onClick={(e) => e.stopPropagation()}
               >
                 Open in Maps
@@ -78,14 +78,14 @@ const LocationRow = forwardRef(function LocationRow({ location, distance, isSele
                 )}`}
                 target="_blank"
                 rel="noreferrer"
-                className="flex-1 text-center py-1.5 px-2 text-xs font-medium bg-green-500 text-white rounded active:bg-green-600"
+                className="flex-1 text-center py-2 px-2 text-sm font-medium bg-green-500 text-white rounded active:bg-green-600"
                 onClick={(e) => e.stopPropagation()}
               >
                 Share
               </a>
               <button
                 onClick={(e) => { e.stopPropagation(); setShowDayPicker(true) }}
-                className="flex-1 text-center py-1.5 px-2 text-xs font-medium bg-indigo-500 text-white rounded active:bg-indigo-600"
+                className="flex-1 text-center py-2 px-2 text-sm font-medium bg-indigo-500 text-white rounded active:bg-indigo-600"
               >
                 + Plan
               </button>

@@ -103,7 +103,7 @@ export default function ListComponent() {
           placeholder="Search locations..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="w-full px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-400"
+          className="w-full px-3 py-2.5 text-base rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-400"
         />
       </div>
 
@@ -115,7 +115,7 @@ export default function ListComponent() {
         {/* All chip */}
         <button
           onClick={() => setActiveCategories(ALL_CATEGORY_KEYS)}
-          className={`shrink-0 px-3 py-1 rounded-full text-xs font-semibold border transition-colors ${
+          className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-semibold border transition-colors ${
             isAllActive
               ? 'bg-sky-500 text-white border-sky-500'
               : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-300 dark:border-gray-600'
@@ -130,7 +130,7 @@ export default function ListComponent() {
             <button
               key={group.id}
               onClick={() => handleChipToggle(group)}
-              className="shrink-0 flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-colors"
+              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold border transition-colors"
               style={
                 isActive
                   ? { backgroundColor: group.color, borderColor: group.color, color: '#fff' }
@@ -149,7 +149,7 @@ export default function ListComponent() {
       {/* List */}
       <div ref={containerRef} className="flex-1 overflow-y-auto overscroll-contain">
         {sortedLocations.length === 0 && (
-          <p className="text-center text-sm text-gray-400 dark:text-gray-600 mt-8">
+          <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-8">
             No locations found
           </p>
         )}

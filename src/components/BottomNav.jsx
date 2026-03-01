@@ -41,6 +41,8 @@ export default function BottomNav({ activeTab, onTabChange }) {
 
   return (
     <nav
+      role="tablist"
+      aria-label="Main navigation"
       className="fixed bottom-0 left-0 right-0 z-30 flex bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700"
       style={{
         height: `calc(${BOTTOM_NAV_HEIGHT}px + env(safe-area-inset-bottom))`,
@@ -52,6 +54,9 @@ export default function BottomNav({ activeTab, onTabChange }) {
         return (
           <button
             key={tab.id}
+            role="tab"
+            aria-selected={isActive}
+            aria-label={tab.label}
             onClick={() => onTabChange(tab.id)}
             className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors relative ${
               isActive ? 'text-sky-500' : 'text-gray-500 dark:text-gray-400'
