@@ -6,6 +6,8 @@ import {
   savePlanEntry,
   updatePlanEntry as dbUpdatePlanEntry,
 } from '../db/plannerDb.js'
+import { writeLocation } from '../db/locations.js'
+import { updateImportedLocation } from '../db/importedLocations.js'
 import { useTripConfig } from '../hooks/useTripConfig.js'
 import { BOTTOM_NAV_HEIGHT } from './BottomNav.jsx'
 import { getRouteColor, getDayColor } from '../config/routeColors.js'
@@ -324,8 +326,11 @@ function TodayView() {
   const allPlanEntries       = useAppStore((s) => s.planEntries)
   const planEntries          = useVisiblePlanEntries()
   const position             = useAppStore((s) => s.position)
+  const locations            = useAppStore((s) => s.locations)
+  const importedLocations    = useAppStore((s) => s.importedLocations)
   const removePlanEntry      = useAppStore((s) => s.removePlanEntry)
   const updatePlanEntryStore = useAppStore((s) => s.updatePlanEntry)
+  const updateLocationStore  = useAppStore((s) => s.updateLocation)
   const travelMode           = useAppStore((s) => s.plannerTravelMode)
   const setPlannerTravelMode = useAppStore((s) => s.setPlannerTravelMode)
   const setRouteLines        = useAppStore((s) => s.setRouteLines)
@@ -559,12 +564,27 @@ function TodayView() {
     }
     const saved = await dbUpdatePlanEntry(updated)
     updatePlanEntryStore(saved)
+
+    // Sync description to the linked location so it appears in Map view search
+    if (updates.note !== undefined && entry.locationId) {
+      const loc = locations.find((l) => l.id === entry.locationId)
+      if (loc) {
+        const updatedLoc = { ...loc, description: updates.note || '' }
+        const isImported = importedLocations.some((l) => l.id === entry.locationId)
+        if (isImported) {
+          await updateImportedLocation(updatedLoc)
+        } else {
+          await writeLocation(updatedLoc)
+        }
+        updateLocationStore(updatedLoc)
+      }
+    }
   }
 
-  async function handleToTomorrow(entry) {
-    if (activeDay >= tripDays) return
-    const tomorrowCount = allPlanEntries.filter((e) => e.day === activeDay + 1).length
-    const updated = { ...entry, day: activeDay + 1, order: tomorrowCount + 1 }
+  async function handleMoveToDay(entry, day) {
+    if (day === entry.day) return
+    const dayCount = allPlanEntries.filter((e) => e.day === day && !e.deletedAt).length
+    const updated = { ...entry, day, order: dayCount + 1 }
     const saved = await dbUpdatePlanEntry(updated)
     updatePlanEntryStore(saved)
   }
@@ -769,7 +789,7 @@ function TodayView() {
                 transitLegsOpen={transitLegsOpen}
                 editMode={editMode}
                 onDelete={() => handleDelete(entry.id)}
-                onToTomorrow={() => handleToTomorrow(entry)}
+                onMoveToDay={(day) => handleMoveToDay(entry, day)}
                 onEdit={(updates) => handleEdit(entry, updates)}
                 onSwapUp={() => handleSwapOrder(entry, sharedEntries[idx - 1])}
                 onSwapDown={() => handleSwapOrder(entry, sharedEntries[idx + 1])}

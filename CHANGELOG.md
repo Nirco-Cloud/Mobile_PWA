@@ -9,6 +9,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.6.0] — 2026-03-01
+
+### Changed
+- "→ Tomorrow" button on EntryCard replaced with "📅 Day" — opens DayPicker overlay to move entry to any day (not just the next one)
+- DayPicker gains `pickerOnly` prop: skips entry creation, fires `onDone(day)` with the chosen day number; header reads "Move to day"; toast reads "Moved to Day X ✓"
+- Edit form now shows a Description / Note textarea for **all** entry types (was Note-only for `type='note'`)
+  - Label shows "Description" for non-note types, "Note" for note type
+  - Stored in `entry.note` field
+  - Saved description is displayed as a small gray line below the entry name on the card
+- Saving a description on a location entry that has a `locationId` also updates the linked location's `description` field in IndexedDB, making it findable in the Map view search bar
+
+---
+
 ## [1.5.0] — 2026-03-01
 
 ### Changed

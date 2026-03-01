@@ -10,3 +10,7 @@ export async function readAllLocations() {
   const allValues = await getMany(allKeys, locStore)
   return allValues.filter(Boolean)
 }
+
+export async function writeLocation(record) {
+  await set(record.id, record, locStore)
+}

@@ -118,5 +118,10 @@ export const useAppStore = create(
         importedLocations: s.importedLocations.map((l) => l.id === updated.id ? updated : l),
         locations: s.locations.map((l) => l.id === updated.id ? updated : l),
       })),
+    updateLocation: (updated) =>
+      set((s) => ({
+        locations: s.locations.map((l) => l.id === updated.id ? updated : l),
+        importedLocations: s.importedLocations.map((l) => l.id === updated.id ? updated : l),
+      })),
   })),
 )
