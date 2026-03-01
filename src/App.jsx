@@ -21,7 +21,6 @@ import SplitLayout from './components/SplitLayout.jsx'
 import MapComponent from './components/MapComponent.jsx'
 import ListComponent from './components/ListComponent.jsx'
 import BottomNav, { BOTTOM_NAV_HEIGHT } from './components/BottomNav.jsx'
-import CategoryFilter from './components/CategoryFilter.jsx'
 import ImportSheet from './components/ImportSheet.jsx'
 import PlannerOverlay from './components/PlannerOverlay.jsx'
 
@@ -40,7 +39,6 @@ export default function App() {
   const [showSplash, setShowSplash] = useState(true)
   const [activeTab, setActiveTab] = useState('map')
   const [showSettings, setShowSettings] = useState(false)
-  const [showFilter, setShowFilter] = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [importInitialUrl, setImportInitialUrl] = useState('')
   const [importAutoResolve, setImportAutoResolve] = useState(false)
@@ -204,18 +202,12 @@ export default function App() {
     if (tab === 'plan') {
       setIsPlannerOpen(!isPlannerOpen)
       setShowSettings(false)
-      setShowFilter(false)
     } else if (tab === 'settings') {
       setShowSettings(true)
-      setShowFilter(false)
-      setIsPlannerOpen(false)
-    } else if (tab === 'filter') {
-      setShowFilter((prev) => !prev)
       setIsPlannerOpen(false)
     } else {
       setActiveTab(tab)
       setShowSettings(false)
-      setShowFilter(false)
       setIsPlannerOpen(false)
     }
   }
@@ -280,8 +272,6 @@ export default function App() {
           }}
         />
       )}
-
-      {showFilter && <CategoryFilter onClose={() => setShowFilter(false)} />}
 
       <PlannerOverlay onImportLink={handleImportFAB} />
 

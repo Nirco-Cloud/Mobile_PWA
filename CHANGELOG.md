@@ -9,6 +9,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.3.0] — 2026-03-01
+
+### Added
+- Horizontal scrollable category chip row pinned between search bar and location list
+- 11 merged chip groups consolidate 16 raw categories into clean labels (Izakaya, Ramen, Sushi, Fine Dining, Street Food, Cafe, Snacks, Shopping, Sights, Hotels, Other)
+- Each chip group maps multiple related internal keys (e.g. Sushi = both Hebrew sushi keys; Cafe = Hebrew + imported cafe keys)
+- Active chip shows colored fill + white dot; "All" chip resets filter
+
+### Removed
+- Full-screen CategoryFilter overlay (replaced by chip row)
+- "Categories" tab from bottom navigation bar (now 3 tabs: Map, Plan, Settings)
+
+---
+
 ## [1.2.1] — 2026-03-01
 
 ### Changed

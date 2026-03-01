@@ -1,12 +1,9 @@
 import { useAppStore } from '../store/appStore.js'
-import { ALL_CATEGORY_KEYS } from '../config/categories.js'
 
 const BOTTOM_NAV_HEIGHT = 56
 
 export default function BottomNav({ activeTab, onTabChange }) {
-  const activeCategories = useAppStore((s) => s.activeCategories)
-  const isPlannerOpen    = useAppStore((s) => s.isPlannerOpen)
-  const isFiltered = activeCategories.length < ALL_CATEGORY_KEYS.length
+  const isPlannerOpen = useAppStore((s) => s.isPlannerOpen)
 
   const tabs = [
     {
@@ -27,16 +24,6 @@ export default function BottomNav({ activeTab, onTabChange }) {
           <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" strokeLinecap="round" strokeLinejoin="round" />
           <rect x="9" y="3" width="6" height="4" rx="1" />
           <path d="M9 12h6M9 16h6" strokeLinecap="round" />
-        </svg>
-      ),
-    },
-    {
-      id: 'filter',
-      label: 'Categories',
-      badge: isFiltered,
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
-          <path d="M3 4h18M7 8h10M11 12h2M9 16h6" strokeLinecap="round" />
         </svg>
       ),
     },
