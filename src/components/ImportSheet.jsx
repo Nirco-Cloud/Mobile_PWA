@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAppStore } from '../store/appStore.js'
 import { saveImportedLocation, deleteImportedLocation } from '../db/importedLocations.js'
-import { savePlanEntry } from '../db/plannerDb.js'
-import { useTripConfig } from '../hooks/useTripConfig.js'
+import DayPicker from './DayPicker.jsx'
 
 // Import categories — unified with entry types + new place types
 const IMPORT_CATEGORIES = [
@@ -50,8 +49,6 @@ const IMPORT_CATEGORIES = [
   },
 ]
 
-// Types that map directly to plan entry types (others → 'location')
-const ENTRY_TYPE_KEYS = ['hotel', 'train']
 
 function detectCategory(name) {
   if (!name) return 'location'
@@ -77,65 +74,6 @@ function isGoogleMapsUrl(text) {
   )
 }
 
-// ─── Inline day picker (no separate overlay) ────────────────────────────────
-
-function InlineDayPicker({ locationName, onSelectDay, onCancel }) {
-  const planEntries = useAppStore((s) => s.planEntries)
-  const { tripDays, formatDayLabel, getTodayDayNumber } = useTripConfig()
-  const todayDay = getTodayDayNumber()
-  const days = Array.from({ length: tripDays }, (_, i) => i + 1)
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <button
-          onClick={onCancel}
-          className="p-1.5 rounded-lg text-gray-400 active:bg-gray-100 dark:active:bg-gray-800"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
-            <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">Add to Day</p>
-          <p className="text-xs text-gray-400 dark:text-gray-500 truncate">{locationName}</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-3 gap-2 max-h-64 overflow-y-auto pb-1">
-        {days.map((day) => {
-          const count = planEntries.filter((e) => e.day === day).length
-          const isToday = todayDay === day
-          return (
-            <button
-              key={day}
-              onClick={() => onSelectDay(day)}
-              className={`relative flex flex-col items-center justify-center rounded-xl py-2.5 text-center border transition-colors active:scale-95 ${
-                isToday
-                  ? 'border-sky-400 bg-sky-50 dark:bg-sky-900/30'
-                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
-              }`}
-            >
-              {isToday && (
-                <span className="absolute top-1 right-1 text-[9px] font-bold text-sky-500 leading-none">TODAY</span>
-              )}
-              <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">Day {day}</span>
-              <span className="text-[10px] text-gray-400 dark:text-gray-500 leading-tight mt-0.5">
-                {formatDayLabel(day).split(' · ')[0]}
-              </span>
-              {count > 0 && (
-                <span className="mt-1 text-[10px] font-medium text-sky-500">
-                  {count} stop{count > 1 ? 's' : ''}
-                </span>
-              )}
-            </button>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
 // ─── Main component ──────────────────────────────────────────────────────────
 
 export default function ImportSheet({ open, onClose, initialUrl = '', autoResolve = false }) {
@@ -145,14 +83,12 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
   const [customName, setCustomName] = useState('')
   const [category, setCategory]     = useState('location')
   const [error, setError]           = useState(null)
-  const [showDayPicker, setShowDayPicker] = useState(false)
+  const [pickerLocation, setPickerLocation] = useState(null)
   const inputRef = useRef(null)
 
   const importedLocations   = useAppStore((s) => s.importedLocations)
   const addImportedLocation = useAppStore((s) => s.addImportedLocation)
   const removeImportedLocation = useAppStore((s) => s.removeImportedLocation)
-  const addPlanEntry        = useAppStore((s) => s.addPlanEntry)
-  const planEntries         = useAppStore((s) => s.planEntries)
   const setSelection        = useAppStore((s) => s.setSelection)
 
   // Sync initialUrl when sheet opens with a pre-filled URL
@@ -172,7 +108,7 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
       setError(null)
       setCustomName('')
       setCategory('location')
-      setShowDayPicker(false)
+      setPickerLocation(null)
     }
   }, [open])
 
@@ -198,7 +134,7 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
     setStatus('loading')
     setError(null)
     setResult(null)
-    setShowDayPicker(false)
+    setPickerLocation(null)
 
     try {
       const res = await fetch(`${RESOLVER_URL}?url=${encodeURIComponent(trimmed)}`)
@@ -251,37 +187,18 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
     return loc
   }
 
-  // "Add to Day" tapped — show inline day picker
-  function handleAddToDay() {
-    setShowDayPicker(true)
-  }
-
-  // Day selected — save location + create plan entry
-  async function handleSelectDay(day) {
+  // "Add to Day →" tapped — save location immediately, reset form, open DayPicker
+  async function handleAddToDay() {
     const loc = await saveLocation()
     if (!loc) return
-
-    // hotel/train → their own entry type; everything else → 'location'
-    const entryType = ENTRY_TYPE_KEYS.includes(category) ? category : 'location'
-
-    const dayEntries = planEntries.filter((e) => e.day === day)
-    const entry = {
-      id: `plan_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-      day,
-      order: dayEntries.length + 1,
-      type: entryType,
-      locationId: loc.id,
-      name: loc.name,
-      lat: loc.lat,
-      lng: loc.lng,
-      note: null,
-      owner: 'shared',
-      meta: entryType !== 'location' ? { category } : null,
-      createdAt: new Date().toISOString(),
-    }
-    await savePlanEntry(entry)
-    addPlanEntry(entry)
-    onClose()
+    // Reset the form so the saved list is visible behind the DayPicker
+    setStatus('idle')
+    setResult(null)
+    setUrl('')
+    setCustomName('')
+    setCategory('location')
+    setError(null)
+    setPickerLocation(loc)
   }
 
   // "Save only" — save to list without planning
@@ -293,7 +210,7 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
     setUrl('')
     setCustomName('')
     setCategory('location')
-    setShowDayPicker(false)
+    setPickerLocation(null)
     setError(null)
   }
 
@@ -362,7 +279,7 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
                 setStatus('idle')
                 setResult(null)
                 setError(null)
-                setShowDayPicker(false)
+                setPickerLocation(null)
               }}
               onPaste={handlePaste}
               className="flex-1 min-w-0 px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-400"
@@ -389,7 +306,7 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
           )}
 
           {/* Success: resolved preview */}
-          {status === 'success' && result && !showDayPicker && (
+          {status === 'success' && result && (
             <div className="border border-sky-200 dark:border-sky-800 rounded-xl overflow-hidden">
               {/* Coords bar */}
               <div className="px-3 py-2 bg-sky-50 dark:bg-sky-900/20 flex items-center gap-2">
@@ -467,17 +384,6 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
             </div>
           )}
 
-          {/* Inline day picker (shown after tapping "Add to Day") */}
-          {status === 'success' && result && showDayPicker && (
-            <div className="border border-sky-200 dark:border-sky-800 rounded-xl px-3 py-3">
-              <InlineDayPicker
-                locationName={customName || result.name || 'Location'}
-                onSelectDay={handleSelectDay}
-                onCancel={() => setShowDayPicker(false)}
-              />
-            </div>
-          )}
-
           {/* Saved imports list */}
           {importedLocations.length > 0 && (
             <div className="space-y-2">
@@ -496,6 +402,13 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
                         {loc.lat.toFixed(5)}, {loc.lng.toFixed(5)}
                       </p>
                     </button>
+                    {/* Add to day from saved list */}
+                    <button
+                      onClick={() => setPickerLocation(loc)}
+                      className="shrink-0 px-2 py-1 text-xs font-medium text-indigo-500 border border-indigo-200 dark:border-indigo-800 rounded-lg active:bg-indigo-50 dark:active:bg-indigo-900/20"
+                    >
+                      + Plan
+                    </button>
                     <button
                       onClick={() => handleDelete(loc.id)}
                       className="p-1.5 text-gray-300 dark:text-gray-600 active:text-red-400 shrink-0"
@@ -512,6 +425,15 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
 
         </div>
       </div>
+
+      {/* DayPicker overlay — slides over ImportSheet */}
+      {pickerLocation && (
+        <DayPicker
+          location={pickerLocation}
+          onClose={() => setPickerLocation(null)}
+          onDone={() => setPickerLocation(null)}
+        />
+      )}
     </>
   )
 }

@@ -9,6 +9,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.5.0] — 2026-03-01
+
+### Changed
+- Import flow now uses the same modern DayPicker sheet (5-col grid, amber today, past days hidden)
+- "Add to Day →" in ImportSheet: saves location immediately, resets form, opens DayPicker as overlay
+- Cancel DayPicker → location stays in saved list, no plan entry created
+- Each saved import now has a "+ Plan" button to open DayPicker at any time without re-pasting
+- DayPicker gains optional `onDone` prop (called after successful save, distinct from `onClose` cancel)
+
+### Removed
+- Old inline 3-column day picker inside ImportSheet (replaced by full DayPicker overlay)
+
+---
+
 ## [1.4.0] — 2026-03-01
 
 ### Added

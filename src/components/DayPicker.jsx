@@ -6,7 +6,7 @@ import { useTripConfig } from '../hooks/useTripConfig.js'
 const DAYS_SHORT   = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-export default function DayPicker({ location, onClose }) {
+export default function DayPicker({ location, onClose, onDone }) {
   const planEntries  = useAppStore((s) => s.planEntries)
   const addPlanEntry = useAppStore((s) => s.addPlanEntry)
   const { tripDays, dayToDate, getTodayDayNumber } = useTripConfig()
@@ -37,7 +37,7 @@ export default function DayPicker({ location, onClose }) {
     await savePlanEntry(entry)
     addPlanEntry(entry)
     setToast(day)
-    setTimeout(() => { setToast(null); onClose() }, 1200)
+    setTimeout(() => { setToast(null); onDone ? onDone() : onClose() }, 1200)
   }
 
   return (
