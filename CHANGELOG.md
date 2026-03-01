@@ -9,7 +9,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [1.6.0] — 2026-03-01
+## [1.6.0] — 2026-03-01 12:35
 
 ### Changed
 - "→ Tomorrow" button on EntryCard replaced with "📅 Day" — opens DayPicker overlay to move entry to any day (not just the next one)
@@ -22,7 +22,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [1.5.0] — 2026-03-01
+## [1.5.0] — 2026-03-01 11:54
 
 ### Changed
 - Import flow now uses the same modern DayPicker sheet (5-col grid, amber today, past days hidden)
@@ -36,7 +36,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [1.4.0] — 2026-03-01
+## [1.4.0] — 2026-03-01 11:31
 
 ### Added
 - "+ Plan" button in expanded LocationRow action row (alongside Open in Maps and Share)
@@ -49,7 +49,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [1.3.1] — 2026-03-01
+## [1.3.1] — 2026-03-01 11:09
 
 ### Changed
 - Category chip tap from "All on" state now isolates to that chip only (no need to clear first)
@@ -58,7 +58,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [1.3.0] — 2026-03-01
+## [1.3.0] — 2026-03-01 10:35
 
 ### Added
 - Horizontal scrollable category chip row pinned between search bar and location list
@@ -72,14 +72,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [1.2.1] — 2026-03-01
+## [1.2.1] — 2026-03-01 10:22
 
 ### Changed
 - Trip Planner opens at 85% screen height by default (was 65%)
 
 ---
 
-## [1.2.0] — 2026-03-01
+## [1.2.0] — 2026-03-01 10:15
 
 ### Changed
 - Drag handles (map/list divider and planner panel) now animate smoothly to snap point on release
@@ -89,7 +89,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [1.1.0] — 2026-03-01
+## [1.1.0] — 2026-03-01 09:55
 
 ### Added
 - Version number displayed at the bottom of the Settings tab (`v{version}`)
