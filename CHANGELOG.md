@@ -9,6 +9,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.7.2] — 2026-03-01 14:30
+
+### Changed
+- Trip Planner panel always opens at **85%** (maximum height) when switching to the Plan tab — regardless of where the user last left it
+- GitHub Actions workflow now displays the app version number in the deploy step name (`Deploy v1.7.2 to GitHub Pages`)
+
+---
+
 ## [1.7.1] — 2026-03-01 13:45
 
 ### Changed

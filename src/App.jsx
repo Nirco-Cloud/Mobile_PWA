@@ -53,6 +53,7 @@ export default function App() {
   const setPlanEntries   = useAppStore((s) => s.setPlanEntries)
   const isPlannerOpen    = useAppStore((s) => s.isPlannerOpen)
   const setIsPlannerOpen = useAppStore((s) => s.setIsPlannerOpen)
+  const setPlannerPanelH = useAppStore((s) => s.setPlannerPanelH)
   const setTripDates       = useAppStore((s) => s.setTripDates)
   const setGithubConfigured = useAppStore((s) => s.setGithubConfigured)
   const setGithubLastSync   = useAppStore((s) => s.setGithubLastSync)
@@ -202,7 +203,9 @@ export default function App() {
 
   function handleTabChange(tab) {
     if (tab === 'plan') {
-      setIsPlannerOpen(!isPlannerOpen)
+      const opening = !isPlannerOpen
+      setIsPlannerOpen(opening)
+      if (opening) setPlannerPanelH(85)
       setShowSettings(false)
     } else if (tab === 'settings') {
       setShowSettings(true)
