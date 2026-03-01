@@ -11,6 +11,14 @@ export const CATEGORIES = [
   { key: 'איזורים ואתרים',             label: 'אזורים',      icon: 'area.svg' },
   { key: 'מלונות',                     label: 'Hotels',      icon: 'hotel.svg' },
   { key: 'custom',                     label: 'Imported',    icon: 'custom.svg' },
+  // Import category keys (new)
+  { key: 'restaurant',                 label: 'Restaurant',  icon: 'street-food.svg' },
+  { key: 'cafe',                       label: 'Cafe',        icon: 'cafe.svg' },
+  { key: 'shop',                       label: 'Shop',        icon: 'shopping.svg' },
+  { key: 'attraction',                 label: 'Attraction',  icon: 'area.svg' },
+  { key: 'hotel',                      label: 'Hotel',       icon: 'hotel.svg' },
+  { key: 'train',                      label: 'Train',       icon: 'custom.svg' },
+  { key: 'location',                   label: 'Place',       icon: 'custom.svg' },
 ]
 
 export const ALL_CATEGORY_KEYS = CATEGORIES.map((c) => c.key)

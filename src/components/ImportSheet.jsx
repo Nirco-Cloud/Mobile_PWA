@@ -2,24 +2,68 @@ import { useState, useEffect, useRef } from 'react'
 import { useAppStore } from '../store/appStore.js'
 import { saveImportedLocation, deleteImportedLocation } from '../db/importedLocations.js'
 import { savePlanEntry } from '../db/plannerDb.js'
-import { CATEGORIES } from '../config/categories.js'
 import { useTripConfig } from '../hooks/useTripConfig.js'
 
+// Import categories — unified with entry types + new place types
+const IMPORT_CATEGORIES = [
+  {
+    key: 'restaurant',
+    label: 'Restaurant',
+    color: '#f97316',
+    icon: 'M3 3h18M3 9h18M9 3v18M15 3v6M3 15h6M15 15h6M3 21h6M15 21h6',
+  },
+  {
+    key: 'cafe',
+    label: 'Cafe',
+    color: '#8b5cf6',
+    icon: 'M17 8h1a4 4 0 010 8h-1M3 8h14v9a4 4 0 01-4 4H7a4 4 0 01-4-4V8zM6 1v3M10 1v3M14 1v3',
+  },
+  {
+    key: 'attraction',
+    label: 'Attraction',
+    color: '#ec4899',
+    icon: 'M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 002 2 2 2 0 010 4 2 2 0 00-2 2v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 00-2-2 2 2 0 010-4 2 2 0 002-2V7a2 2 0 00-2-2H5z',
+  },
+  {
+    key: 'shop',
+    label: 'Shop',
+    color: '#10b981',
+    icon: 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z',
+  },
+  {
+    key: 'hotel',
+    label: 'Hotel',
+    color: '#8b5cf6',
+    icon: 'M3 7v11m0-7h18m0 0V7a2 2 0 00-2-2H5a2 2 0 00-2 2v4h18zm0 0v7m-9-4h.01',
+  },
+  {
+    key: 'train',
+    label: 'Train',
+    color: '#f97316',
+    icon: 'M12 4v16m-4-4l4 4 4-4M8 4h8a2 2 0 012 2v8a2 2 0 01-2 2H8a2 2 0 01-2-2V6a2 2 0 012-2z',
+  },
+  {
+    key: 'location',
+    label: 'Place',
+    color: '#6b7280',
+    icon: 'M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z',
+  },
+]
+
+// Types that map directly to plan entry types (others → 'location')
+const ENTRY_TYPE_KEYS = ['hotel', 'train']
+
 function detectCategory(name) {
-  if (!name) return 'custom'
+  if (!name) return 'location'
   const n = name.toLowerCase()
-  if (/hotel|inn|hostel|ryokan|lodge|resort|guesthouse|guest house|motel/.test(n)) return 'מלונות'
-  if (/ramen|noodle|soba|udon/.test(n))                                           return 'Ramen'
-  if (/izakaya|yakitori|robata/.test(n))                                           return 'Izakaya'
-  if (/omakase|kaiseki|teppanyaki/.test(n))                                        return 'מסעדות גבוהות / הזמנה'
-  if (/sushi|sashimi/.test(n))                                                     return 'סושי עממי ולא יקר'
-  if (/cafe|coffee|kissaten|tearoom|tea room/.test(n))                             return 'קפה/תה/אלכוהול'
-  if (/bar|pub|brewery|winery|sake/.test(n))                                       return 'קפה/תה/אלכוהול'
-  if (/bakery|patisserie|cake|donut|sweet|candy|ice cream|crepe|wagashi|mochi|dessert/.test(n)) return 'חטיפים ומלוחים'
-  if (/store|shop|market|mall|boutique|department|supermarket|drugstore|pharmacy/.test(n))      return 'חנויות'
-  if (/shrine|jinja|temple|park|garden|museum|castle|tower|palace|onsen|hot spring|waterfall/.test(n)) return 'איזורים ואתרים'
-  if (/restaurant|diner|eatery|bbq|grill|curry|tempura|tonkatsu|yakiniku/.test(n)) return 'מסעדות ואוכל רחוב'
-  return 'custom'
+  if (/hotel|inn|hostel|ryokan|lodge|resort|guesthouse|guest house|motel/.test(n)) return 'hotel'
+  if (/cafe|coffee|kissaten|tearoom|tea room|bakery|patisserie/.test(n))           return 'cafe'
+  if (/bar|pub|brewery|winery|sake/.test(n))                                       return 'cafe'
+  if (/store|shop|market|mall|boutique|department|supermarket|drugstore|pharmacy/.test(n)) return 'shop'
+  if (/shrine|jinja|temple|park|garden|museum|castle|tower|palace|onsen|hot spring|waterfall/.test(n)) return 'attraction'
+  if (/station|railway|terminal/.test(n))                                          return 'train'
+  if (/ramen|noodle|soba|udon|sushi|sashimi|izakaya|yakitori|omakase|kaiseki|restaurant|diner|eatery|bbq|grill|curry|tempura|tonkatsu|yakiniku/.test(n)) return 'restaurant'
+  return 'location'
 }
 
 const RESOLVER_URL = import.meta.env.VITE_NETLIFY_RESOLVER_URL
@@ -99,7 +143,7 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
   const [status, setStatus]         = useState('idle') // 'idle' | 'loading' | 'success' | 'error'
   const [result, setResult]         = useState(null)
   const [customName, setCustomName] = useState('')
-  const [category, setCategory]     = useState('custom')
+  const [category, setCategory]     = useState('location')
   const [error, setError]           = useState(null)
   const [showDayPicker, setShowDayPicker] = useState(false)
   const inputRef = useRef(null)
@@ -127,7 +171,7 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
       setResult(null)
       setError(null)
       setCustomName('')
-      setCategory('custom')
+      setCategory('location')
       setShowDayPicker(false)
     }
   }, [open])
@@ -217,19 +261,22 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
     const loc = await saveLocation()
     if (!loc) return
 
+    // hotel/train → their own entry type; everything else → 'location'
+    const entryType = ENTRY_TYPE_KEYS.includes(category) ? category : 'location'
+
     const dayEntries = planEntries.filter((e) => e.day === day)
     const entry = {
       id: `plan_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
       day,
       order: dayEntries.length + 1,
-      type: 'location',
+      type: entryType,
       locationId: loc.id,
       name: loc.name,
       lat: loc.lat,
       lng: loc.lng,
       note: null,
       owner: 'shared',
-      meta: null,
+      meta: entryType !== 'location' ? { category } : null,
       createdAt: new Date().toISOString(),
     }
     await savePlanEntry(entry)
@@ -245,7 +292,7 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
     setResult(null)
     setUrl('')
     setCustomName('')
-    setCategory('custom')
+    setCategory('location')
     setShowDayPicker(false)
     setError(null)
   }
@@ -371,19 +418,27 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
                 <div>
                   <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Category</label>
                   <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-                    {CATEGORIES.map((c) => {
+                    {IMPORT_CATEGORIES.map((c) => {
                       const selected = category === c.key
                       return (
                         <button
                           key={c.key}
                           onClick={() => setCategory(c.key)}
-                          className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors whitespace-nowrap ${
+                          className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors whitespace-nowrap ${
                             selected
-                              ? 'bg-sky-500 border-sky-500 text-white'
+                              ? 'border-transparent text-white'
                               : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 active:bg-gray-50 dark:active:bg-gray-700'
                           }`}
+                          style={selected ? { backgroundColor: c.color, borderColor: c.color } : {}}
                         >
-                          {selected && '✓ '}{c.label}
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                            strokeLinecap="round" strokeLinejoin="round"
+                            className="w-3.5 h-3.5 shrink-0"
+                            style={selected ? {} : { color: c.color }}
+                          >
+                            <path d={c.icon} />
+                          </svg>
+                          {c.label}
                         </button>
                       )
                     })}
