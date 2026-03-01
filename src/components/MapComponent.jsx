@@ -4,6 +4,31 @@ import { useAppStore } from '../store/appStore.js'
 import MapMarker from './MapMarker.jsx'
 import { getRouteColor, getDayColor } from '../config/routeColors.js'
 import { useVisiblePlanEntries } from '../hooks/useVisiblePlanEntries.js'
+import { getCategoryIcon } from '../config/categories.js'
+import { ENTRY_TYPES } from '../config/entryTypes.js'
+
+// Return the category icon URL for a plan entry (via its linked location)
+function getEntryIconSrc(entry, locations) {
+  if (!entry.locationId) return null
+  const loc = locations.find((l) => l.id === entry.locationId)
+  return loc ? getCategoryIcon(loc.category) : null
+}
+
+// Renders the icon content (img or SVG) for a plan marker
+function PlanMarkerIcon({ entry, locations, size = 16 }) {
+  const iconSrc = getEntryIconSrc(entry, locations)
+  if (iconSrc) {
+    return <img src={iconSrc} style={{ width: size, height: size }} alt="" />
+  }
+  const typeDef = ENTRY_TYPES[entry.type] ?? ENTRY_TYPES.location
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"
+      strokeLinecap="round" strokeLinejoin="round"
+      style={{ width: size - 2, height: size - 2 }}>
+      <path d={typeDef.icon} />
+    </svg>
+  )
+}
 
 const DEFAULT_ZOOM = 12
 
@@ -91,16 +116,25 @@ function MapController() {
 }
 
 function PlanMapLayer() {
-  const map            = useMap()
-  const isPlannerOpen  = useAppStore((s) => s.isPlannerOpen)
-  const plannerView    = useAppStore((s) => s.plannerView)
-  const planEntries    = useVisiblePlanEntries()
-  const routeLines     = useAppStore((s) => s.routeLines)
-  const planFocusDay   = useAppStore((s) => s.planFocusDay)
-  const showConnectors = useAppStore((s) => s.showTripConnectors)
-  const position       = useAppStore((s) => s.position)
-  const planRecapDay   = useAppStore((s) => s.planRecapDay)
-  const planRecapMode  = useAppStore((s) => s.planRecapMode)
+  const map                  = useMap()
+  const isPlannerOpen        = useAppStore((s) => s.isPlannerOpen)
+  const plannerView          = useAppStore((s) => s.plannerView)
+  const planEntries          = useVisiblePlanEntries()
+  const routeLines           = useAppStore((s) => s.routeLines)
+  const planFocusDay         = useAppStore((s) => s.planFocusDay)
+  const showConnectors       = useAppStore((s) => s.showTripConnectors)
+  const position             = useAppStore((s) => s.position)
+  const planRecapDay         = useAppStore((s) => s.planRecapDay)
+  const planRecapMode        = useAppStore((s) => s.planRecapMode)
+  const locations            = useAppStore((s) => s.locations)
+  const setPlannerPanelH     = useAppStore((s) => s.setPlannerPanelH)
+  const setPlanFocusEntryId  = useAppStore((s) => s.setPlanFocusEntryId)
+  const planFocusEntryId     = useAppStore((s) => s.planFocusEntryId)
+
+  function handleMarkerClick(entry) {
+    setPlannerPanelH(85)
+    setPlanFocusEntryId(entry.id)
+  }
   const dayPolysRef    = useRef([])
   const seqPolyRef     = useRef(null)
   const routePolysRef  = useRef([])
@@ -222,16 +256,57 @@ function PlanMapLayer() {
         const color = getDayColor(group.day)
         return (
           <Fragment key={`day-${group.day}`}>
-            {group.stops.map((entry) => (
-              <AdvancedMarker key={entry.id} position={{ lat: entry.lat, lng: entry.lng }}>
-                <div
-                  className="flex items-center justify-center rounded-full border-2 border-white shadow-md px-1.5 h-6 min-w-[1.5rem]"
-                  style={{ backgroundColor: color }}
+            {group.stops.map((entry, idx) => {
+              const isFirst = idx === 0
+              const seqNum  = idx + 1
+              const isHL    = entry.id === planFocusEntryId
+              const ringSize = isFirst ? 34 : 28
+              const iconSize = isFirst ? 18 : 15
+              return (
+                <AdvancedMarker
+                  key={entry.id}
+                  position={{ lat: entry.lat, lng: entry.lng }}
+                  onClick={() => handleMarkerClick(entry)}
                 >
-                  <span className="text-white text-[10px] font-bold leading-none">D{group.day}</span>
-                </div>
-              </AdvancedMarker>
-            ))}
+                  <div style={{ position: 'relative', cursor: 'pointer' }}>
+                    {/* Main ring */}
+                    <div style={{
+                      width: ringSize, height: ringSize, borderRadius: '50%',
+                      border: '2.5px solid white', backgroundColor: color,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      boxShadow: isHL
+                        ? `0 0 0 3px ${color}90, 0 0 10px ${color}70`
+                        : '0 2px 6px rgba(0,0,0,0.35)',
+                    }}>
+                      <PlanMarkerIcon entry={entry} locations={locations} size={iconSize} />
+                    </div>
+                    {/* D# badge — first stop of this day only */}
+                    {isFirst && (
+                      <div style={{
+                        position: 'absolute', top: -7, left: -5,
+                        backgroundColor: color, border: '1.5px solid white',
+                        borderRadius: 5, padding: '1px 4px',
+                        fontSize: 9, fontWeight: 'bold', color: 'white',
+                        lineHeight: 1.2, whiteSpace: 'nowrap',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                      }}>
+                        D{group.day}
+                      </div>
+                    )}
+                    {/* Sequence number badge */}
+                    <div style={{
+                      position: 'absolute', bottom: -5, right: -5,
+                      backgroundColor: 'white', border: `1.5px solid ${color}`,
+                      borderRadius: 5, padding: '0 3px',
+                      fontSize: 8, fontWeight: 'bold', color,
+                      lineHeight: 1.5, minWidth: 12, textAlign: 'center',
+                    }}>
+                      {seqNum}
+                    </div>
+                  </div>
+                </AdvancedMarker>
+              )
+            })}
           </Fragment>
         )
       })}
@@ -239,25 +314,50 @@ function PlanMapLayer() {
       {/* === TODAY VIEW (single day, hidden during recap) === */}
       {showTodayView && (
         <>
+          {/* GPS origin dot */}
           {position && todayStops.length > 0 && (
             <AdvancedMarker key="origin-0" position={{ lat: position.lat, lng: position.lng }}>
-              <div
-                className="flex items-center justify-center w-7 h-7 rounded-full border-2 border-white shadow-md"
-                style={{ backgroundColor: '#6b7280' }}
-              >
-                <span className="text-white text-xs font-bold leading-none">0</span>
+              <div style={{
+                width: 28, height: 28, borderRadius: '50%',
+                border: '2.5px solid white', backgroundColor: '#6b7280',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 2px 5px rgba(0,0,0,0.3)',
+              }}>
+                <span style={{ color: 'white', fontSize: 11, fontWeight: 'bold', lineHeight: 1 }}>0</span>
               </div>
             </AdvancedMarker>
           )}
           {todayStops.map((entry, idx) => {
             const bgColor = getRouteColor(idx)
+            const isHL    = entry.id === planFocusEntryId
             return (
-              <AdvancedMarker key={entry.id} position={{ lat: entry.lat, lng: entry.lng }}>
-                <div
-                  className="flex items-center justify-center w-7 h-7 rounded-full border-2 border-white shadow-md"
-                  style={{ backgroundColor: bgColor }}
-                >
-                  <span className="text-white text-xs font-bold leading-none">{idx + 1}</span>
+              <AdvancedMarker
+                key={entry.id}
+                position={{ lat: entry.lat, lng: entry.lng }}
+                onClick={() => handleMarkerClick(entry)}
+              >
+                <div style={{ position: 'relative', cursor: 'pointer' }}>
+                  {/* Main ring */}
+                  <div style={{
+                    width: 30, height: 30, borderRadius: '50%',
+                    border: '2.5px solid white', backgroundColor: bgColor,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    boxShadow: isHL
+                      ? `0 0 0 3px ${bgColor}90, 0 0 10px ${bgColor}70`
+                      : '0 2px 5px rgba(0,0,0,0.3)',
+                  }}>
+                    <PlanMarkerIcon entry={entry} locations={locations} size={16} />
+                  </div>
+                  {/* Sequence number badge */}
+                  <div style={{
+                    position: 'absolute', bottom: -5, right: -5,
+                    backgroundColor: 'white', border: `1.5px solid ${bgColor}`,
+                    borderRadius: 5, padding: '0 3px',
+                    fontSize: 8, fontWeight: 'bold', color: bgColor,
+                    lineHeight: 1.5, minWidth: 12, textAlign: 'center',
+                  }}>
+                    {idx + 1}
+                  </div>
                 </div>
               </AdvancedMarker>
             )

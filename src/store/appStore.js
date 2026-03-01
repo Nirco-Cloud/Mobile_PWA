@@ -86,6 +86,13 @@ export const useAppStore = create(
     planRecapMode: null, // null = off, 'single' = this day only, 'onward' = day N+
     setPlanRecap: (day, mode) => set({ planRecapDay: day, planRecapMode: mode }),
 
+    // Panel height command channel — written externally (e.g. map marker tap), read by PlannerOverlay
+    plannerPanelH: 85,
+    setPlannerPanelH: (h) => set({ plannerPanelH: h }),
+    // Focused plan entry — set by tapping a map marker, cleared after highlight
+    planFocusEntryId: null,
+    setPlanFocusEntryId: (id) => set({ planFocusEntryId: id }),
+
     // Encryption passphrase (stored in memory only, loaded from IDB on boot)
     encPassphrase: null,
     setEncPassphrase: (p) => set({ encPassphrase: p }),

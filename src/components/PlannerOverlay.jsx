@@ -341,6 +341,9 @@ function TodayView() {
   const planRecapMode        = useAppStore((s) => s.planRecapMode)
   const setPlanRecap         = useAppStore((s) => s.setPlanRecap)
 
+  const planFocusEntryId    = useAppStore((s) => s.planFocusEntryId)
+  const setPlanFocusEntryId = useAppStore((s) => s.setPlanFocusEntryId)
+
   const [travelTimes, setTravelTimes]     = useState({})
   const [travelLoading, setTravelLoading] = useState(false)
   const [travelError, setTravelError]     = useState(null)
@@ -348,8 +351,19 @@ function TodayView() {
   const [transitLegsOpen, setTransitLegsOpen]     = useState(false)
   const [editMode, setEditMode]                   = useState(false)
   const lastFetchPos = useRef(null)
+  const cardRefs     = useRef({})
   const inJapan      = position ? isInJapan(position) : true // default Japan for this trip
   const activeDay    = planFocusDay ?? 1
+
+  // Scroll to focused entry after panel expands, then auto-clear highlight
+  useEffect(() => {
+    if (!planFocusEntryId) return
+    const scrollTimer = setTimeout(() => {
+      cardRefs.current[planFocusEntryId]?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 300)
+    const clearTimer = setTimeout(() => setPlanFocusEntryId(null), 2500)
+    return () => { clearTimeout(scrollTimer); clearTimeout(clearTimer) }
+  }, [planFocusEntryId, setPlanFocusEntryId])
 
   // Default to single-day recap when entering TodayView or switching days
   useEffect(() => {
@@ -365,6 +379,7 @@ function TodayView() {
     const next = activeDay + delta
     if (next >= 1 && next <= tripDays) {
       setPlanFocusDay(next)
+      setPlanFocusEntryId(null)
       lastFetchPos.current = null
       setTravelTimes({})
       setTravelError(null)
@@ -778,24 +793,26 @@ function TodayView() {
             }
 
             return (
-              <EntryCard
-                key={entry.id}
-                entry={entry}
-                index={idx}
-                color={color}
-                travelTime={tt}
-                mapsUrl={mapsUrl}
-                transitFromLabel={transitFromLabel}
-                transitLegsOpen={transitLegsOpen}
-                editMode={editMode}
-                onDelete={() => handleDelete(entry.id)}
-                onMoveToDay={(day) => handleMoveToDay(entry, day)}
-                onEdit={(updates) => handleEdit(entry, updates)}
-                onSwapUp={() => handleSwapOrder(entry, sharedEntries[idx - 1])}
-                onSwapDown={() => handleSwapOrder(entry, sharedEntries[idx + 1])}
-                isFirst={idx === 0}
-                isLast={idx === sharedEntries.length - 1}
-              />
+              <div key={entry.id} ref={(el) => { cardRefs.current[entry.id] = el }}>
+                <EntryCard
+                  entry={entry}
+                  index={idx}
+                  color={color}
+                  travelTime={tt}
+                  mapsUrl={mapsUrl}
+                  transitFromLabel={transitFromLabel}
+                  transitLegsOpen={transitLegsOpen}
+                  editMode={editMode}
+                  highlighted={entry.id === planFocusEntryId}
+                  onDelete={() => handleDelete(entry.id)}
+                  onMoveToDay={(day) => handleMoveToDay(entry, day)}
+                  onEdit={(updates) => handleEdit(entry, updates)}
+                  onSwapUp={() => handleSwapOrder(entry, sharedEntries[idx - 1])}
+                  onSwapDown={() => handleSwapOrder(entry, sharedEntries[idx + 1])}
+                  isFirst={idx === 0}
+                  isLast={idx === sharedEntries.length - 1}
+                />
+              </div>
             )
           })}
 
@@ -835,10 +852,20 @@ export default function PlannerOverlay({ onImportLink }) {
   // Clear recap when switching views
   function setPlannerView(v) { setPlanRecap(null, null); setPlannerView_(v) }
 
+  const storePanelH         = useAppStore((s) => s.plannerPanelH)
+  const setStorePlannerH    = useAppStore((s) => s.setPlannerPanelH)
+  const setPlanFocusEntryId = useAppStore((s) => s.setPlanFocusEntryId)
+
   // ── Drag-to-resize panel ────────────────────────────────────────────────────
   const PLANNER_SNAPS = [35, 65, 85]
   const [panelH, setPanelH] = useState(85)       // % of viewport
   const panelRef      = useRef(null)
+
+  // Sync external panel height commands (e.g. map marker tap) into local state
+  useEffect(() => {
+    setPanelH(storePanelH)
+    if (panelRef.current) panelRef.current.style.transition = 'height 200ms ease-out'
+  }, [storePanelH])
   const dragging      = useRef(false)
   const didMove       = useRef(false)
   const rafRef        = useRef(null)
@@ -879,15 +906,19 @@ export default function PlannerOverlay({ onImportLink }) {
     if (!didMove.current) {
       // Tap → cycle snap points
       setPanelH((h) => {
-        const idx = PLANNER_SNAPS.indexOf(snapPanelTo(h))
-        return PLANNER_SNAPS[(idx + 1) % PLANNER_SNAPS.length]
+        const snapped = PLANNER_SNAPS[(PLANNER_SNAPS.indexOf(snapPanelTo(h)) + 1) % PLANNER_SNAPS.length]
+        setStorePlannerH(snapped)
+        return snapped
       })
     } else {
-      setPanelH((h) => snapPanelTo(h))
+      setPanelH((h) => {
+        const snapped = snapPanelTo(h)
+        setStorePlannerH(snapped)
+        return snapped
+      })
     }
 
     didMove.current = false
-    // Enable transition for the snap animation, then restore touch action
     if (panelRef.current) panelRef.current.style.transition = 'height 200ms ease-out'
     if (panelRef.current) panelRef.current.style.touchAction = ''
     window.removeEventListener('pointermove',   plannerMoveHandler)
@@ -940,7 +971,7 @@ export default function PlannerOverlay({ onImportLink }) {
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-2 border-b border-gray-100 dark:border-gray-800">
         <button
-          onClick={() => { setPlanRecap(null, null); setIsPlannerOpen(false) }}
+          onClick={() => { setPlanRecap(null, null); setIsPlannerOpen(false); setPlanFocusEntryId(null) }}
           className="p-1.5 -ml-1.5 rounded-lg text-gray-400 active:bg-gray-100 dark:active:bg-gray-800"
           aria-label="Close planner"
         >

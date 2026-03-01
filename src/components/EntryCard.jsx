@@ -362,6 +362,7 @@ export default function EntryCard({
   onEdit,
   isFirst,
   isLast,
+  highlighted,
 }) {
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [editing, setEditing] = useState(false)
@@ -465,10 +466,13 @@ export default function EntryCard({
 
   return (
     <div
-      className={`bg-white dark:bg-gray-800 rounded-xl border p-3 shadow-sm ${
+      className={`bg-white dark:bg-gray-800 rounded-xl border p-3 shadow-sm transition-shadow ${
         editMode ? 'border-amber-200 dark:border-amber-800' : 'border-gray-100 dark:border-gray-700'
       }`}
-      style={!isLocation && !editMode ? { borderLeftWidth: 3, borderLeftColor: typeDef.accentColor } : undefined}
+      style={{
+        ...(highlighted ? { boxShadow: '0 0 0 2px #38bdf8, 0 0 14px rgba(56,189,248,0.35)' } : {}),
+        ...(!isLocation && !editMode ? { borderLeftWidth: 3, borderLeftColor: typeDef.accentColor } : {}),
+      }}
     >
       {!editMode && mapsUrl ? (
         <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="block active:opacity-70">

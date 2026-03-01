@@ -9,6 +9,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.7.0] — 2026-03-01 13:20
+
+### Changed
+- Plan map markers redesigned (Option A):
+  - Multi-day overview: first stop of each day shows a `D#` badge (top-left) + category icon inside colored ring — subsequent stops show icon + sequential number badge only, no redundant day label
+  - Today view: each stop shows category icon inside colored ring + sequential number badge (bottom-right)
+  - Category icon resolved from entry's linked location (`locationId → getCategoryIcon`); entries without a location (flight, hotel, note…) show their entry-type SVG icon
+  - GPS origin marker (stop 0) kept as plain gray circle
+- Tapping any plan stop marker on the map now expands the Trip Planner panel to 85% height and scrolls + highlights the corresponding entry card in the list (sky-blue glow ring, auto-clears after 2.5s)
+- Highlighted marker shows a colored outer glow ring matching the day/route color
+- Panel height is now synced via store so external commands (marker tap) and user drag always stay consistent
+
+---
+
 ## [1.6.0] — 2026-03-01 12:35
 
 ### Changed
