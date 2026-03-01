@@ -817,7 +817,7 @@ export default function PlannerOverlay({ onImportLink }) {
 
   // ── Drag-to-resize panel ────────────────────────────────────────────────────
   const PLANNER_SNAPS = [35, 65, 85]
-  const [panelH, setPanelH] = useState(65)       // % of viewport
+  const [panelH, setPanelH] = useState(85)       // % of viewport
   const panelRef      = useRef(null)
   const dragging      = useRef(false)
   const didMove       = useRef(false)
