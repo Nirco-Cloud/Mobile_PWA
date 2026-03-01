@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
+import { set as idbSet } from 'idb-keyval'
 import { useAppStore } from '../store/appStore.js'
 import { ALL_CATEGORY_KEYS } from '../config/categories.js'
 import { haversine } from '../utils/haversine.js'
@@ -31,13 +32,27 @@ export default function ListComponent() {
 
   const isAllActive = activeCategories.length === ALL_CATEGORY_KEYS.length
 
+  // Persist filter to IDB on every change (survives crash/restart)
+  useEffect(() => {
+    idbSet('activeCategories', activeCategories)
+  }, [activeCategories])
+
   function handleChipToggle(group) {
-    const allOn = group.keys.every((k) => activeCategories.includes(k))
-    if (allOn) {
-      setActiveCategories(activeCategories.filter((k) => !group.keys.includes(k)))
+    let next
+    if (isAllActive) {
+      // First tap from "All on" → isolate to this chip group only
+      next = group.keys.filter((k) => ALL_CATEGORY_KEYS.includes(k))
     } else {
-      setActiveCategories([...new Set([...activeCategories, ...group.keys])])
+      const allOn = group.keys.every((k) => activeCategories.includes(k))
+      if (allOn) {
+        // Chip is active → deactivate it
+        next = activeCategories.filter((k) => !group.keys.includes(k))
+      } else {
+        // Chip is inactive → add it
+        next = [...new Set([...activeCategories, ...group.keys])]
+      }
     }
+    setActiveCategories(next)
   }
 
   // Filter + sort

@@ -9,6 +9,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.3.1] — 2026-03-01
+
+### Changed
+- Category chip tap from "All on" state now isolates to that chip only (no need to clear first)
+- "All" chip always resets to show everything
+- Active category filter persisted to IndexedDB — survives app crash, close, and phone restart
+
+---
+
 ## [1.3.0] — 2026-03-01
 
 ### Added

@@ -57,13 +57,15 @@ export default function App() {
   const setGithubConfigured = useAppStore((s) => s.setGithubConfigured)
   const setGithubLastSync   = useAppStore((s) => s.setGithubLastSync)
 
-  // Load persisted default categories on mount — always ensure 'custom' is included
+  // Restore persisted active category filter on mount
   useEffect(() => {
-    idbGet('defaultCategories').then((saved) => {
+    idbGet('activeCategories').then((saved) => {
       const cats = saved ?? ALL_CATEGORY_KEYS
-      const withCustom = cats.includes('custom') ? cats : [...cats, 'custom']
-      setDefaultCategories(withCustom)
-      setActiveCategories(withCustom)
+      // Ensure newly added keys (e.g. 'custom') are always valid
+      const valid = cats.filter((k) => ALL_CATEGORY_KEYS.includes(k))
+      const restored = valid.length > 0 ? valid : ALL_CATEGORY_KEYS
+      setActiveCategories(restored)
+      setDefaultCategories(ALL_CATEGORY_KEYS)
     })
   }, [setActiveCategories, setDefaultCategories])
 
