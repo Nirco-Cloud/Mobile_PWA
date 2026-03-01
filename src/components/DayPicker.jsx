@@ -21,6 +21,7 @@ export default function DayPicker({ location, onClose, onDone, pickerOnly = fals
   async function handleSelectDay(day) {
     if (pickerOnly) {
       // Just pick a day — no new entry created; caller handles the action
+      navigator.vibrate?.(15)
       setToast(day)
       setTimeout(() => { setToast(null); onDone ? onDone(day) : onClose() }, 1200)
       return
@@ -42,6 +43,7 @@ export default function DayPicker({ location, onClose, onDone, pickerOnly = fals
     }
     await savePlanEntry(entry)
     addPlanEntry(entry)
+    navigator.vibrate?.(15)
     setToast(day)
     setTimeout(() => { setToast(null); onDone ? onDone() : onClose() }, 1200)
   }

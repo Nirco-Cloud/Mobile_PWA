@@ -23,7 +23,7 @@ const LocationRow = forwardRef(function LocationRow({ location, distance, isSele
             ? 'bg-sky-50 dark:bg-sky-900/30'
             : 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800'
         }`}
-        style={{ willChange: 'transform', backfaceVisibility: 'hidden' }}
+        style={{ willChange: 'transform', backfaceVisibility: 'hidden', contain: 'layout style paint' }}
       >
         {/* Compact row */}
         <div className="flex items-center gap-2 px-3 py-3 min-h-[56px]">

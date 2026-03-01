@@ -54,6 +54,7 @@ export default function EntryCreatorSheet({ targetDay, onClose }) {
 
     const saved = await savePlanEntry(entry)
     addPlanEntry(saved)
+    navigator.vibrate?.(15)
     onClose()
   }
 

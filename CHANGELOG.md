@@ -9,6 +9,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.7.4] — 2026-03-01 16:00
+
+### Added
+- **List virtualization** (`@tanstack/react-virtual`) — only visible rows + 5-row overscan are in the DOM; dynamic height measurement handles expanded rows automatically; map→list scroll uses `scrollToIndex` instead of `scrollIntoView`
+- **Haptic feedback** — `navigator.vibrate(15)` on successful "Add to Day" (DayPicker) and "Save entry" (EntryCreatorSheet)
+- **M3 active pill** — sky-100/sky-900 pill indicator behind active tab icon in BottomNav (Material Design 3 pattern)
+- **Re-center FAB now works** — was previously a no-op; now pans map to GPS position and resets zoom ≥15 if needed
+
+### Changed
+- **Re-center FAB color** — sky-500 when auto-centered on GPS, gray-400 when user has panned away; tap restores centering and color
+- **CSS `contain: layout style paint`** added to each LocationRow for faster scroll paint
+- **Dark mode transition** — `body` background color transitions in 200ms when switching modes
+
+---
+
 ## [1.7.3] — 2026-03-01 15:30
 
 ### Added

@@ -26,6 +26,8 @@ body,
 /* Prevent pull-to-refresh */
 body {
   overscroll-behavior-y: none;
+  /* Smooth dark/light mode switch */
+  transition: background-color 200ms ease;
 }
 
 /* Skeleton shimmer animation */

@@ -62,6 +62,10 @@ export default function BottomNav({ activeTab, onTabChange }) {
               isActive ? 'text-sky-500' : 'text-gray-500 dark:text-gray-400'
             }`}
           >
+            {/* M3-style active indicator pill behind the icon */}
+            {isActive && (
+              <span className="absolute top-1.5 left-1/2 -translate-x-1/2 w-16 h-8 rounded-full bg-sky-100 dark:bg-sky-900/40 transition-all" />
+            )}
             <div className="relative">
               {tab.icon}
               {tab.badge && (

@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { set as idbSet } from 'idb-keyval'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { useAppStore } from '../store/appStore.js'
 import { ALL_CATEGORY_KEYS } from '../config/categories.js'
 import { haversine } from '../utils/haversine.js'
@@ -22,15 +23,18 @@ const CHIP_GROUPS = [
 ]
 
 export default function ListComponent() {
-  const locations          = useAppStore((s) => s.locations)
-  const syncStatus         = useAppStore((s) => s.syncStatus)
-  const position           = useAppStore((s) => s.position)
-  const activeCategories   = useAppStore((s) => s.activeCategories)
+  const locations           = useAppStore((s) => s.locations)
+  const syncStatus          = useAppStore((s) => s.syncStatus)
+  const position            = useAppStore((s) => s.position)
+  const selectedLocationId  = useAppStore((s) => s.selectedLocationId)
+  const activeCategories    = useAppStore((s) => s.activeCategories)
   const setActiveCategories = useAppStore((s) => s.setActiveCategories)
-  const [query, setQuery]  = useState('')
+  const [query, setQuery]   = useState('')
   const [expandedId, setExpandedId] = useState(null)
-  const rowRefs      = useRef({})
-  const containerRef = useRef(null)
+  const containerRef        = useRef(null)
+
+  // Stable ref to sorted list — used inside subscription without stale closure
+  const sortedLocationsRef  = useRef([])
 
   const isAllActive = activeCategories.length === ALL_CATEGORY_KEYS.length
 
@@ -42,15 +46,12 @@ export default function ListComponent() {
   function handleChipToggle(group) {
     let next
     if (isAllActive) {
-      // First tap from "All on" → isolate to this chip group only
       next = group.keys.filter((k) => ALL_CATEGORY_KEYS.includes(k))
     } else {
       const allOn = group.keys.every((k) => activeCategories.includes(k))
       if (allOn) {
-        // Chip is active → deactivate it
         next = activeCategories.filter((k) => !group.keys.includes(k))
       } else {
-        // Chip is inactive → add it
         next = [...new Set([...activeCategories, ...group.keys])]
       }
     }
@@ -76,20 +77,34 @@ export default function ListComponent() {
     return list
   }, [locations, position, query, activeCategories])
 
-  // Scroll to selected row when selection comes from the map
+  // Keep stable ref in sync
+  useEffect(() => {
+    sortedLocationsRef.current = sortedLocations
+  }, [sortedLocations])
+
+  // Virtual list — dynamic row height (handles expanded rows automatically)
+  const virtualizer = useVirtualizer({
+    count: sortedLocations.length,
+    getScrollElement: () => containerRef.current,
+    estimateSize: () => 56,
+    overscan: 5,
+    measureElement: (el) => el?.getBoundingClientRect().height ?? 56,
+  })
+
+  // Map → list sync: expand + scroll to selected row
   useEffect(() => {
     const unsub = useAppStore.subscribe(
       (s) => ({ id: s.selectedLocationId, source: s.selectionSource }),
       ({ id, source }) => {
         if (source !== 'map' || !id) return
         setExpandedId(id)
-        const el = rowRefs.current[id]
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+        const idx = sortedLocationsRef.current.findIndex((l) => l.id === id)
+        if (idx >= 0) virtualizer.scrollToIndex(idx, { align: 'start' })
       },
       { equalityFn: (a, b) => a.id === b.id && a.source === b.source },
     )
     return unsub
-  }, [])
+  }, [virtualizer])
 
   const handleToggle = useCallback((id) => {
     setExpandedId((prev) => (prev === id ? null : id))
@@ -148,7 +163,7 @@ export default function ListComponent() {
         })}
       </div>
 
-      {/* List */}
+      {/* Virtual list */}
       <div ref={containerRef} className="flex-1 overflow-y-auto overscroll-contain">
         {locations.length === 0 && syncStatus === 'syncing' && <SkeletonList />}
         {locations.length > 0 && sortedLocations.length === 0 && (
@@ -156,23 +171,27 @@ export default function ListComponent() {
             No locations found
           </p>
         )}
-        {sortedLocations.map((loc) => {
-          const selectedId = useAppStore.getState().selectedLocationId
-          return (
-            <LocationRow
-              key={loc.id}
-              ref={(el) => {
-                if (el) rowRefs.current[loc.id] = el
-                else delete rowRefs.current[loc.id]
-              }}
-              location={loc}
-              distance={loc._dist}
-              isSelected={selectedId === loc.id}
-              isExpanded={expandedId === loc.id}
-              onToggle={handleToggle}
-            />
-          )
-        })}
+        <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+          {virtualizer.getVirtualItems().map((virtualRow) => {
+            const loc = sortedLocations[virtualRow.index]
+            return (
+              <div
+                key={loc.id}
+                data-index={virtualRow.index}
+                ref={virtualizer.measureElement}
+                style={{ position: 'absolute', top: virtualRow.start, left: 0, right: 0 }}
+              >
+                <LocationRow
+                  location={loc}
+                  distance={loc._dist}
+                  isSelected={selectedLocationId === loc.id}
+                  isExpanded={expandedId === loc.id}
+                  onToggle={handleToggle}
+                />
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )

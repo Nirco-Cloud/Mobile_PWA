@@ -32,6 +32,10 @@ function PlanMarkerIcon({ entry, locations, size = 16 }) {
 
 const DEFAULT_ZOOM = 12
 
+// Module-level singletons — shared between MapController and MapComponent (one map in this app)
+let _mapInstance = null
+let _notifyPanStateChange = null // (isCentered: bool) => void
+
 function MapMarkers({ locations, selectedLocationId }) {
   const map = useMap()
   if (!map) return null
@@ -103,11 +107,18 @@ function MapController() {
     return unsub
   }, [map])
 
-  // Detect user pan
+  // Store map instance for use by FAB re-center handler
+  useEffect(() => {
+    _mapInstance = map
+    return () => { _mapInstance = null }
+  }, [map])
+
+  // Detect user pan — update module-level flag and notify MapComponent
   useEffect(() => {
     if (!map) return
     const listener = map.addListener('dragstart', () => {
       userHasPanned.current = true
+      _notifyPanStateChange?.(false)
     })
     return () => listener.remove()
   }, [map])
@@ -401,9 +412,23 @@ export default function MapComponent() {
   const position = useAppStore((s) => s.position)
   const selectedLocationId = useAppStore((s) => s.selectedLocationId)
   const [mapReady, setMapReady] = useState(false)
+  const [isCentered, setIsCentered] = useState(true)
   const setSelection = useAppStore((s) => s.setSelection)
 
-  const handleRecenter = useCallback(() => {}, [])
+  // Subscribe to pan-state updates from MapController
+  useEffect(() => {
+    _notifyPanStateChange = setIsCentered
+    return () => { _notifyPanStateChange = null }
+  }, [])
+
+  const handleRecenter = useCallback(() => {
+    const pos = useAppStore.getState().position
+    if (_mapInstance && pos) {
+      _mapInstance.panTo(pos)
+      if (_mapInstance.getZoom() < 15) _mapInstance.setZoom(15)
+    }
+    setIsCentered(true)
+  }, [])
 
   const initialCenter = position ?? { lat: 35.6762, lng: 139.6503 } // Tokyo default
   const mapId = import.meta.env.VITE_GOOGLE_MAPS_MAP_ID || undefined
@@ -429,10 +454,12 @@ export default function MapComponent() {
         {mapReady && <PlanMapLayer />}
       </Map>
 
-      {/* Re-center FAB */}
+      {/* Re-center FAB — sky-500 when auto-centered, gray when user has panned away */}
       <button
         onClick={handleRecenter}
-        className="absolute bottom-4 right-4 w-12 h-12 bg-white dark:bg-gray-800 rounded-full shadow-lg flex items-center justify-center text-sky-500 active:scale-95 transition-transform"
+        className={`absolute bottom-4 right-4 w-12 h-12 bg-white dark:bg-gray-800 rounded-full shadow-lg flex items-center justify-center active:scale-95 transition-all ${
+          isCentered ? 'text-sky-500' : 'text-gray-400 dark:text-gray-500'
+        }`}
         aria-label="Re-center on my location"
       >
         <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
