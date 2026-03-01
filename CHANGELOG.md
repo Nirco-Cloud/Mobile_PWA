@@ -9,6 +9,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.2.0] — 2026-03-01
+
+### Changed
+- Drag handles (map/list divider and planner panel) now animate smoothly to snap point on release
+  - `transition: none` during drag — panel follows finger instantly with zero lag
+  - `transition: height 200ms ease-out` activates only at finger lift — glides to snap point
+  - Tap-to-cycle also animates smoothly
+
+---
+
 ## [1.1.0] — 2026-03-01
 
 ### Added

@@ -867,6 +867,8 @@ export default function PlannerOverlay({ onImportLink }) {
     }
 
     didMove.current = false
+    // Enable transition for the snap animation, then restore touch action
+    if (panelRef.current) panelRef.current.style.transition = 'height 200ms ease-out'
     if (panelRef.current) panelRef.current.style.touchAction = ''
     window.removeEventListener('pointermove',   plannerMoveHandler)
     window.removeEventListener('pointerup',     stablePlannerUp)
@@ -878,6 +880,8 @@ export default function PlannerOverlay({ onImportLink }) {
     didMove.current  = false
     e.preventDefault()
     e.stopPropagation()
+    // Disable transition so panel follows finger instantly during drag
+    if (panelRef.current) panelRef.current.style.transition = 'none'
     if (panelRef.current) panelRef.current.style.touchAction = 'none'
     window.addEventListener('pointermove',   plannerMoveHandler)
     window.addEventListener('pointerup',     stablePlannerUp)

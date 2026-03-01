@@ -18,6 +18,7 @@ function snapTo(raw) {
 export default function SplitLayout({ mapSlot, listSlot, bottomNavHeight = 56 }) {
   const [mapPercent, setMapPercent] = useState(DEFAULT_MAP_PERCENT)
   const containerRef  = useRef(null)
+  const mapPanelRef   = useRef(null)
   const dragging      = useRef(false)
   const didMove       = useRef(false)
   const rafRef        = useRef(null)
@@ -47,6 +48,9 @@ export default function SplitLayout({ mapSlot, listSlot, bottomNavHeight = 56 })
     dragging.current = false
     if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null }
 
+    // Enable transition for the snap animation
+    if (mapPanelRef.current) mapPanelRef.current.style.transition = 'height 200ms ease-out'
+
     if (!didMove.current) {
       // Tap → cycle to next snap point
       setMapPercent((h) => {
@@ -69,6 +73,8 @@ export default function SplitLayout({ mapSlot, listSlot, bottomNavHeight = 56 })
     didMove.current  = false
     e.preventDefault()
     e.stopPropagation()
+    // Disable transition so panel follows finger instantly during drag
+    if (mapPanelRef.current) mapPanelRef.current.style.transition = 'none'
     // Block scroll on the whole container while dragging
     if (containerRef.current) containerRef.current.style.touchAction = 'none'
     window.addEventListener('pointermove',   moveHandler)
@@ -95,6 +101,7 @@ export default function SplitLayout({ mapSlot, listSlot, bottomNavHeight = 56 })
     >
       {/* Map panel */}
       <div
+        ref={mapPanelRef}
         className="overflow-hidden"
         style={{ height: listSlot ? `${mapPercent}%` : '100%', minHeight: 0 }}
       >
