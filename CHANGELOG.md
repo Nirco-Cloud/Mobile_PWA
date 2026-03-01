@@ -9,6 +9,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.4.0] — 2026-03-01
+
+### Added
+- "+ Plan" button in expanded LocationRow action row (alongside Open in Maps and Share)
+- Modern day-picker bottom sheet: 5-column grid, blurred backdrop, rounded-3xl corners
+- Each day cell shows: day-of-week, date number, month, day number (D3), green dot if already has entries
+- Today highlighted with amber ring and "today" badge
+- Hard cutoff: past days hidden — only today and future days shown
+- If trip hasn't started yet, all days shown from Day 1
+- Success toast "Added to Day X ✓" shown for 1.2s then sheet closes automatically
+
+---
+
 ## [1.3.1] — 2026-03-01
 
 ### Changed
