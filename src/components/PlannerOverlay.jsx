@@ -339,7 +339,6 @@ function TodayView() {
   const [travelTimes, setTravelTimes]     = useState({})
   const [travelLoading, setTravelLoading] = useState(false)
   const [travelError, setTravelError]     = useState(null)
-  const [pickerOpen, setPickerOpen]               = useState(false)
   const [entryCreatorOpen, setEntryCreatorOpen]   = useState(false)
   const [transitLegsOpen, setTransitLegsOpen]     = useState(false)
   const [editMode, setEditMode]                   = useState(false)
@@ -780,30 +779,16 @@ function TodayView() {
             )
           })}
 
-          {/* Add buttons */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => setPickerOpen(true)}
-              className="flex-1 py-3 text-sm font-medium text-sky-500 border border-dashed border-sky-300 dark:border-sky-700 rounded-xl active:bg-sky-50 dark:active:bg-sky-900/20"
-            >
-              + Location
-            </button>
-            <button
-              onClick={() => setEntryCreatorOpen(true)}
-              className="flex-1 py-3 text-sm font-medium text-violet-500 border border-dashed border-violet-300 dark:border-violet-700 rounded-xl active:bg-violet-50 dark:active:bg-violet-900/20"
-            >
-              + Entry
-            </button>
-          </div>
+          {/* Add entry button */}
+          <button
+            onClick={() => setEntryCreatorOpen(true)}
+            className="w-full py-3 text-sm font-medium text-violet-500 border border-dashed border-violet-300 dark:border-violet-700 rounded-xl active:bg-violet-50 dark:active:bg-violet-900/20"
+          >
+            + Entry (flight, hotel, train…)
+          </button>
         </div>
       </div>
 
-      {pickerOpen && (
-        <LocationPickerSheet
-          targetDay={activeDay}
-          onClose={() => setPickerOpen(false)}
-        />
-      )}
       {entryCreatorOpen && (
         <EntryCreatorSheet
           targetDay={activeDay}

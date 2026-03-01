@@ -1,12 +1,10 @@
-import { forwardRef, useState } from 'react'
+import { forwardRef } from 'react'
 import { useAppStore } from '../store/appStore.js'
 import { formatDistance } from '../utils/haversine.js'
-import DayPicker from './DayPicker.jsx'
 
 const LocationRow = forwardRef(function LocationRow({ location, distance, isSelected, isExpanded, onToggle }, ref) {
   const setSelection  = useAppStore((s) => s.setSelection)
   const position      = useAppStore((s) => s.position)
-  const [showDayPicker, setShowDayPicker] = useState(false)
 
   function handleClick() {
     setSelection(location.id, 'list')
@@ -83,20 +81,11 @@ const LocationRow = forwardRef(function LocationRow({ location, distance, isSele
             >
               Share on WhatsApp
             </a>
-            <button
-              onClick={(e) => { e.stopPropagation(); setShowDayPicker(true) }}
-              className="py-1.5 px-2 text-xs font-medium bg-indigo-500 text-white rounded active:bg-indigo-600"
-            >
-              + Plan
-            </button>
           </div>
         </div>
       )}
     </div>
-    {showDayPicker && (
-      <DayPicker location={location} onClose={() => setShowDayPicker(false)} />
-    )}
-    </>
+</>
   )
 })
 

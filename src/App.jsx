@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { APIProvider } from '@vis.gl/react-google-maps'
-import { get as idbGet, set as idbSet } from 'idb-keyval'
+import { get as idbGet, set as idbSet, del as idbDel } from 'idb-keyval'
 import { useAppStore } from './store/appStore.js'
 import { CATEGORIES, ALL_CATEGORY_KEYS } from './config/categories.js'
 import { initializeData, initializePlan } from './db/sync.js'
@@ -80,10 +80,14 @@ export default function App() {
     })
   }, [setIsDark])
 
-  // Load persisted trip dates
+  // Load persisted trip dates — clear stale values where start === end
   useEffect(() => {
     idbGet('tripDates').then((saved) => {
       if (saved?.start && saved?.end) {
+        if (saved.start === saved.end) {
+          idbDel('tripDates') // stale/identical dates — clear and use defaults
+          return
+        }
         setTripDates(new Date(saved.start), new Date(saved.end))
       }
     })

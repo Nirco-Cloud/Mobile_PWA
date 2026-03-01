@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAppStore } from '../store/appStore.js'
 import { saveImportedLocation, deleteImportedLocation } from '../db/importedLocations.js'
+import { savePlanEntry } from '../db/plannerDb.js'
 import { CATEGORIES } from '../config/categories.js'
+import { useTripConfig } from '../hooks/useTripConfig.js'
 
 function detectCategory(name) {
   if (!name) return 'custom'
@@ -31,27 +33,89 @@ function isGoogleMapsUrl(text) {
   )
 }
 
+// ─── Inline day picker (no separate overlay) ────────────────────────────────
+
+function InlineDayPicker({ locationName, onSelectDay, onCancel }) {
+  const planEntries = useAppStore((s) => s.planEntries)
+  const { tripDays, formatDayLabel, getTodayDayNumber } = useTripConfig()
+  const todayDay = getTodayDayNumber()
+  const days = Array.from({ length: tripDays }, (_, i) => i + 1)
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <button
+          onClick={onCancel}
+          className="p-1.5 rounded-lg text-gray-400 active:bg-gray-100 dark:active:bg-gray-800"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
+            <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">Add to Day</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 truncate">{locationName}</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2 max-h-64 overflow-y-auto pb-1">
+        {days.map((day) => {
+          const count = planEntries.filter((e) => e.day === day).length
+          const isToday = todayDay === day
+          return (
+            <button
+              key={day}
+              onClick={() => onSelectDay(day)}
+              className={`relative flex flex-col items-center justify-center rounded-xl py-2.5 text-center border transition-colors active:scale-95 ${
+                isToday
+                  ? 'border-sky-400 bg-sky-50 dark:bg-sky-900/30'
+                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
+              }`}
+            >
+              {isToday && (
+                <span className="absolute top-1 right-1 text-[9px] font-bold text-sky-500 leading-none">TODAY</span>
+              )}
+              <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">Day {day}</span>
+              <span className="text-[10px] text-gray-400 dark:text-gray-500 leading-tight mt-0.5">
+                {formatDayLabel(day).split(' · ')[0]}
+              </span>
+              {count > 0 && (
+                <span className="mt-1 text-[10px] font-medium text-sky-500">
+                  {count} stop{count > 1 ? 's' : ''}
+                </span>
+              )}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ─── Main component ──────────────────────────────────────────────────────────
+
 export default function ImportSheet({ open, onClose, initialUrl = '', autoResolve = false }) {
-  const [url, setUrl] = useState('')
-  const [status, setStatus] = useState('idle') // 'idle' | 'loading' | 'success' | 'error'
-  const [result, setResult] = useState(null)
+  const [url, setUrl]               = useState('')
+  const [status, setStatus]         = useState('idle') // 'idle' | 'loading' | 'success' | 'error'
+  const [result, setResult]         = useState(null)
   const [customName, setCustomName] = useState('')
-  const [category, setCategory] = useState('custom')
-  const [error, setError] = useState(null)
+  const [category, setCategory]     = useState('custom')
+  const [error, setError]           = useState(null)
+  const [showDayPicker, setShowDayPicker] = useState(false)
   const inputRef = useRef(null)
 
-  const importedLocations = useAppStore((s) => s.importedLocations)
+  const importedLocations   = useAppStore((s) => s.importedLocations)
   const addImportedLocation = useAppStore((s) => s.addImportedLocation)
   const removeImportedLocation = useAppStore((s) => s.removeImportedLocation)
-  const setSelection = useAppStore((s) => s.setSelection)
+  const addPlanEntry        = useAppStore((s) => s.addPlanEntry)
+  const planEntries         = useAppStore((s) => s.planEntries)
+  const setSelection        = useAppStore((s) => s.setSelection)
 
   // Sync initialUrl when sheet opens with a pre-filled URL
   useEffect(() => {
     if (open && initialUrl) {
       setUrl(initialUrl)
-      if (autoResolve) {
-        resolve(initialUrl)
-      }
+      if (autoResolve) resolve(initialUrl)
     }
   }, [open, initialUrl, autoResolve])
 
@@ -64,6 +128,7 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
       setError(null)
       setCustomName('')
       setCategory('custom')
+      setShowDayPicker(false)
     }
   }, [open])
 
@@ -77,11 +142,9 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
   async function resolve(resolveUrl) {
     let trimmed = (resolveUrl ?? url).trim()
     if (!trimmed) return
-    // Ensure protocol is present
-    if (trimmed && !trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+    if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
       trimmed = 'https://' + trimmed
     }
-
     if (!RESOLVER_URL) {
       setStatus('error')
       setError('VITE_NETLIFY_RESOLVER_URL is not set in .env')
@@ -91,13 +154,13 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
     setStatus('loading')
     setError(null)
     setResult(null)
+    setShowDayPicker(false)
 
     try {
       const res = await fetch(`${RESOLVER_URL}?url=${encodeURIComponent(trimmed)}`)
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed to resolve')
 
-      // Android GPS share links have no coords in URL/HTML — geocode client-side
       if (data.needsGeocode && data.address && window.google?.maps?.Geocoder) {
         const geocoder = new window.google.maps.Geocoder()
         const geoResult = await geocoder.geocode({ address: data.address })
@@ -113,9 +176,10 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
         throw new Error('Could not extract coordinates from this link')
       }
 
+      const detectedCategory = detectCategory(data.name || '')
       setResult(data)
       setCustomName(data.name || '')
-      setCategory(detectCategory(data.name || ''))
+      setCategory(detectedCategory)
       setStatus('success')
     } catch (err) {
       setError(err.message)
@@ -123,13 +187,12 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
     }
   }
 
-  async function handleSave() {
-    if (!result) return
-    const alreadySaved = importedLocations.some((loc) => loc.sourceUrl === url.trim())
-    if (alreadySaved) {
-      setError('This location is already saved.')
-      return
-    }
+  // Save location to imported list and return the saved object
+  async function saveLocation() {
+    if (!result) return null
+    const alreadySaved = importedLocations.find((loc) => loc.sourceUrl === url.trim())
+    if (alreadySaved) return alreadySaved // already saved, reuse it
+
     const loc = {
       id: `imported_${Date.now()}`,
       name: customName.trim() || `Imported ${new Date().toLocaleDateString()}`,
@@ -141,11 +204,49 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
     }
     await saveImportedLocation(loc)
     addImportedLocation(loc)
+    return loc
+  }
+
+  // "Add to Day" tapped — show inline day picker
+  function handleAddToDay() {
+    setShowDayPicker(true)
+  }
+
+  // Day selected — save location + create plan entry
+  async function handleSelectDay(day) {
+    const loc = await saveLocation()
+    if (!loc) return
+
+    const dayEntries = planEntries.filter((e) => e.day === day)
+    const entry = {
+      id: `plan_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      day,
+      order: dayEntries.length + 1,
+      type: 'location',
+      locationId: loc.id,
+      name: loc.name,
+      lat: loc.lat,
+      lng: loc.lng,
+      note: null,
+      owner: 'shared',
+      meta: null,
+      createdAt: new Date().toISOString(),
+    }
+    await savePlanEntry(entry)
+    addPlanEntry(entry)
+    onClose()
+  }
+
+  // "Save only" — save to list without planning
+  async function handleSaveOnly() {
+    const loc = await saveLocation()
+    if (!loc) { setError('This location is already saved.'); return }
     setStatus('idle')
     setResult(null)
     setUrl('')
     setCustomName('')
     setCategory('custom')
+    setShowDayPicker(false)
     setError(null)
   }
 
@@ -162,7 +263,6 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
   function handlePaste(e) {
     const text = e.clipboardData?.getData('text') || ''
     if (isGoogleMapsUrl(text)) {
-      // Auto-resolve on paste if it's a maps URL
       setTimeout(() => resolve(text), 0)
     }
   }
@@ -172,18 +272,12 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
   return (
     <>
       {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-40 bg-black/40"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 z-40 bg-black/40" onClick={onClose} />
 
       {/* Sheet */}
       <div
         className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 rounded-t-2xl shadow-2xl flex flex-col"
-        style={{
-          maxHeight: '80dvh',
-          paddingBottom: 'env(safe-area-inset-bottom)',
-        }}
+        style={{ maxHeight: '85dvh', paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-1 shrink-0">
@@ -197,7 +291,7 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
           </h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 active:bg-gray-100 dark:active:bg-gray-800"
+            className="p-1.5 rounded-full text-gray-400 active:bg-gray-100 dark:active:bg-gray-800"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
               <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" />
@@ -207,7 +301,8 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
 
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-4">
-          {/* URL input + resolve */}
+
+          {/* URL input */}
           <div className="flex gap-2">
             <input
               ref={inputRef}
@@ -220,6 +315,7 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
                 setStatus('idle')
                 setResult(null)
                 setError(null)
+                setShowDayPicker(false)
               }}
               onPaste={handlePaste}
               className="flex-1 min-w-0 px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-400"
@@ -234,9 +330,7 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
                 </svg>
-              ) : (
-                'Go'
-              )}
+              ) : 'Go'}
             </button>
           </div>
 
@@ -247,55 +341,89 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
             </div>
           )}
 
-          {/* Success preview */}
-          {status === 'success' && result && (
+          {/* Success: resolved preview */}
+          {status === 'success' && result && !showDayPicker && (
             <div className="border border-sky-200 dark:border-sky-800 rounded-xl overflow-hidden">
-              <div className="px-3 py-2 bg-sky-50 dark:bg-sky-900/20 flex items-start gap-2">
-                <span className="text-sky-500 mt-0.5 shrink-0">
-                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-                  </svg>
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-sky-600 dark:text-sky-400 font-mono">
-                    {result.lat.toFixed(6)}, {result.lng.toFixed(6)}
-                  </p>
-                </div>
+              {/* Coords bar */}
+              <div className="px-3 py-2 bg-sky-50 dark:bg-sky-900/20 flex items-center gap-2">
+                <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-sky-500 shrink-0">
+                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                </svg>
+                <p className="text-xs text-sky-600 dark:text-sky-400 font-mono">
+                  {result.lat.toFixed(6)}, {result.lng.toFixed(6)}
+                </p>
               </div>
-              <div className="px-3 py-2 space-y-2">
-                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">
-                  Name
-                </label>
-                <input
-                  type="text"
-                  value={customName}
-                  onChange={(e) => setCustomName(e.target.value)}
-                  placeholder="Enter a name for this location"
-                  className="w-full px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-400"
-                />
-                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">
-                  Category
-                </label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
-                >
-                  {CATEGORIES.map((c) => (
-                    <option key={c.key} value={c.key}>{c.label}</option>
-                  ))}
-                </select>
+
+              <div className="px-3 py-3 space-y-3">
+                {/* Name */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Name</label>
+                  <input
+                    type="text"
+                    value={customName}
+                    onChange={(e) => setCustomName(e.target.value)}
+                    placeholder="Enter a name…"
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-400"
+                  />
+                </div>
+
+                {/* Category chips */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Category</label>
+                  <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+                    {CATEGORIES.map((c) => {
+                      const selected = category === c.key
+                      return (
+                        <button
+                          key={c.key}
+                          onClick={() => setCategory(c.key)}
+                          className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors whitespace-nowrap ${
+                            selected
+                              ? 'bg-sky-500 border-sky-500 text-white'
+                              : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 active:bg-gray-50 dark:active:bg-gray-700'
+                          }`}
+                        >
+                          {selected && '✓ '}{c.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Primary action: Add to Day */}
                 <button
-                  onClick={handleSave}
-                  className="w-full py-2 bg-sky-500 text-white text-sm font-medium rounded-lg active:bg-sky-600"
+                  onClick={handleAddToDay}
+                  className="w-full py-3 bg-sky-500 text-white text-sm font-semibold rounded-xl active:bg-sky-600 flex items-center justify-center gap-2"
                 >
-                  Save to list
+                  Add to Day
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4">
+                    <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+
+                {/* Secondary action: Save only */}
+                <button
+                  onClick={handleSaveOnly}
+                  className="w-full py-2 text-sm text-gray-400 dark:text-gray-500 active:text-gray-600 dark:active:text-gray-300"
+                >
+                  Save to list only
                 </button>
               </div>
             </div>
           )}
 
-          {/* Saved imports */}
+          {/* Inline day picker (shown after tapping "Add to Day") */}
+          {status === 'success' && result && showDayPicker && (
+            <div className="border border-sky-200 dark:border-sky-800 rounded-xl px-3 py-3">
+              <InlineDayPicker
+                locationName={customName || result.name || 'Location'}
+                onSelectDay={handleSelectDay}
+                onCancel={() => setShowDayPicker(false)}
+              />
+            </div>
+          )}
+
+          {/* Saved imports list */}
           {importedLocations.length > 0 && (
             <div className="space-y-2">
               <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide">
@@ -308,16 +436,14 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
                       onClick={() => handleSelectImported(loc)}
                       className="flex-1 min-w-0 text-left"
                     >
-                      <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">
-                        {loc.name}
-                      </p>
+                      <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{loc.name}</p>
                       <p className="text-xs text-gray-400 font-mono">
                         {loc.lat.toFixed(5)}, {loc.lng.toFixed(5)}
                       </p>
                     </button>
                     <button
                       onClick={() => handleDelete(loc.id)}
-                      className="p-1.5 text-gray-300 dark:text-gray-600 hover:text-red-400 active:text-red-500 shrink-0"
+                      className="p-1.5 text-gray-300 dark:text-gray-600 active:text-red-400 shrink-0"
                     >
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
                         <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" />
@@ -328,6 +454,7 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
               </div>
             </div>
           )}
+
         </div>
       </div>
     </>
