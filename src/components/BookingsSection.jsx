@@ -59,6 +59,7 @@ function formatDate(val) {
 }
 
 function BookingCard({ entry, onDelete, mapsUrl, travelTime }) {
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
   const typeDef = ENTRY_TYPES[entry.type] ?? ENTRY_TYPES.location
   const meta = entry.meta
   const tt = travelTime
@@ -70,7 +71,7 @@ function BookingCard({ entry, onDelete, mapsUrl, travelTime }) {
     >
       <div className="flex items-start gap-2">
         <div
-          className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center mt-0.5"
+          className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-0.5"
           style={{ backgroundColor: typeDef.accentColor + '20' }}
         >
           <svg
@@ -90,8 +91,18 @@ function BookingCard({ entry, onDelete, mapsUrl, travelTime }) {
             <span className="text-[14px] font-semibold text-gray-800 dark:text-gray-100 leading-snug">
               {entry.name}
             </span>
-            {tt?.walk && <span className="text-[12px] font-medium text-green-500">🚶 {tt.walk}</span>}
-            {tt?.drive && <span className="text-[12px] font-medium text-sky-500">🚗 {tt.drive}</span>}
+            {tt?.walk && (
+              <span className="text-[12px] font-medium text-green-500">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3 inline -mt-0.5 mr-0.5"><path d="M13 4v3l-2 4-3 1v4l2 4M15 4a1 1 0 100-2 1 1 0 000 2zM12 18l-1 4M17 7l2 4h-3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                {tt.walk}
+              </span>
+            )}
+            {tt?.drive && (
+              <span className="text-[12px] font-medium text-sky-500">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3 inline -mt-0.5 mr-0.5"><path d="M5 17h14M5 17a2 2 0 01-2-2V9l2-4h14l2 4v6a2 2 0 01-2 2M5 17a2 2 0 100 4 2 2 0 000-4zm14 0a2 2 0 100 4 2 2 0 000-4z" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                {tt.drive}
+              </span>
+            )}
             {tt?.driveKm && <span className="text-[12px] text-gray-400">{tt.driveKm} km</span>}
           </div>
           <p className="text-[11px] text-amber-500 font-medium mt-0.5">
@@ -109,7 +120,7 @@ function BookingCard({ entry, onDelete, mapsUrl, travelTime }) {
                   href={mapsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-500 text-white text-[12px] font-semibold shadow-sm active:bg-sky-600 transition-colors"
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-sky-500 text-white text-[12px] font-semibold shadow-sm active:bg-sky-600 transition-colors min-h-[36px]"
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5">
                     <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" strokeLinecap="round" strokeLinejoin="round" />
@@ -157,14 +168,34 @@ function BookingCard({ entry, onDelete, mapsUrl, travelTime }) {
 
         {/* Delete */}
         <button
-          onClick={onDelete}
-          className="shrink-0 p-1 text-gray-300 dark:text-gray-600 active:text-red-400"
+          onClick={() => setConfirmingDelete(true)}
+          className="shrink-0 p-2 text-gray-300 dark:text-gray-600 active:text-red-400 min-w-[36px] min-h-[36px] flex items-center justify-center"
+          aria-label="Delete booking"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
             <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
       </div>
+
+      {/* Delete confirmation */}
+      {confirmingDelete && (
+        <div className="flex items-center gap-2 mt-2 p-2 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+          <span className="text-xs text-red-600 dark:text-red-400 flex-1">Delete this booking?</span>
+          <button
+            onClick={() => setConfirmingDelete(false)}
+            className="px-3 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 active:bg-gray-100 min-h-[36px]"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => { setConfirmingDelete(false); onDelete() }}
+            className="px-3 py-1.5 text-xs font-medium text-white bg-red-500 rounded-lg active:bg-red-600 min-h-[36px]"
+          >
+            Delete
+          </button>
+        </div>
+      )}
     </div>
   )
 }

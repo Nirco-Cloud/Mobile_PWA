@@ -145,14 +145,14 @@ function LocationPickerSheet({ targetDay, onClose }) {
 
 // ─── Full trip view ──────────────────────────────────────────────────────────
 
-// Small inline type icon for FullTripView badges
+// Small inline type badge with icon + label for FullTripView
 function TypeBadge({ type }) {
   const def = ENTRY_TYPES[type]
   if (!def) return null
   return (
     <div
-      className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
-      style={{ backgroundColor: def.accentColor + '20' }}
+      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full shrink-0"
+      style={{ backgroundColor: def.accentColor + '18' }}
     >
       <svg
         viewBox="0 0 24 24" fill="none" stroke={def.accentColor}
@@ -161,6 +161,7 @@ function TypeBadge({ type }) {
       >
         <path d={def.icon} />
       </svg>
+      <span className="text-[9px] font-semibold" style={{ color: def.accentColor }}>{def.label}</span>
     </div>
   )
 }
@@ -172,14 +173,42 @@ function FullTripView() {
   const setPlannerView  = useAppStore((s) => s.setPlannerView)
   const todayDay        = getTodayDayNumber()
   const days            = Array.from({ length: tripDays }, (_, i) => i + 1)
+  const todayRef        = useRef(null)
+  const plannedCount    = days.filter((d) => planEntries.some((e) => e.day === d)).length
 
   function handleDayPress(day) {
     setPlanFocusDay(day)
     setPlannerView('today')
   }
 
+  function scrollToToday() {
+    if (todayRef.current) {
+      todayRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }
+
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div className="flex-1 overflow-y-auto relative">
+      {/* Progress bar */}
+      <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-800 flex items-center gap-2">
+        <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-sky-500 rounded-full transition-all"
+            style={{ width: `${(plannedCount / tripDays) * 100}%` }}
+          />
+        </div>
+        <span className="text-[11px] text-gray-400 dark:text-gray-500 whitespace-nowrap">
+          {plannedCount}/{tripDays} days
+        </span>
+        {todayDay >= 1 && todayDay <= tripDays && (
+          <button
+            onClick={scrollToToday}
+            className="text-[11px] font-semibold text-sky-500 whitespace-nowrap active:text-sky-600 px-2 py-1 rounded-lg active:bg-sky-50 dark:active:bg-sky-900/20"
+          >
+            Today
+          </button>
+        )}
+      </div>
       {days.map((day) => {
         const dayEntries = planEntries.filter((e) => e.day === day)
         const count   = dayEntries.length
@@ -194,6 +223,7 @@ function FullTripView() {
         return (
           <button
             key={day}
+            ref={isToday ? todayRef : undefined}
             onClick={() => handleDayPress(day)}
             className={`w-full flex items-center gap-3 px-4 py-3 border-b border-gray-100 dark:border-gray-800 text-left active:bg-gray-50 dark:active:bg-gray-800 transition-colors ${
               isToday
@@ -522,6 +552,16 @@ function TodayView() {
     removePlanEntry(id)
   }
 
+  async function handleEdit(entry, updates) {
+    const updated = {
+      ...entry,
+      ...updates,
+      meta: updates.meta !== undefined ? updates.meta : entry.meta,
+    }
+    const saved = await dbUpdatePlanEntry(updated)
+    updatePlanEntryStore(saved)
+  }
+
   async function handleToTomorrow(entry) {
     if (activeDay >= tripDays) return
     const tomorrowCount = allPlanEntries.filter((e) => e.day === activeDay + 1).length
@@ -579,16 +619,17 @@ function TodayView() {
                   setPlanRecap(activeDay, 'onward')
                 }
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-bold transition-colors text-white shadow-md"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-colors text-white shadow-md min-h-[32px]"
               style={{ backgroundColor: planRecapMode === 'onward' && planRecapDay === activeDay ? '#0ea5e9' : getDayColor(activeDay) }}
+              aria-label={planRecapMode === 'onward' && planRecapDay === activeDay ? 'Showing all days from today onward' : 'Show this day route on map'}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5">
                 <path d="M3 6l3-3 3 3M6 3v12" strokeLinecap="round" strokeLinejoin="round" />
                 <path d="M21 18l-3 3-3-3M18 21V9" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
               {planRecapMode === 'onward' && planRecapDay === activeDay
-                ? `D${activeDay}+ On Map`
-                : `D${activeDay} Route`}
+                ? `Day ${activeDay}+ onward`
+                : `Day ${activeDay} route`}
             </button>
           </div>
           <p className="text-[11px] text-gray-400 dark:text-gray-500 text-center -mt-0.5">
@@ -612,34 +653,48 @@ function TodayView() {
               <button
                 key={mode}
                 onClick={() => handleModeSwitch(mode)}
-                className={`flex-1 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                className={`flex-1 py-2 text-xs font-medium rounded-lg border transition-colors min-h-[40px] inline-flex items-center justify-center gap-1.5 ${
                   travelMode === mode && !transitLegsOpen
                     ? 'border-sky-500 bg-sky-500 text-white'
                     : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400'
                 }`}
+                aria-label={mode === 'WALKING' ? 'Walking mode' : 'Driving mode'}
               >
-                {mode === 'WALKING' ? '🚶 Walk' : '🚗 Drive'}
+                {mode === 'WALKING' ? (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M13 4v3l-2 4-3 1v4l2 4M15 4a1 1 0 100-2 1 1 0 000 2zM12 18l-1 4M17 7l2 4h-3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M5 17h14M5 17a2 2 0 01-2-2V9l2-4h14l2 4v6a2 2 0 01-2 2M5 17a2 2 0 100 4 2 2 0 000-4zm14 0a2 2 0 100 4 2 2 0 000-4z" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                )}
+                {mode === 'WALKING' ? 'Walk' : 'Drive'}
               </button>
             ))}
             <button
               onClick={() => handleModeSwitch('TRANSIT')}
-              className={`flex-1 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+              className={`flex-1 py-2 text-xs font-medium rounded-lg border transition-colors min-h-[40px] inline-flex items-center justify-center gap-1.5 ${
                 transitLegsOpen
                   ? 'border-purple-500 bg-purple-500 text-white'
                   : 'border-purple-400 text-purple-500 dark:text-purple-400 active:bg-purple-50 dark:active:bg-purple-900/30'
               }`}
+              aria-label="Transit mode"
             >
-              🚇 Transit
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M8 6v12M4 10h8M18 12v6M15 15h6M12 6a4 4 0 018 0" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              Transit
             </button>
             <button
               onClick={() => setEditMode((prev) => !prev)}
-              className={`py-1.5 px-3 text-xs font-medium rounded-lg border transition-colors ${
+              className={`py-2 px-3 text-xs font-medium rounded-lg border transition-colors min-h-[40px] inline-flex items-center justify-center gap-1 ${
                 editMode
                   ? 'border-amber-500 bg-amber-500 text-white'
                   : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400'
               }`}
+              aria-label={editMode ? 'Done reordering' : 'Reorder entries'}
             >
-              {editMode ? 'Done' : '✏️'}
+              {editMode ? 'Done' : (
+                <>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  Edit
+                </>
+              )}
             </button>
           </div>
           {!position && (
@@ -660,7 +715,7 @@ function TodayView() {
         </div>
 
         {/* Stop list */}
-        <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2">
+        <div className="flex-1 overflow-y-auto px-4 py-2 space-y-3">
           {/* My Bookings (private entries) */}
           <BookingsSection dayNumber={activeDay} travelTimes={travelTimes} travelMode={travelMode} transitLegsOpen={transitLegsOpen} />
 
@@ -716,6 +771,7 @@ function TodayView() {
                 editMode={editMode}
                 onDelete={() => handleDelete(entry.id)}
                 onToTomorrow={() => handleToTomorrow(entry)}
+                onEdit={(updates) => handleEdit(entry, updates)}
                 onSwapUp={() => handleSwapOrder(entry, sharedEntries[idx - 1])}
                 onSwapDown={() => handleSwapOrder(entry, sharedEntries[idx + 1])}
                 isFirst={idx === 0}
@@ -773,9 +829,21 @@ export default function PlannerOverlay({ onImportLink }) {
 
   // Clear recap when switching views
   function setPlannerView(v) { setPlanRecap(null, null); setPlannerView_(v) }
+  const SNAP_POINTS = [35, 65, 85]
   const [panelH, setPanelH] = useState(65)       // % of viewport
   const containerRef = useRef(null)
   const dragging = useRef(false)
+
+  // Snap to nearest snap point
+  function snapTo(rawH) {
+    let closest = SNAP_POINTS[0]
+    let minDist = Math.abs(rawH - closest)
+    for (const sp of SNAP_POINTS) {
+      const dist = Math.abs(rawH - sp)
+      if (dist < minDist) { closest = sp; minDist = dist }
+    }
+    return closest
+  }
 
   // Pointer-event drag (same pattern as SplitLayout divider)
   const handlePointerDown = useCallback((e) => {
@@ -790,11 +858,12 @@ export default function PlannerOverlay({ onImportLink }) {
     const panelTop = e.clientY
     const available = window.innerHeight
     const newH = ((available - panelTop) / available) * 100
-    setPanelH(Math.min(85, Math.max(20, newH)))
+    setPanelH(Math.min(90, Math.max(20, newH)))
   }, [])
 
   const handlePointerUp = useCallback(() => {
     dragging.current = false
+    setPanelH((h) => snapTo(h))
   }, [])
 
   if (!isPlannerOpen) return null
@@ -809,14 +878,15 @@ export default function PlannerOverlay({ onImportLink }) {
     >
       {/* Drag handle — drag to resize (pointer events, same as SplitLayout) */}
       <div
-        className="relative flex items-center justify-center bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 rounded-t-2xl z-10"
-        style={{ height: 20, cursor: 'row-resize', touchAction: 'none', flexShrink: 0 }}
+        className="relative flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 rounded-t-2xl z-10 select-none"
+        style={{ height: 32, cursor: 'row-resize', touchAction: 'none', flexShrink: 0 }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
       >
-        <div className="w-12 h-1 rounded-full bg-gray-400 dark:bg-gray-500" />
+        <div className="w-10 h-1 rounded-full bg-gray-400 dark:bg-gray-500" />
+        <div className="w-6 h-1 rounded-full bg-gray-300 dark:bg-gray-600 mt-1" />
       </div>
 
       {/* Header */}
