@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { APIProvider } from '@vis.gl/react-google-maps'
 import { get as idbGet, set as idbSet, del as idbDel } from 'idb-keyval'
 import { useAppStore } from './store/appStore.js'
-import { CATEGORIES, ALL_CATEGORY_KEYS } from './config/categories.js'
+import { CATEGORIES, ALL_CATEGORY_KEYS, migrateLocations } from './config/categories.js'
 import { initializeData, initializePlan } from './db/sync.js'
 import { readAllLocations } from './db/locations.js'
 import { readAllImportedLocations, deleteImportedLocation, updateImportedLocation } from './db/importedLocations.js'
@@ -153,7 +153,7 @@ export default function App() {
           readAllPlanEntries(),
         ])
         setImportedLocations(importedRecords)
-        const allLocs = [...records, ...importedRecords]
+        const allLocs = migrateLocations([...records, ...importedRecords])
         setLocations(allLocs)
         setPlanEntries(enrichPlanEntries(planRecords, allLocs))
         // Validate saved passphrase against encrypted data
@@ -187,7 +187,7 @@ export default function App() {
             readAllPlanEntries(),
           ])
           setImportedLocations(importedRecords)
-          const allLocs = [...records, ...importedRecords]
+          const allLocs = migrateLocations([...records, ...importedRecords])
           setLocations(allLocs)
           setPlanEntries(enrichPlanEntries(planRecords, allLocs))
         } catch {
@@ -244,8 +244,8 @@ export default function App() {
         readAllLocations(),
         readAllPlanEntries(),
       ])
-      setLocations(records)
-      setPlanEntries(enrichPlanEntries(planRecords, records))
+      setLocations(migrateLocations(records))
+      setPlanEntries(enrichPlanEntries(planRecords, migrateLocations(records)))
       setSyncStatus('done')
     } catch (err) {
       console.error('Resync error:', err)
@@ -740,7 +740,7 @@ function LocationManager() {
   const updateImportedLocationStore = useAppStore((s) => s.updateImportedLocation)
   const [editingId, setEditingId] = useState(null)
   const [editName, setEditName] = useState('')
-  const [editCategory, setEditCategory] = useState('custom')
+  const [editCategory, setEditCategory] = useState('location')
 
   function startEdit(loc) {
     setEditingId(loc.id)

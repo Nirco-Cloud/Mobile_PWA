@@ -3,28 +3,28 @@ import { useAppStore } from '../store/appStore.js'
 import { saveImportedLocation, deleteImportedLocation } from '../db/importedLocations.js'
 import DayPicker from './DayPicker.jsx'
 
-// Import categories — unified with entry types + new place types
+// Import categories — canonical keys matching categories.js
 const IMPORT_CATEGORIES = [
   {
-    key: 'restaurant',
+    key: 'מסעדות ואוכל רחוב',
     label: 'Restaurant',
     color: '#f97316',
     icon: 'M3 3h18M3 9h18M9 3v18M15 3v6M3 15h6M15 15h6M3 21h6M15 21h6',
   },
   {
-    key: 'cafe',
+    key: 'קפה/תה/אלכוהול',
     label: 'Cafe',
     color: '#8b5cf6',
     icon: 'M17 8h1a4 4 0 010 8h-1M3 8h14v9a4 4 0 01-4 4H7a4 4 0 01-4-4V8zM6 1v3M10 1v3M14 1v3',
   },
   {
-    key: 'attraction',
+    key: 'איזורים ואתרים',
     label: 'Attraction',
     color: '#ec4899',
     icon: 'M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 002 2 2 2 0 010 4 2 2 0 00-2 2v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 00-2-2 2 2 0 010-4 2 2 0 002-2V7a2 2 0 00-2-2H5z',
   },
   {
-    key: 'shop',
+    key: 'חנויות',
     label: 'Shop',
     color: '#10b981',
     icon: 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z',
@@ -43,7 +43,7 @@ const IMPORT_CATEGORIES = [
   },
   {
     key: 'location',
-    label: 'Place',
+    label: 'Location',
     color: '#6b7280',
     icon: 'M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z',
   },
@@ -54,12 +54,12 @@ function detectCategory(name) {
   if (!name) return 'location'
   const n = name.toLowerCase()
   if (/hotel|inn|hostel|ryokan|lodge|resort|guesthouse|guest house|motel/.test(n)) return 'hotel'
-  if (/cafe|coffee|kissaten|tearoom|tea room|bakery|patisserie/.test(n))           return 'cafe'
-  if (/bar|pub|brewery|winery|sake/.test(n))                                       return 'cafe'
-  if (/store|shop|market|mall|boutique|department|supermarket|drugstore|pharmacy/.test(n)) return 'shop'
-  if (/shrine|jinja|temple|park|garden|museum|castle|tower|palace|onsen|hot spring|waterfall/.test(n)) return 'attraction'
+  if (/cafe|coffee|kissaten|tearoom|tea room|bakery|patisserie/.test(n))           return 'קפה/תה/אלכוהול'
+  if (/bar|pub|brewery|winery|sake/.test(n))                                       return 'קפה/תה/אלכוהול'
+  if (/store|shop|market|mall|boutique|department|supermarket|drugstore|pharmacy/.test(n)) return 'חנויות'
+  if (/shrine|jinja|temple|park|garden|museum|castle|tower|palace|onsen|hot spring|waterfall/.test(n)) return 'איזורים ואתרים'
   if (/station|railway|terminal/.test(n))                                          return 'train'
-  if (/ramen|noodle|soba|udon|sushi|sashimi|izakaya|yakitori|omakase|kaiseki|restaurant|diner|eatery|bbq|grill|curry|tempura|tonkatsu|yakiniku/.test(n)) return 'restaurant'
+  if (/ramen|noodle|soba|udon|sushi|sashimi|izakaya|yakitori|omakase|kaiseki|restaurant|diner|eatery|bbq|grill|curry|tempura|tonkatsu|yakiniku/.test(n)) return 'מסעדות ואוכל רחוב'
   return 'location'
 }
 

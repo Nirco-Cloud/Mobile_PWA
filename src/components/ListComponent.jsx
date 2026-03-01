@@ -13,13 +13,13 @@ const CHIP_GROUPS = [
   { id: 'ramen',      label: 'Ramen',       keys: ['Ramen'],                                           color: '#ef4444' },
   { id: 'sushi',      label: 'Sushi',       keys: ['סושי יקר ומוקפד', 'סושי עממי ולא יקר'],           color: '#14b8a6' },
   { id: 'finedining', label: 'Fine Dining', keys: ['מסעדות גבוהות / הזמנה'],                          color: '#8b5cf6' },
-  { id: 'street',     label: 'Street Food', keys: ['מסעדות ואוכל רחוב', 'restaurant'],                color: '#f97316' },
-  { id: 'cafe',       label: 'Cafe',        keys: ['קפה/תה/אלכוהול', 'cafe'],                          color: '#ec4899' },
+  { id: 'street',     label: 'Street Food', keys: ['מסעדות ואוכל רחוב'],                              color: '#f97316' },
+  { id: 'cafe',       label: 'Cafe',        keys: ['קפה/תה/אלכוהול'],                                  color: '#ec4899' },
   { id: 'snacks',     label: 'Snacks',      keys: ['חטיפים ומלוחים'],                                  color: '#eab308' },
-  { id: 'shopping',   label: 'Shopping',    keys: ['חנויות', 'shop'],                                  color: '#10b981' },
-  { id: 'sights',     label: 'Attractions', keys: ['איזורים ואתרים', 'attraction', 'location'],        color: '#3b82f6' },
-  { id: 'hotels',     label: 'Hotels',      keys: ['מלונות', 'hotel'],                                 color: '#6366f1' },
-  { id: 'other',      label: 'Other',       keys: ['custom', 'train'],                                 color: '#6b7280' },
+  { id: 'shopping',   label: 'Shopping',    keys: ['חנויות'],                                          color: '#10b981' },
+  { id: 'sights',     label: 'Attractions', keys: ['איזורים ואתרים', 'location', 'activity'],          color: '#3b82f6' },
+  { id: 'hotels',     label: 'Hotels',      keys: ['hotel'],                                           color: '#6366f1' },
+  { id: 'other',      label: 'Other',       keys: ['train'],                                           color: '#6b7280' },
 ]
 
 export default function ListComponent() {

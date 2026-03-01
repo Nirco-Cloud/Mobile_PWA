@@ -8,3 +8,6 @@ dist
 
 # Local Netlify folder
 .netlify
+
+# Local builder tool — desktop admin panel, not part of the app
+builder.html
