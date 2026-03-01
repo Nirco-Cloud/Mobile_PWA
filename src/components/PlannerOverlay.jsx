@@ -814,61 +814,100 @@ export default function PlannerOverlay({ onImportLink }) {
 
   // Clear recap when switching views
   function setPlannerView(v) { setPlanRecap(null, null); setPlannerView_(v) }
-  const SNAP_POINTS = [35, 65, 85]
-  const [panelH, setPanelH] = useState(65)       // % of viewport
-  const containerRef = useRef(null)
-  const dragging = useRef(false)
 
-  // Snap to nearest snap point
-  function snapTo(rawH) {
-    let closest = SNAP_POINTS[0]
+  // ── Drag-to-resize panel ────────────────────────────────────────────────────
+  const PLANNER_SNAPS = [35, 65, 85]
+  const [panelH, setPanelH] = useState(65)       // % of viewport
+  const panelRef      = useRef(null)
+  const dragging      = useRef(false)
+  const didMove       = useRef(false)
+  const rafRef        = useRef(null)
+  const pendingPanelH = useRef(65)
+
+  function snapPanelTo(rawH) {
+    let closest = PLANNER_SNAPS[0]
     let minDist = Math.abs(rawH - closest)
-    for (const sp of SNAP_POINTS) {
-      const dist = Math.abs(rawH - sp)
-      if (dist < minDist) { closest = sp; minDist = dist }
+    for (const sp of PLANNER_SNAPS) {
+      const d = Math.abs(rawH - sp)
+      if (d < minDist) { closest = sp; minDist = d }
     }
     return closest
   }
 
-  // Pointer-event drag (same pattern as SplitLayout divider)
-  const handlePointerDown = useCallback((e) => {
-    dragging.current = true
-    e.currentTarget.setPointerCapture(e.pointerId)
-    e.stopPropagation()
-  }, [])
-
-  const handlePointerMove = useCallback((e) => {
+  // Stable move handler (all state via refs)
+  const plannerMoveHandler = useCallback((e) => {
     if (!dragging.current) return
-    // Panel is anchored to bottom — pointer Y from top of viewport → panel height
-    const panelTop = e.clientY
+    didMove.current = true
     const available = window.innerHeight
-    const newH = ((available - panelTop) / available) * 100
-    setPanelH(Math.min(90, Math.max(20, newH)))
+    const newH = ((available - e.clientY) / available) * 100
+    pendingPanelH.current = Math.min(90, Math.max(20, newH))
+    if (rafRef.current) return
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null
+      setPanelH(pendingPanelH.current)
+    })
   }, [])
 
-  const handlePointerUp = useCallback(() => {
+  const plannerUpRef = useRef(null)
+  const stablePlannerUp = useCallback((e) => plannerUpRef.current(e), [])
+
+  plannerUpRef.current = () => {
+    if (!dragging.current) return
     dragging.current = false
-    setPanelH((h) => snapTo(h))
-  }, [])
+    if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null }
+
+    if (!didMove.current) {
+      // Tap → cycle snap points
+      setPanelH((h) => {
+        const idx = PLANNER_SNAPS.indexOf(snapPanelTo(h))
+        return PLANNER_SNAPS[(idx + 1) % PLANNER_SNAPS.length]
+      })
+    } else {
+      setPanelH((h) => snapPanelTo(h))
+    }
+
+    didMove.current = false
+    if (panelRef.current) panelRef.current.style.touchAction = ''
+    window.removeEventListener('pointermove',   plannerMoveHandler)
+    window.removeEventListener('pointerup',     stablePlannerUp)
+    window.removeEventListener('pointercancel', stablePlannerUp)
+  }
+
+  const handleDragPointerDown = useCallback((e) => {
+    dragging.current = true
+    didMove.current  = false
+    e.preventDefault()
+    e.stopPropagation()
+    if (panelRef.current) panelRef.current.style.touchAction = 'none'
+    window.addEventListener('pointermove',   plannerMoveHandler)
+    window.addEventListener('pointerup',     stablePlannerUp)
+    window.addEventListener('pointercancel', stablePlannerUp)
+  }, [plannerMoveHandler, stablePlannerUp])
+
+  useEffect(() => () => {
+    window.removeEventListener('pointermove',   plannerMoveHandler)
+    window.removeEventListener('pointerup',     stablePlannerUp)
+    window.removeEventListener('pointercancel', stablePlannerUp)
+    if (rafRef.current) cancelAnimationFrame(rafRef.current)
+  }, [plannerMoveHandler, stablePlannerUp])
+  // ────────────────────────────────────────────────────────────────────────────
 
   if (!isPlannerOpen) return null
 
   return (
     <div
+      ref={panelRef}
       className="fixed bottom-0 left-0 right-0 z-40 flex flex-col bg-white dark:bg-gray-900 rounded-t-2xl shadow-2xl"
       style={{
         height: `${panelH}dvh`,
         paddingBottom: `calc(${BOTTOM_NAV_HEIGHT}px + env(safe-area-inset-bottom))`,
       }}
     >
-      {/* Drag handle — drag to resize (pointer events, same as SplitLayout) */}
+      {/* Drag handle — 48px hit target, tap cycles snap points */}
       <div
         className="relative flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 rounded-t-2xl z-10 select-none"
-        style={{ height: 32, cursor: 'row-resize', touchAction: 'none', flexShrink: 0 }}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
+        style={{ height: 48, cursor: 'row-resize', touchAction: 'none', flexShrink: 0 }}
+        onPointerDown={handleDragPointerDown}
       >
         <div className="w-10 h-1 rounded-full bg-gray-400 dark:bg-gray-500" />
         <div className="w-6 h-1 rounded-full bg-gray-300 dark:bg-gray-600 mt-1" />
