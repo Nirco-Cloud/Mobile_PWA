@@ -15,7 +15,7 @@ const CHIP_GROUPS = [
   { id: 'cafe',       label: 'Cafe',        keys: ['קפה/תה/אלכוהול', 'cafe'],                          color: '#ec4899' },
   { id: 'snacks',     label: 'Snacks',      keys: ['חטיפים ומלוחים'],                                  color: '#eab308' },
   { id: 'shopping',   label: 'Shopping',    keys: ['חנויות', 'shop'],                                  color: '#10b981' },
-  { id: 'sights',     label: 'Sights',      keys: ['איזורים ואתרים', 'attraction', 'location'],        color: '#3b82f6' },
+  { id: 'sights',     label: 'Attractions', keys: ['איזורים ואתרים', 'attraction', 'location'],        color: '#3b82f6' },
   { id: 'hotels',     label: 'Hotels',      keys: ['מלונות', 'hotel'],                                 color: '#6366f1' },
   { id: 'other',      label: 'Other',       keys: ['custom', 'train'],                                 color: '#6b7280' },
 ]

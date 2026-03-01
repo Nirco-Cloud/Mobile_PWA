@@ -9,6 +9,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.7.1] — 2026-03-01 13:45
+
+### Changed
+- `area.svg` icon replaced: was a generic blue location pin (indistinguishable from Google Maps default); now a Japanese **torii gate** silhouette — distinctive, thematic, clearly marks tourist attractions
+- Filter chip renamed "Sights" → **"Attractions"** so it matches the category label shown during Google Maps import (users imported places as "Attraction" but couldn't find the chip)
+
+---
+
 ## [1.7.0] — 2026-03-01 13:20
 
 ### Changed
