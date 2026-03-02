@@ -132,7 +132,8 @@ function mapGoogleTypeToCategory(types = [], primaryType = '') {
 
 async function enrichWithPlacesAPI(name, coords) {
   const apiKey = process.env.GOOGLE_PLACES_API_KEY
-  if (!apiKey || !name || !coords) return null
+  if (!apiKey) return { _debug: 'no API key in env' }
+  if (!name || !coords) return { _debug: 'missing name or coords' }
 
   try {
     const response = await fetch('https://places.googleapis.com/v1/places:searchText', {
@@ -167,11 +168,14 @@ async function enrichWithPlacesAPI(name, coords) {
       }),
     })
 
-    if (!response.ok) return null
+    if (!response.ok) {
+      const errText = await response.text()
+      return { _debug: `Places API ${response.status}`, _error: errText.slice(0, 300) }
+    }
 
     const data = await response.json()
     const place = data.places?.[0]
-    if (!place) return null
+    if (!place) return { _debug: 'no places returned', _query: name }
 
     const types = place.types || []
     const primaryType = place.primaryType || ''
@@ -190,8 +194,8 @@ async function enrichWithPlacesAPI(name, coords) {
       openingHours: place.regularOpeningHours?.weekdayDescriptions || null,
       description: place.editorialSummary?.text || null,
     }
-  } catch {
-    return null
+  } catch (err) {
+    return { _debug: 'exception', _error: err.message }
   }
 }
 
