@@ -297,6 +297,38 @@
       "note": null,
       "createdAt": "2026-03-01T22:10:30.465Z",
       "updatedAt": "2026-03-01T22:15:32.356Z"
+    },
+    {
+      "id": "plan_1772450516120_g87uc",
+      "day": 12,
+      "order": 0,
+      "type": "location",
+      "locationId": "nanzen-ji--350114138-1357944841",
+      "name": "Nanzen-ji",
+      "lat": 35.0114138,
+      "lng": 135.7944841,
+      "note": null,
+      "owner": "shared",
+      "meta": null,
+      "createdAt": "2026-03-02T11:21:56.120Z",
+      "updatedAt": "2026-03-02T11:21:56.120Z",
+      "deletedAt": null
+    },
+    {
+      "id": "plan_1772450535517_g3crd",
+      "day": 13,
+      "order": 0,
+      "type": "location",
+      "locationId": "nishiki-market--350050258-135764723",
+      "name": "Nishiki Market",
+      "lat": 35.0050258,
+      "lng": 135.764723,
+      "note": null,
+      "owner": "shared",
+      "meta": null,
+      "createdAt": "2026-03-02T11:22:15.517Z",
+      "updatedAt": "2026-03-02T11:22:15.517Z",
+      "deletedAt": null
     }
   ]
 }
