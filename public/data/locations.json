@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "updated_at": "2026-03-02T01:33:55.024Z",
+  "updated_at": "2026-03-02T06:13:35.468Z",
   "categories": [
     "איזורים ואתרים",
     "מסעדות ואוכל רחוב",
@@ -8559,6 +8559,162 @@
       "images": [],
       "icon": "",
       "id": "ninenzaka--349981744-1357808578"
+    },
+    {
+      "name": "Sannenzaka",
+      "latitude": 34.9966644,
+      "longitude": 135.781008,
+      "category": "איזורים ואתרים",
+      "description": "מדרחוב שוקק השוכן על גבעה, ולאורכו דוכני מזכרות ואדריכלות יפנית מסורתית \nKyoto",
+      "created_at": "2026-03-02T05:51:47.289Z",
+      "source": "builder",
+      "images": [],
+      "icon": "",
+      "id": "sannenzaka--349966644-135781008"
+    },
+    {
+      "name": "Hanamikoji-dori, Higashiyama Ward, Kyoto, יפן‭",
+      "latitude": 35.0054928,
+      "longitude": 135.7752402,
+      "category": "איזורים ואתרים",
+      "description": "",
+      "created_at": "2026-03-02T05:53:37.913Z",
+      "source": "builder",
+      "images": [],
+      "icon": "",
+      "id": "hanamikoji-dori-higashiyama-wa--350054928-1357752402"
+    },
+    {
+      "name": "Hōkan-ji Temple (Yasaka Pagoda)",
+      "latitude": 34.998558,
+      "longitude": 135.7792358,
+      "category": "איזורים ואתרים",
+      "description": "מקדש פגודה בודהיסטי ציורי בן 5 קומות, עם נופים מרהיבים מלמעלה.\nKyoto",
+      "created_at": "2026-03-02T05:55:34.139Z",
+      "source": "builder",
+      "images": [],
+      "icon": "",
+      "id": "h-kan-ji-temple-yasaka-pagoda--34998558-1357792358"
+    },
+    {
+      "name": "Yasaka Shrine",
+      "latitude": 35.0036559,
+      "longitude": 135.7785534,
+      "category": "איזורים ואתרים",
+      "description": "מקדש שינטו זה הוקם בשנת 656 לספירה, והוא ידוע כמקום שבו נערך אחד הפסטיבלים המפורסמים ביפן. KYOTO",
+      "created_at": "2026-03-02T05:57:56.557Z",
+      "source": "builder",
+      "images": [],
+      "icon": "",
+      "id": "yasaka-shrine--350036559-1357785534"
+    },
+    {
+      "name": "Kiyomizu-dera",
+      "latitude": 34.9946662,
+      "longitude": 135.784661,
+      "category": "איזורים ואתרים",
+      "description": "מקדש בודהיסטי ידוע על הר אוטובה, המפורסם בזכות הנופים שנשקפים מהמרפסת הגדולה שלו.\nKYOTO",
+      "created_at": "2026-03-02T05:59:34.678Z",
+      "source": "builder",
+      "images": [],
+      "icon": "",
+      "id": "kiyomizu-dera--349946662-135784661"
+    },
+    {
+      "name": "המקדש המוזהב‭",
+      "latitude": 35.03937,
+      "longitude": 135.7292431,
+      "category": "איזורים ואתרים",
+      "description": "מקדש היסטורי שליו עם חזית מצופה זהב, הממוקם בין גנים מטופחים ובריכת השתקפות.\nKYOTO",
+      "created_at": "2026-03-02T06:01:04.278Z",
+      "source": "builder",
+      "images": [],
+      "icon": "",
+      "id": "--3503937-1357292431"
+    },
+    {
+      "name": "מקדש פושימי אינארי‭",
+      "latitude": 34.9676945,
+      "longitude": 135.7791876,
+      "category": "איזורים ואתרים",
+      "description": "מקדש שינטו משנת 711 לספירה השוכן על צלע הר, ובו שביל עם מאות שערים מסורתיים\nKYOTO",
+      "created_at": "2026-03-02T06:02:34.774Z",
+      "source": "builder",
+      "images": [],
+      "icon": "",
+      "id": "--349676945-1357791876"
+    },
+    {
+      "name": "Nanzen-ji",
+      "latitude": 35.0114138,
+      "longitude": 135.7944841,
+      "category": "איזורים ואתרים",
+      "description": "מתחם של מקדש בודהיסטי מרשים עם גן זן, שטחים מיוערים ושבילי הליכה.\nKYOTO",
+      "created_at": "2026-03-02T06:03:50.250Z",
+      "source": "builder",
+      "images": [],
+      "icon": "",
+      "id": "nanzen-ji--350114138-1357944841"
+    },
+    {
+      "name": "אייקן-דו זנרין-ג'י‭",
+      "latitude": 35.0148543,
+      "longitude": 135.7941588,
+      "category": "איזורים ואתרים",
+      "description": "מקדש בודהיסטי מרכזי עם אומנות עתיקה, כמו פסל מפורסם של בודהה המביט מעבר לכתפו.\nKYOTO",
+      "created_at": "2026-03-02T06:05:08.103Z",
+      "source": "builder",
+      "images": [],
+      "icon": "",
+      "id": "--350148543-1357941588"
+    },
+    {
+      "name": "Arashiyama Bamboo Forest",
+      "latitude": 35.0168187,
+      "longitude": 135.6713013,
+      "category": "איזורים ואתרים",
+      "description": "KYOTO",
+      "created_at": "2026-03-02T06:06:58.017Z",
+      "source": "builder",
+      "images": [],
+      "icon": "",
+      "id": "arashiyama-bamboo-forest--350168187-1356713013"
+    },
+    {
+      "name": "Tenryu-ji",
+      "latitude": 35.0158379,
+      "longitude": 135.6737654,
+      "category": "איזורים ואתרים",
+      "description": "מקדש זן מפורסם ששוכן לרגלי ההרים וכולל בתי תה וגנים שלווים ורחבי ידיים.\nKyoto",
+      "created_at": "2026-03-02T06:08:15.567Z",
+      "source": "builder",
+      "images": [],
+      "icon": "",
+      "id": "tenryu-ji--350158379-1356737654"
+    },
+    {
+      "name": "Daihikaku Senkō-ji Temple",
+      "latitude": 35.015801,
+      "longitude": 135.665565,
+      "category": "איזורים ואתרים",
+      "description": "מקדש בודהיסטי\nKYOTO \nמחוץ לעיר",
+      "created_at": "2026-03-02T06:10:30.984Z",
+      "source": "builder",
+      "images": [],
+      "icon": "",
+      "id": "daihikaku-senk-ji-temple--35015801-135665565"
+    },
+    {
+      "name": "Nishiki Market",
+      "latitude": 35.0050258,
+      "longitude": 135.764723,
+      "category": "מסעדות ואוכל רחוב",
+      "description": "דוכנים רבים עם אוכל יפני מכל סוג ומין, בשוק מפורסם בן 400 שנה.\nKyoto",
+      "created_at": "2026-03-02T06:12:45.323Z",
+      "source": "builder",
+      "images": [],
+      "icon": "",
+      "id": "nishiki-market--350050258-135764723"
     }
   ]
 }
