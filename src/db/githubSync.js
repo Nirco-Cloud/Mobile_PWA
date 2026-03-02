@@ -11,23 +11,16 @@ const TOMBSTONE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000 // 30 days
 const DEFAULT_CONFIG = {
   token: '',
   owner: 'Nirco-Cloud',
-  repo: 'Mobile_PWA',
+  repo: 'trip-data',
   branch: 'main',
-  filePath: 'public/data/plan.json',
+  filePath: 'plan.json',
 }
 
 // ── Config persistence ───────────────────────────────────────────────────────
 
 export async function getGithubConfig() {
   const saved = await idbGet(KEYS.GITHUB_CONFIG, kvStore)
-  const config = { ...DEFAULT_CONFIG, ...saved }
-  // Migrate: old default pointed at trip-data/plan.json — update to current default
-  if (config.repo === 'trip-data' && config.filePath === 'plan.json') {
-    config.repo = DEFAULT_CONFIG.repo
-    config.filePath = DEFAULT_CONFIG.filePath
-    await idbSet(KEYS.GITHUB_CONFIG, config, kvStore)
-  }
-  return config
+  return { ...DEFAULT_CONFIG, ...saved }
 }
 
 export async function setGithubConfig(config) {

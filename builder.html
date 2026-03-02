@@ -42,7 +42,7 @@
 <script type="text/babel">
 const { useState, useRef, useEffect } = React
 
-const BUILDER_VERSION = '1.7.8'
+const BUILDER_VERSION = '1.7.9'
 
 // ─── Trip Config ──────────────────────────────────────────────────────────────
 const TRIP_START = new Date(2026, 10, 3)  // Nov 3, 2026
@@ -295,11 +295,12 @@ function Header({ dirty, onOpenLocFile, onOpenPlanFile, onSaveFiles, onClearCach
 
 // ─── Setup Modal ──────────────────────────────────────────────────────────────
 function SetupModal({ onClose, onAfterSave }) {
-  const [url,     setUrl]     = useState(() => localStorage.getItem('builderNetlifyUrl') || '')
-  const [mapsKey, setMapsKey] = useState(() => localStorage.getItem('builderMapsKey')    || '')
-  const [ghToken, setGhToken] = useState(() => localStorage.getItem('builderGhToken')    || '')
-  const [ghRepo,  setGhRepo]  = useState(() => localStorage.getItem('builderGhRepo')     || '')
-  const [ghBranch,setGhBranch]= useState(() => localStorage.getItem('builderGhBranch')   || 'main')
+  const [url,      setUrl]      = useState(() => localStorage.getItem('builderNetlifyUrl') || '')
+  const [mapsKey,  setMapsKey]  = useState(() => localStorage.getItem('builderMapsKey')    || '')
+  const [ghToken,  setGhToken]  = useState(() => localStorage.getItem('builderGhToken')    || '')
+  const [ghRepo,   setGhRepo]   = useState(() => localStorage.getItem('builderGhRepo')     || '')
+  const [ghBranch, setGhBranch] = useState(() => localStorage.getItem('builderGhBranch')   || 'main')
+  const [syncRepo, setSyncRepo] = useState(() => localStorage.getItem('builderSyncRepo')   || 'Nirco-Cloud/trip-data')
 
   function save() {
     localStorage.setItem('builderNetlifyUrl', url.trim())
@@ -307,6 +308,7 @@ function SetupModal({ onClose, onAfterSave }) {
     localStorage.setItem('builderGhToken',    ghToken.trim())
     localStorage.setItem('builderGhRepo',     ghRepo.trim())
     localStorage.setItem('builderGhBranch',   ghBranch.trim() || 'main')
+    localStorage.setItem('builderSyncRepo',   syncRepo.trim())
     onAfterSave?.()
     onClose()
   }
@@ -384,6 +386,19 @@ function SetupModal({ onClose, onAfterSave }) {
                 className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 font-mono"
               />
             </div>
+          </div>
+          <div className="mb-4">
+            <label className="block text-xs font-medium text-slate-700 mb-1">
+              Mobile Sync Repo
+              <span className="text-slate-400 font-normal ml-1">— plan.json pushed here for mobile sync</span>
+            </label>
+            <input
+              type="text"
+              value={syncRepo}
+              onChange={e => setSyncRepo(e.target.value)}
+              placeholder="username/trip-data"
+              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 font-mono"
+            />
           </div>
           <p className="text-xs text-slate-400 mb-2">
             When configured, 💾 Save pushes directly to GitHub — no terminal needed.
@@ -2023,9 +2038,10 @@ function App() {
     }, null, 2)
     const planJson = JSON.stringify({ version: '2.0.0', entries: planEntries }, null, 2)
 
-    const token  = localStorage.getItem('builderGhToken')  || ''
-    const repo   = localStorage.getItem('builderGhRepo')   || ''
-    const branch = localStorage.getItem('builderGhBranch') || 'main'
+    const token    = localStorage.getItem('builderGhToken')  || ''
+    const repo     = localStorage.getItem('builderGhRepo')   || ''
+    const branch   = localStorage.getItem('builderGhBranch') || 'main'
+    const syncRepo = localStorage.getItem('builderSyncRepo') || ''
 
     if (token && repo) {
       status('⏳ Pushing to GitHub…', 0)
@@ -2036,7 +2052,25 @@ function App() {
           { path: 'public/data/plan.json',      content: planJson },
         ], msg)
         setDirty(false)
-        status('✅ Pushed to GitHub — deploy will start automatically', 5000)
+
+        // Also push plan.json to the mobile sync repo (trip-data) so mobile sync picks it up
+        if (syncRepo) {
+          try {
+            const syncPayload = JSON.stringify({
+              version: '3.0.0',
+              syncedAt: new Date().toISOString(),
+              entries: planEntries,
+            }, null, 2)
+            await ghPushFiles(token, syncRepo, 'main', [
+              { path: 'plan.json', content: syncPayload },
+            ], msg)
+            status('✅ Pushed to GitHub + sync repo — deploy will start automatically', 5000)
+          } catch (syncErr) {
+            status(`✅ Main push OK — sync repo push failed: ${syncErr.message}`, 8000)
+          }
+        } else {
+          status('✅ Pushed to GitHub — deploy will start automatically', 5000)
+        }
       } catch (err) {
         status(`❌ GitHub push failed: ${err.message}`, 8000)
       }
