@@ -2,9 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { useAppStore } from '../store/appStore.js'
 import { deleteImportedLocation } from '../db/importedLocations.js'
 import { deletePlanEntry } from '../db/plannerDb.js'
+import { resolveMapLink } from '../utils/resolveMapLink.js'
 import DayPicker from './DayPicker.jsx'
-
-const RESOLVER_URL = import.meta.env.VITE_NETLIFY_RESOLVER_URL
 
 function isGoogleMapsUrl(text) {
   return (
@@ -61,60 +60,12 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
     if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
       trimmed = 'https://' + trimmed
     }
-    if (!RESOLVER_URL) {
-      setStatus('error')
-      setError('VITE_NETLIFY_RESOLVER_URL is not set in .env')
-      return
-    }
-
     setStatus('loading')
     setError(null)
     setPickerLocation(null)
 
     try {
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 12000)
-      let res
-      try {
-        res = await fetch(`${RESOLVER_URL}?url=${encodeURIComponent(trimmed)}`, { signal: controller.signal })
-      } finally {
-        clearTimeout(timeoutId)
-      }
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to resolve')
-
-      if (data.needsGeocode && data.address && window.google?.maps?.Geocoder) {
-        const geocoder = new window.google.maps.Geocoder()
-        const geoResult = await geocoder.geocode({ address: data.address })
-        if (geoResult.results?.[0]) {
-          const loc = geoResult.results[0].geometry.location
-          data.lat = loc.lat()
-          data.lng = loc.lng()
-          delete data.needsGeocode
-
-          // Now that we have coords, enrich via Places API with location bias
-          try {
-            const enrichRes = await fetch(
-              `${RESOLVER_URL}?mode=enrich&name=${encodeURIComponent(data.name || data.address)}&lat=${data.lat}&lng=${data.lng}`,
-              { signal: AbortSignal.timeout(6000) }
-            )
-            if (enrichRes.ok) {
-              const enrichData = await enrichRes.json()
-              if (enrichData.enriched) {
-                data.enriched = enrichData.enriched
-                if (enrichData.enriched.displayName) data.name = enrichData.enriched.displayName
-              }
-            }
-          } catch { /* non-critical — continue without enrichment */ }
-        } else {
-          throw new Error('Could not find coordinates for this place')
-        }
-      } else if (data.needsGeocode) {
-        throw new Error('Could not extract coordinates from this link')
-      }
-
-      // Hand off to full-screen editor overlay
-      const resolvedUrl = trimmed
+      const { data, resolvedUrl } = await resolveMapLink(trimmed)
       setUrl('')
       setStatus('idle')
       onResolved?.(data, resolvedUrl)

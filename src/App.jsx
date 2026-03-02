@@ -22,6 +22,7 @@ import MapComponent from './components/MapComponent.jsx'
 import ListComponent from './components/ListComponent.jsx'
 import BottomNav, { BOTTOM_NAV_HEIGHT } from './components/BottomNav.jsx'
 import ImportSheet from './components/ImportSheet.jsx'
+import { resolveMapLink } from './utils/resolveMapLink.js'
 import LocationImportEditSheet from './components/LocationImportEditSheet.jsx'
 import PlannerOverlay from './components/PlannerOverlay.jsx'
 import LocationDetailSheet from './components/LocationDetailSheet.jsx'
@@ -243,6 +244,17 @@ export default function App() {
     setShowImport(true)
   }
 
+  async function handleResolveUrl(rawUrl) {
+    try {
+      const { data, resolvedUrl } = await resolveMapLink(rawUrl)
+      setLastResolvedUrl(resolvedUrl)
+      setImportEditData(data)
+      setImportEditSourceUrl(resolvedUrl)
+    } catch (err) {
+      throw err // re-throw so PlannerOverlay can show the error inline
+    }
+  }
+
   async function handleResync() {
     setSyncStatus('syncing')
     await resetSync()
@@ -289,7 +301,7 @@ export default function App() {
         />
       )}
 
-      <PlannerOverlay onImportLink={handleImportFAB} />
+      <PlannerOverlay onImportLink={handleImportFAB} onResolveUrl={handleResolveUrl} />
 
       <LocationDetailSheet />
 
