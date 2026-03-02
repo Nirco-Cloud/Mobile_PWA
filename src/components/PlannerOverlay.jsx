@@ -1074,19 +1074,23 @@ export default function PlannerOverlay({ onImportLink }) {
             </svg>
           </button>
         )}
-        {onImportLink && (
+      </div>
+
+      {/* Import button */}
+      {onImportLink && (
+        <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-800">
           <button
             onClick={onImportLink}
-            className="p-1.5 -mr-1.5 rounded-lg text-sky-500 active:bg-gray-100 dark:active:bg-gray-800"
-            aria-label="Import Google Maps link"
+            className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-sky-300 dark:border-sky-700 text-sky-500 dark:text-sky-400 bg-white dark:bg-gray-900 text-sm font-medium active:bg-sky-50 dark:active:bg-sky-900/20"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 shrink-0">
               <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" strokeLinecap="round" strokeLinejoin="round" />
               <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
+            Import from Google Maps
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* View tabs */}
       <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-800">
