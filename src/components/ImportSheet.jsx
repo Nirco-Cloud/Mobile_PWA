@@ -114,7 +114,7 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
       }
 
       // Hand off to full-screen editor overlay
-      const resolvedUrl = url.trim()
+      const resolvedUrl = trimmed
       setUrl('')
       setStatus('idle')
       onResolved?.(data, resolvedUrl)
