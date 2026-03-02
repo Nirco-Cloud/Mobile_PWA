@@ -47,6 +47,7 @@ export default function App() {
   const [importAutoResolve, setImportAutoResolve] = useState(false)
   const [importEditData, setImportEditData] = useState(null)
   const [importEditSourceUrl, setImportEditSourceUrl] = useState('')
+  const [lastResolvedUrl, setLastResolvedUrl] = useState('')
   const [qrConfigReceived, setQrConfigReceived] = useState(false)
   const setLocations = useAppStore((s) => s.setLocations)
   const setSyncStatus = useAppStore((s) => s.setSyncStatus)
@@ -232,7 +233,7 @@ export default function App() {
     // Try to read clipboard for a maps URL
     try {
       const text = await navigator.clipboard.readText()
-      if (isGoogleMapsUrl(text)) {
+      if (isGoogleMapsUrl(text) && text.trim() !== lastResolvedUrl) {
         setImportInitialUrl(text)
         setImportAutoResolve(true)
       }
@@ -305,6 +306,7 @@ export default function App() {
           setShowImport(false)
           setImportInitialUrl('')
           setImportAutoResolve(false)
+          setLastResolvedUrl(sourceUrl.trim())
           setImportEditData(data)
           setImportEditSourceUrl(sourceUrl)
         }}
