@@ -756,6 +756,7 @@ function LocationManager() {
   const [editingId, setEditingId] = useState(null)
   const [editName, setEditName] = useState('')
   const [editCategory, setEditCategory] = useState('location')
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null)
 
   function startEdit(loc) {
     setEditingId(loc.id)
@@ -845,14 +846,31 @@ function LocationManager() {
                         <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     </button>
-                    <button
-                      onClick={() => handleDelete(loc.id)}
-                      className="p-1.5 text-gray-300 dark:text-gray-600 hover:text-red-400 active:text-red-500 shrink-0"
-                    >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
-                        <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </button>
+                    {confirmDeleteId === loc.id ? (
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => { handleDelete(loc.id); setConfirmDeleteId(null) }}
+                          className="px-2 py-1 text-xs font-semibold bg-red-500 text-white rounded-lg active:bg-red-600"
+                        >
+                          Delete
+                        </button>
+                        <button
+                          onClick={() => setConfirmDeleteId(null)}
+                          className="px-2 py-1 text-xs text-gray-500 dark:text-gray-400 rounded-lg border border-gray-200 dark:border-gray-700"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmDeleteId(loc.id)}
+                        className="p-1.5 text-gray-300 dark:text-gray-600 hover:text-red-400 active:text-red-500 shrink-0"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                          <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </button>
+                    )}
                   </div>
                 )}
               </div>

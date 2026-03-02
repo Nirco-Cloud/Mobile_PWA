@@ -42,7 +42,7 @@
 <script type="text/babel">
 const { useState, useRef, useEffect } = React
 
-const BUILDER_VERSION = '1.8.5'
+const BUILDER_VERSION = '1.8.6'
 
 // ─── Trip Config ──────────────────────────────────────────────────────────────
 const TRIP_START = new Date(2026, 10, 3)  // Nov 3, 2026
@@ -645,7 +645,7 @@ function EntryEditPanel({ entry, isNew, onSave, onCancel, onDelete }) {
         </button>
         {!isNew && (
           <button
-            onClick={onDelete}
+            onClick={() => { if (confirm(`Delete "${entry.name || 'this entry'}"? This cannot be undone.`)) onDelete() }}
             className="ml-auto px-3 py-1.5 text-sm text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
           >
             Delete
@@ -694,7 +694,7 @@ function EntryRow({ entry, index, isEditing, onEdit, onDelete, onFocus, onDragSt
           Edit
         </button>
         <button
-          onClick={e => { e.stopPropagation(); onDelete() }}
+          onClick={e => { e.stopPropagation(); if (confirm(`Delete "${entry.name || 'this entry'}"? This cannot be undone.`)) onDelete() }}
           className="px-3 py-1.5 text-sm font-semibold text-red-400 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
         >
           Delete
@@ -1038,7 +1038,7 @@ function LocationEditPanel({ location, isNew, onSave, onCancel, onDelete, onAddB
           Cancel
         </button>
         {!isNew && (
-          <button onClick={onDelete} className="ml-auto px-3 py-1.5 text-sm text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+          <button onClick={() => { if (confirm(`Delete "${location.name || 'this location'}"? This cannot be undone.`)) onDelete() }} className="ml-auto px-3 py-1.5 text-sm text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
             Delete
           </button>
         )}
