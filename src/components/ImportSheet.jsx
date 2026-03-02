@@ -160,6 +160,21 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
           data.lat = loc.lat()
           data.lng = loc.lng()
           delete data.needsGeocode
+
+          // Now that we have coords, enrich via Places API with location bias
+          try {
+            const enrichRes = await fetch(
+              `${RESOLVER_URL}?mode=enrich&name=${encodeURIComponent(data.name || data.address)}&lat=${data.lat}&lng=${data.lng}`,
+              { signal: AbortSignal.timeout(6000) }
+            )
+            if (enrichRes.ok) {
+              const enrichData = await enrichRes.json()
+              if (enrichData.enriched) {
+                data.enriched = enrichData.enriched
+                if (enrichData.enriched.displayName) data.name = enrichData.enriched.displayName
+              }
+            }
+          } catch { /* non-critical — continue without enrichment */ }
         } else {
           throw new Error('Could not find coordinates for this place')
         }

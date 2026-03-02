@@ -225,7 +225,26 @@ export const handler = async (event) => {
     return { statusCode: 204, headers, body: '' }
   }
 
-  const { url } = event.queryStringParameters || {}
+  const params = event.queryStringParameters || {}
+
+  // Mode: enrich — given name + coords, return Places API enrichment.
+  // Used by the client after client-side geocoding gives us coordinates for
+  // share.google links that had no embedded coords.
+  if (params.mode === 'enrich') {
+    const { name, lat, lng } = params
+    if (!name) {
+      return { statusCode: 400, headers, body: JSON.stringify({ error: 'Missing name parameter' }) }
+    }
+    const coords = lat && lng ? { lat: parseFloat(lat), lng: parseFloat(lng) } : null
+    const enriched = await enrichWithPlacesAPI(name, coords)
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({ enriched: enriched || null }),
+    }
+  }
+
+  const { url } = params
 
   if (!url) {
     return {
