@@ -20,7 +20,15 @@ const DEFAULT_CONFIG = {
 
 export async function getGithubConfig() {
   const saved = await idbGet(KEYS.GITHUB_CONFIG, kvStore)
-  return { ...DEFAULT_CONFIG, ...saved }
+  const config = { ...DEFAULT_CONFIG, ...saved }
+  // Reverse migration: a previous bug wrote Mobile_PWA/public/data/plan.json
+  // into IDB — revert to the correct trip-data/plan.json target.
+  if (config.repo === 'Mobile_PWA' && config.filePath === 'public/data/plan.json') {
+    config.repo = 'trip-data'
+    config.filePath = 'plan.json'
+    await idbSet(KEYS.GITHUB_CONFIG, config, kvStore)
+  }
+  return config
 }
 
 export async function setGithubConfig(config) {

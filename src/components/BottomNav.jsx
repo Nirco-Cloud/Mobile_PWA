@@ -4,6 +4,7 @@ const BOTTOM_NAV_HEIGHT = 56
 
 export default function BottomNav({ activeTab, onTabChange }) {
   const isPlannerOpen = useAppStore((s) => s.isPlannerOpen)
+  const planCount = useAppStore((s) => s.planEntries.filter((e) => !e.deletedAt).length)
 
   const tabs = [
     {
@@ -72,7 +73,9 @@ export default function BottomNav({ activeTab, onTabChange }) {
                 <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-sky-500" />
               )}
             </div>
-            <span className="text-xs font-medium">{tab.label}</span>
+            <span className="text-xs font-medium">
+              {tab.label}{tab.id === 'plan' && planCount > 0 ? ` (${planCount})` : ''}
+            </span>
           </button>
         )
       })}
