@@ -1,15 +1,30 @@
 # Changelog — Nirco PWA
 
-All notable changes to this project are documented here.
+Two products are tracked here:
+- **Mobile PWA** — the React progressive web app (deployed to GitHub Pages)
+- **Builder PWA** — standalone desktop admin panel (`builder.html`, local-only, gitignored)
+
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
+
+# Mobile PWA
 
 ## [Unreleased]
 
 ---
 
-## [1.7.5] — 2026-03-01 19:01
+## [1.7.6] — 2026-03-02
+
+### Fixed
+- **`custom.svg` / `train.svg` icons** — `custom.svg` was malformed (24×24 bare path, no circle background); replaced with proper 40×40 amber circle + pin icon; created new `train.svg` (orange circle + train icon); updated `categories.js` so `train` category uses `train.svg`
+
+### Changed
+- **Location row tap behavior** — tapping the location name or category dot now zooms the map to that location without opening the detail panel; a dedicated **Edit** button (highlights sky-blue when open) replaces the old expand-on-tap behavior; `+ Plan` button is unchanged
+
+---
+
+## [1.7.5] — 2026-03-02 01:15
 
 ### Added
 - **Jump to day** — tap the "Day X" label in TodayView to open a day picker sheet showing all 17 trip days; instant navigation with no toast delay
@@ -21,6 +36,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **TypeBadge sizes** (FullTripView row) — icon `w-3→w-3.5`, text `text-[9px]→text-[11px]`, padding `px-1.5→px-2`; badges are now properly legible at arm's length
 - **FullTripView empty days** — faint `+` hint appears before the chevron on days with no entries to communicate tap affordance
 - **DayPicker** — new `jumpMode` prop shows all trip days (not just future), closes instantly on selection
+
+### Fixed
+- **Cascade delete** — deleting a location now also removes all linked plan entries (`locationId` match) from both IndexedDB and Zustand store; applies in both `LocationManager` (main locations) and `ImportSheet` (imported locations). Deletion in the other direction (removing a plan entry) leaves the location untouched
+- **Category migration on boot** — all legacy category keys (`מלונות`, `custom`, `restaurant`, `cafe`, `shop`, `attraction`) are transparently remapped to canonical keys at load time via `migrateLocations()`
+
+### Changed
+- **Category system aligned with Builder PWA** — 14 canonical categories in `src/config/categories.js` (Hebrew food categories + English hotel/train/location/activity); `migrateCategoryLegacy()` and `migrateLocations()` exported for boot-time migration
+- **`ImportSheet` IMPORT_CATEGORIES** updated to canonical keys (`מסעדות ואוכל רחוב`, `קפה/תה/אלכוהול`, `איזורים ואתרים`, `חנויות`, `location`)
+- **`ListComponent` CHIP_GROUPS** — removed obsolete aliases (`restaurant`, `cafe`, `shop`, `attraction`, `custom`, `מלונות`) from group mappings; `activity` added to sights group
+- **`PlannerOverlay` CATEGORY_COLORS** — removed obsolete alias keys; added `activity: '#ec4899'`
+- **Default edit category** in LocationManager changed from `'custom'` → `'location'`
 
 ---
 
@@ -231,6 +257,85 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-[Unreleased]: https://github.com/Nirco-Cloud/Mobile_PWA/compare/v1.1.0...HEAD
+---
+
+# Builder PWA
+
+> Local-only desktop admin panel (`builder.html`). Not deployed — opened directly in Chrome via File System Access API. Version tracked here for reference; changes are not committed to git.
+
+## [Unreleased]
+
+---
+
+## [1.4.0] — 2026-03-02
+
+### Fixed
+- **Day click always navigates to Plan tab** — clicking any day in the sidebar now switches `mainTab` to `'plan'` in addition to setting `activeDay`; previously clicking a day while on the Locations tab would silently update the active day with no visible effect
+
+---
+
+## [1.3.0] — 2026-03-02
+
+### Changed
+- **Day picker moved into the New Location form** — the `📅 Add to Day` pill and 7-column day grid now live inside the `+New Location` dialog alongside the Category picker (same row); selecting a day turns the button indigo and upgrades the label to "Add Location + Plan Day N"; the Maps importer panel itself is simplified back to a single "Add Location →" button that just prefills the form
+
+---
+
+## [1.2.0] — 2026-03-02
+
+### Added
+- **Cascade delete** — deleting a location from the locations list (or map view) now also removes all linked plan entries (`locationId` match); dirty flag is set so the user knows to save; status bar shows count of removed entries
+- **Version number next to tool name** — `v{BUILDER_VERSION}` shown inline in the header next to "🔨 Builder_PWA"
+
+### Changed
+- **Categories as `{ key, label }` objects** — CATEGORIES array changed from plain strings to objects; both location and entry form dropdowns now show proper-cased labels (e.g. "Hotel", "Train", "Location") while storing canonical keys internally
+- **Default category** in location form changed from `'custom'` → `'location'`
+
+---
+
+## [1.1.0] — 2026-03-02
+
+### Added
+- **Plan entry count in tab** — Days sidebar Plan tab label shows live count: `📅 Plan (N)`
+- **Locations count in tab** — Locations sidebar tab shows `📍 Locations (N)` with live count
+- **Version number in Setup modal** — footer of ⚙ Setup modal now displays `Builder_PWA v1.1.0`
+
+---
+
+## [1.0.0] — 2026-03-01
+
+### Added
+- **Single-file tool** — `builder.html` runs entirely in Chrome with no build step; React 18 UMD + Babel Standalone + Tailwind Play CDN + pdf.js 3.x via CDN
+- **File System Access API** — "Open Folder" picks the project root; navigates to `public/data/` and reads `locations.json` + `plan.json` directly; "Save Files ●" writes both files back to disk; dirty indicator (orange ●) in header when unsaved changes
+- **3-column layout** — Days sidebar (left) · Day editor (center) · Tools panel (right)
+- **Days sidebar** — 17-day list with entry counts + type color dots; Locations tab for the full location list with search
+- **Day editor** — selected day's entries with drag-to-reorder (HTML5 native), edit/delete per entry, `+ Location` and `+ Entry` add buttons
+- **EntryEditPanel** — inline form for editing/creating entries: type picker grid (7 types), dynamic meta fields per type, day selector, owner toggle (Shared / Nirco / Bar)
+- **LocationsList** — searchable list of all locations; edit form with name, category, lat/lng, description; hard-delete with confirmation
+- **MapView** — Leaflet map showing all location pins; click pin to focus and edit; add new location by clicking map
+- **Google Maps importer** — paste URL → POST to Netlify resolver → name + coordinates prefilled; add to Locations or to a specific Day as a plan entry
+- **PDF digestor** — pick `.pdf` file → pdf.js text extraction → scrollable preview; buttons to assign text as Description or Note; "Load sample" shows a dummy hotel voucher
+- **Email digestor** — paste confirmation email → regex detection for type, dates, times, confirmation numbers, airport codes; detected fields shown as editable inputs; date → day number conversion; "Load sample" with dummy Booking.com email; "Create Entry" adds to plan
+- **Settings modal** — Netlify resolver URL input (saved to localStorage); trip start/end dates
+- **Schema compatibility** — reads and writes the exact same `locations.json` (v1.0.0 wrapper) and `plan.json` (v2.0.0 wrapper) format as the Mobile PWA
+- **Status bar** — bottom of window shows timestamped operation results
+
+---
+
+---
+
+[1.7.5]: https://github.com/Nirco-Cloud/Mobile_PWA/compare/v1.7.4...v1.7.5
+[1.7.4]: https://github.com/Nirco-Cloud/Mobile_PWA/compare/v1.7.3...v1.7.4
+[1.7.3]: https://github.com/Nirco-Cloud/Mobile_PWA/compare/v1.7.2...v1.7.3
+[1.7.2]: https://github.com/Nirco-Cloud/Mobile_PWA/compare/v1.7.1...v1.7.2
+[1.7.1]: https://github.com/Nirco-Cloud/Mobile_PWA/compare/v1.7.0...v1.7.1
+[1.7.0]: https://github.com/Nirco-Cloud/Mobile_PWA/compare/v1.6.0...v1.7.0
+[1.6.0]: https://github.com/Nirco-Cloud/Mobile_PWA/compare/v1.5.0...v1.6.0
+[1.5.0]: https://github.com/Nirco-Cloud/Mobile_PWA/compare/v1.4.0...v1.5.0
+[1.4.0]: https://github.com/Nirco-Cloud/Mobile_PWA/compare/v1.3.1...v1.4.0
+[1.3.1]: https://github.com/Nirco-Cloud/Mobile_PWA/compare/v1.3.0...v1.3.1
+[1.3.0]: https://github.com/Nirco-Cloud/Mobile_PWA/compare/v1.2.1...v1.3.0
+[1.2.1]: https://github.com/Nirco-Cloud/Mobile_PWA/compare/v1.2.0...v1.2.1
+[1.2.0]: https://github.com/Nirco-Cloud/Mobile_PWA/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/Nirco-Cloud/Mobile_PWA/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/Nirco-Cloud/Mobile_PWA/releases/tag/v1.0.0

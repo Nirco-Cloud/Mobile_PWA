@@ -10,7 +10,7 @@ export const CATEGORIES = [
   { key: 'חנויות',                    label: 'חנויות',      icon: 'shopping.svg' },
   { key: 'איזורים ואתרים',            label: 'אזורים',      icon: 'area.svg' },
   { key: 'hotel',                     label: 'Hotel',       icon: 'hotel.svg' },
-  { key: 'train',                     label: 'Train',       icon: 'custom.svg' },
+  { key: 'train',                     label: 'Train',       icon: 'train.svg' },
   { key: 'location',                  label: 'Location',    icon: 'custom.svg' },
   { key: 'activity',                  label: 'Activity',    icon: 'area.svg' },
 ]

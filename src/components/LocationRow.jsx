@@ -8,27 +8,28 @@ const LocationRow = forwardRef(function LocationRow({ location, distance, isSele
   const position      = useAppStore((s) => s.position)
   const [showDayPicker, setShowDayPicker] = useState(false)
 
-  function handleClick() {
+  function handleFocus() {
     setSelection(location.id, 'list')
-    onToggle(location.id)
   }
 
   return (
     <>
       <div
         ref={ref}
-        onClick={handleClick}
-        className={`border-b border-gray-200 dark:border-gray-700 cursor-pointer select-none transition-colors ${
+        className={`border-b border-gray-200 dark:border-gray-700 select-none transition-colors ${
           isSelected
             ? 'bg-sky-50 dark:bg-sky-900/30'
-            : 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800'
+            : 'bg-white dark:bg-gray-900'
         }`}
         style={{ willChange: 'transform', backfaceVisibility: 'hidden', contain: 'layout style paint' }}
       >
         {/* Compact row */}
         <div className="flex items-center gap-2 px-3 py-3 min-h-[56px]">
-          <CategoryDot category={location.category} />
-          <span className="flex-1 truncate text-base font-medium text-gray-800 dark:text-gray-100">
+          <CategoryDot category={location.category} onClick={handleFocus} />
+          <span
+            className="flex-1 truncate text-base font-medium text-gray-800 dark:text-gray-100 cursor-pointer active:text-sky-600"
+            onClick={handleFocus}
+          >
             {location.name}
           </span>
           {distance != null && (
@@ -36,9 +37,16 @@ const LocationRow = forwardRef(function LocationRow({ location, distance, isSele
               {formatDistance(distance)}
             </span>
           )}
-          <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">
-            {isExpanded ? '▲' : '▼'}
-          </span>
+          <button
+            onClick={() => onToggle(location.id)}
+            className={`shrink-0 px-2.5 py-1 text-xs font-medium rounded border transition-colors ${
+              isExpanded
+                ? 'text-sky-700 border-sky-300 bg-sky-50 dark:bg-sky-900/40 dark:border-sky-600 dark:text-sky-300'
+                : 'text-gray-500 border-gray-200 dark:border-gray-700 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600'
+            }`}
+          >
+            Edit
+          </button>
         </div>
 
         {/* Expanded detail */}
@@ -101,7 +109,7 @@ const LocationRow = forwardRef(function LocationRow({ location, distance, isSele
   )
 })
 
-function CategoryDot({ category }) {
+function CategoryDot({ category, onClick }) {
   const colors = {
     'Izakaya': 'bg-amber-500',
     'Ramen': 'bg-orange-500',
@@ -116,7 +124,7 @@ function CategoryDot({ category }) {
     default: 'bg-gray-400',
   }
   const color = colors[category] ?? colors.default
-  return <span className={`w-2 h-2 rounded-full shrink-0 ${color}`} />
+  return <span className={`w-2 h-2 rounded-full shrink-0 cursor-pointer ${color}`} onClick={onClick} />
 }
 
 export default LocationRow
