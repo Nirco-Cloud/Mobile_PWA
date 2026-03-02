@@ -120,28 +120,9 @@ export const useAppStore = create(
     setGithubLastSync: (githubLastSync) => set({ githubLastSync }),
     setGithubConfigured: (githubConfigured) => set({ githubConfigured }),
 
-    // Imported locations (from Google Maps links)
-    importedLocations: [],
-    addImportedLocation: (loc) =>
-      set((s) => ({
-        importedLocations: [...s.importedLocations, loc],
-        locations: [...s.locations, loc],
-      })),
-    removeImportedLocation: (id) =>
-      set((s) => ({
-        importedLocations: s.importedLocations.filter((l) => l.id !== id),
-        locations: s.locations.filter((l) => l.id !== id),
-      })),
-    setImportedLocations: (importedLocations) => set({ importedLocations }),
-    updateImportedLocation: (updated) =>
-      set((s) => ({
-        importedLocations: s.importedLocations.map((l) => l.id === updated.id ? updated : l),
-        locations: s.locations.map((l) => l.id === updated.id ? updated : l),
-      })),
     updateLocation: (updated) =>
       set((s) => ({
         locations: s.locations.map((l) => l.id === updated.id ? updated : l),
-        importedLocations: s.importedLocations.map((l) => l.id === updated.id ? updated : l),
       })),
   })),
 )

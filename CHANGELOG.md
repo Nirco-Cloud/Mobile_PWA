@@ -14,6 +14,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.9.0] — 2026-03-03
+
+### Removed
+- **Google Maps link import feature** — removed ImportSheet, LocationImportEditSheet, resolveMapLink utility, importedLocations DB/store, InlineImport component in PlannerOverlay, Web Share Target manifest registration, Netlify resolver function and netlify.toml. The app now shows only builder-defined locations; users cannot add new locations via link import.
+- Removed `VITE_NETLIFY_RESOLVER_URL` environment variable from build pipeline
+
+---
+
 ## [1.8.4] — 2026-03-02
 
 ### Added

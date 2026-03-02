@@ -5,7 +5,6 @@ import { useAppStore } from './store/appStore.js'
 import { CATEGORIES, ALL_CATEGORY_KEYS, migrateLocations } from './config/categories.js'
 import { initializeData, initializePlan } from './db/sync.js'
 import { readAllLocations } from './db/locations.js'
-import { readAllImportedLocations, deleteImportedLocation, updateImportedLocation } from './db/importedLocations.js'
 import { readAllPlanEntries, enrichPlanEntries, deletePlanEntry } from './db/plannerDb.js'
 import { getGithubConfig, setGithubConfig, getLastSyncTime } from './db/githubSync.js'
 import { useGithubSync } from './hooks/useGithubSync.js'
@@ -21,34 +20,16 @@ import SplitLayout from './components/SplitLayout.jsx'
 import MapComponent from './components/MapComponent.jsx'
 import ListComponent from './components/ListComponent.jsx'
 import BottomNav, { BOTTOM_NAV_HEIGHT } from './components/BottomNav.jsx'
-import ImportSheet from './components/ImportSheet.jsx'
-import { resolveMapLink } from './utils/resolveMapLink.js'
-import LocationImportEditSheet from './components/LocationImportEditSheet.jsx'
 import PlannerOverlay from './components/PlannerOverlay.jsx'
 import LocationDetailSheet from './components/LocationDetailSheet.jsx'
 import OfflineToast from './components/OfflineToast.jsx'
 
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 
-function isGoogleMapsUrl(text) {
-  return (
-    text.includes('maps.app.goo.gl') ||
-    text.includes('google.com/maps') ||
-    text.includes('goo.gl/maps') ||
-    text.includes('share.google/')
-  )
-}
-
 export default function App() {
   const [showSplash, setShowSplash] = useState(true)
   const [activeTab, setActiveTab] = useState('map')
   const [showSettings, setShowSettings] = useState(false)
-  const [showImport, setShowImport] = useState(false)
-  const [importInitialUrl, setImportInitialUrl] = useState('')
-  const [importAutoResolve, setImportAutoResolve] = useState(false)
-  const [importEditData, setImportEditData] = useState(null)
-  const [importEditSourceUrl, setImportEditSourceUrl] = useState('')
-  const [lastResolvedUrl, setLastResolvedUrl] = useState('')
   const [qrConfigReceived, setQrConfigReceived] = useState(false)
   const setLocations = useAppStore((s) => s.setLocations)
   const setSyncStatus = useAppStore((s) => s.setSyncStatus)
@@ -57,8 +38,7 @@ export default function App() {
   const gpsDenied = useAppStore((s) => s.gpsDenied)
   const setActiveCategories = useAppStore((s) => s.setActiveCategories)
   const setDefaultCategories = useAppStore((s) => s.setDefaultCategories)
-  const setImportedLocations = useAppStore((s) => s.setImportedLocations)
-  const setPlanEntries   = useAppStore((s) => s.setPlanEntries)
+const setPlanEntries   = useAppStore((s) => s.setPlanEntries)
   const isPlannerOpen    = useAppStore((s) => s.isPlannerOpen)
   const setIsPlannerOpen = useAppStore((s) => s.setIsPlannerOpen)
   const setPlannerPanelH = useAppStore((s) => s.setPlannerPanelH)
@@ -102,19 +82,7 @@ export default function App() {
     })
   }, [setTripDates])
 
-  // Detect Web Share Target — browser navigates to /share-target?url=... or ?text=...
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const sharedUrl = params.get('url') || params.get('text') || ''
-    if (sharedUrl && isGoogleMapsUrl(sharedUrl)) {
-      window.history.replaceState({}, '', window.location.pathname)
-      setImportInitialUrl(sharedUrl)
-      setImportAutoResolve(true)
-      setShowImport(true)
-    }
-  }, [])
-
-  // Detect QR config share — URL fragment #ghsync=BASE64_JSON
+// Detect QR config share — URL fragment #ghsync=BASE64_JSON
   useEffect(() => {
     const hash = window.location.hash
     if (!hash.startsWith('#ghsync=')) return
@@ -154,13 +122,11 @@ export default function App() {
       try {
         await initializeData()
         await initializePlan()
-        const [records, importedRecords, planRecords] = await Promise.all([
+        const [records, planRecords] = await Promise.all([
           readAllLocations(),
-          readAllImportedLocations(),
           readAllPlanEntries(),
         ])
-        setImportedLocations(importedRecords)
-        const allLocs = migrateLocations([...records, ...importedRecords])
+        const allLocs = migrateLocations(records)
         setLocations(allLocs)
         setPlanEntries(enrichPlanEntries(planRecords, allLocs))
         // Validate saved passphrase against encrypted data
@@ -188,13 +154,11 @@ export default function App() {
       } catch (err) {
         console.error('Boot error:', err)
         try {
-          const [records, importedRecords, planRecords] = await Promise.all([
+          const [records, planRecords] = await Promise.all([
             readAllLocations(),
-            readAllImportedLocations(),
             readAllPlanEntries(),
           ])
-          setImportedLocations(importedRecords)
-          const allLocs = migrateLocations([...records, ...importedRecords])
+          const allLocs = migrateLocations(records)
           setLocations(allLocs)
           setPlanEntries(enrichPlanEntries(planRecords, allLocs))
           if (allLocs.length === 0) {
@@ -228,34 +192,7 @@ export default function App() {
     }
   }
 
-  async function handleImportFAB() {
-    setImportAutoResolve(false)
-    setImportInitialUrl('')
-    // Try to read clipboard for a maps URL
-    try {
-      const text = await navigator.clipboard.readText()
-      if (isGoogleMapsUrl(text) && text.trim() !== lastResolvedUrl) {
-        setImportInitialUrl(text)
-        setImportAutoResolve(true)
-      }
-    } catch {
-      // Clipboard access denied or unavailable — open empty sheet
-    }
-    setShowImport(true)
-  }
-
-  async function handleResolveUrl(rawUrl) {
-    try {
-      const { data, resolvedUrl } = await resolveMapLink(rawUrl)
-      setLastResolvedUrl(resolvedUrl)
-      setImportEditData(data)
-      setImportEditSourceUrl(resolvedUrl)
-    } catch (err) {
-      throw err // re-throw so PlannerOverlay can show the error inline
-    }
-  }
-
-  async function handleResync() {
+async function handleResync() {
     setSyncStatus('syncing')
     await resetSync()
     try {
@@ -301,39 +238,11 @@ export default function App() {
         />
       )}
 
-      <PlannerOverlay onImportLink={handleImportFAB} onResolveUrl={handleResolveUrl} />
+      <PlannerOverlay />
 
       <LocationDetailSheet />
 
-      <ImportSheet
-        open={showImport}
-        onClose={() => {
-          setShowImport(false)
-          setImportInitialUrl('')
-          setImportAutoResolve(false)
-        }}
-        initialUrl={importInitialUrl}
-        autoResolve={importAutoResolve}
-        onResolved={(data, sourceUrl) => {
-          setShowImport(false)
-          setImportInitialUrl('')
-          setImportAutoResolve(false)
-          setLastResolvedUrl(sourceUrl.trim())
-          setImportEditData(data)
-          setImportEditSourceUrl(sourceUrl)
-        }}
-      />
-
-      <LocationImportEditSheet
-        data={importEditData}
-        sourceUrl={importEditSourceUrl}
-        onClose={() => {
-          setImportEditData(null)
-          setImportEditSourceUrl('')
-        }}
-      />
-
-      <BottomNav activeTab={showSettings ? 'settings' : activeTab} onTabChange={handleTabChange} />
+<BottomNav activeTab={showSettings ? 'settings' : activeTab} onTabChange={handleTabChange} />
       <OfflineToast />
     </APIProvider>
   )
@@ -750,9 +659,6 @@ function SettingsPanel({ batteryLevel, position, gpsDenied, onResync, onClose, b
           </p>
         </section>
 
-        {/* Location Manager */}
-        <LocationManager />
-
         {/* Version */}
         <p className="text-xs text-gray-400 dark:text-gray-600 text-center pt-2 pb-1">
           v{__APP_VERSION__}
@@ -777,140 +683,5 @@ function SettingsPanel({ batteryLevel, position, gpsDenied, onResync, onClose, b
         </div>
       )}
     </div>
-  )
-}
-
-function LocationManager() {
-  const importedLocations = useAppStore((s) => s.importedLocations)
-  const removeImportedLocation = useAppStore((s) => s.removeImportedLocation)
-  const updateImportedLocationStore = useAppStore((s) => s.updateImportedLocation)
-  const planEntries = useAppStore((s) => s.planEntries)
-  const removePlanEntry = useAppStore((s) => s.removePlanEntry)
-  const [editingId, setEditingId] = useState(null)
-  const [editName, setEditName] = useState('')
-  const [editCategory, setEditCategory] = useState('location')
-  const [confirmDeleteId, setConfirmDeleteId] = useState(null)
-
-  function startEdit(loc) {
-    setEditingId(loc.id)
-    setEditName(loc.name)
-    setEditCategory(loc.category)
-  }
-
-  function cancelEdit() {
-    setEditingId(null)
-  }
-
-  async function handleSaveEdit(loc) {
-    const updated = { ...loc, name: editName.trim() || loc.name, category: editCategory }
-    await updateImportedLocation(updated)
-    updateImportedLocationStore(updated)
-    setEditingId(null)
-  }
-
-  async function handleDelete(id) {
-    await deleteImportedLocation(id)
-    removeImportedLocation(id)
-    const linked = planEntries.filter((e) => e.locationId === id && !e.deletedAt)
-    for (const e of linked) {
-      await deletePlanEntry(e.id)
-      removePlanEntry(e.id)
-    }
-  }
-
-  return (
-    <section className="space-y-2">
-      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-        Imported Locations
-      </h3>
-      {importedLocations.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">No imported locations</p>
-      ) : (
-        <div className="divide-y divide-gray-100 dark:divide-gray-800 border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden">
-          {importedLocations.map((loc) => {
-            const cat = CATEGORIES.find((c) => c.key === loc.category)
-            const isEditing = editingId === loc.id
-            return (
-              <div key={loc.id} className="px-3 py-2">
-                {isEditing ? (
-                  <div className="space-y-2">
-                    <input
-                      type="text"
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      className="w-full px-2 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
-                    />
-                    <select
-                      value={editCategory}
-                      onChange={(e) => setEditCategory(e.target.value)}
-                      className="w-full px-2 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
-                    >
-                      {CATEGORIES.map((c) => (
-                        <option key={c.key} value={c.key}>{c.label}</option>
-                      ))}
-                    </select>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleSaveEdit(loc)}
-                        className="flex-1 py-1.5 bg-sky-500 text-white text-sm font-medium rounded-lg active:bg-sky-600"
-                      >
-                        Save
-                      </button>
-                      <button
-                        onClick={cancelEdit}
-                        className="flex-1 py-1.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-sm font-medium rounded-lg active:bg-gray-200"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{loc.name}</p>
-                      <p className="text-xs text-gray-400">{cat ? cat.label : loc.category}</p>
-                    </div>
-                    <button
-                      onClick={() => startEdit(loc)}
-                      className="p-1.5 text-gray-300 dark:text-gray-600 hover:text-sky-400 active:text-sky-500 shrink-0"
-                    >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
-                        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </button>
-                    {confirmDeleteId === loc.id ? (
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          onClick={() => { handleDelete(loc.id); setConfirmDeleteId(null) }}
-                          className="px-2 py-1 text-xs font-semibold bg-red-500 text-white rounded-lg active:bg-red-600"
-                        >
-                          Delete
-                        </button>
-                        <button
-                          onClick={() => setConfirmDeleteId(null)}
-                          className="px-2 py-1 text-xs text-gray-500 dark:text-gray-400 rounded-lg border border-gray-200 dark:border-gray-700"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setConfirmDeleteId(loc.id)}
-                        className="p-1.5 text-gray-300 dark:text-gray-600 hover:text-red-400 active:text-red-500 shrink-0"
-                      >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
-                          <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
-    </section>
   )
 }

@@ -7,7 +7,6 @@ import {
   updatePlanEntry as dbUpdatePlanEntry,
 } from '../db/plannerDb.js'
 import { writeLocation } from '../db/locations.js'
-import { updateImportedLocation } from '../db/importedLocations.js'
 import { useTripConfig } from '../hooks/useTripConfig.js'
 import { BOTTOM_NAV_HEIGHT } from './BottomNav.jsx'
 import { getRouteColor, getDayColor } from '../config/routeColors.js'
@@ -357,8 +356,7 @@ function TodayView() {
   const planEntries          = useVisiblePlanEntries()
   const position             = useAppStore((s) => s.position)
   const locations            = useAppStore((s) => s.locations)
-  const importedLocations    = useAppStore((s) => s.importedLocations)
-  const removePlanEntry      = useAppStore((s) => s.removePlanEntry)
+const removePlanEntry      = useAppStore((s) => s.removePlanEntry)
   const updatePlanEntryStore = useAppStore((s) => s.updatePlanEntry)
   const updateLocationStore  = useAppStore((s) => s.updateLocation)
   const travelMode           = useAppStore((s) => s.plannerTravelMode)
@@ -617,12 +615,7 @@ function TodayView() {
       const loc = locations.find((l) => l.id === entry.locationId)
       if (loc) {
         const updatedLoc = { ...loc, description: updates.note || '' }
-        const isImported = importedLocations.some((l) => l.id === entry.locationId)
-        if (isImported) {
-          await updateImportedLocation(updatedLoc)
-        } else {
-          await writeLocation(updatedLoc)
-        }
+        await writeLocation(updatedLoc)
         updateLocationStore(updatedLoc)
       }
     }
@@ -909,119 +902,9 @@ function TodayView() {
   )
 }
 
-// ─── Inline import row ───────────────────────────────────────────────────────
-
-function InlineImport({ onResolveUrl, onFallback }) {
-  const [active,  setActive]  = useState(false)
-  const [url,     setUrl]     = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error,   setError]   = useState(null)
-  const inputRef = useRef(null)
-
-  function open() {
-    setActive(true)
-    setUrl('')
-    setError(null)
-    setTimeout(() => inputRef.current?.focus(), 50)
-  }
-
-  function close() {
-    setActive(false)
-    setUrl('')
-    setError(null)
-    setLoading(false)
-  }
-
-  async function go(rawUrl) {
-    const u = (rawUrl ?? url).trim()
-    if (!u) return
-    if (!onResolveUrl) { onFallback?.(); return }
-    setLoading(true)
-    setError(null)
-    try {
-      await onResolveUrl(u)
-      close()
-    } catch (err) {
-      setError(err.name === 'AbortError' ? 'Request timed out — try again' : err.message)
-      setLoading(false)
-    }
-  }
-
-  function handlePaste(e) {
-    const text = e.clipboardData?.getData('text') || ''
-    if (
-      text.includes('maps.app.goo.gl') ||
-      text.includes('google.com/maps') ||
-      text.includes('goo.gl/maps') ||
-      text.includes('share.google/')
-    ) {
-      setTimeout(() => go(text), 0)
-    }
-  }
-
-  if (!active) {
-    return (
-      <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-800">
-        <button
-          onClick={open}
-          className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-sky-300 dark:border-sky-700 text-sky-500 dark:text-sky-400 bg-white dark:bg-gray-900 text-sm font-medium active:bg-sky-50 dark:active:bg-sky-900/20"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 shrink-0">
-            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          Import from Google Maps
-        </button>
-      </div>
-    )
-  }
-
-  return (
-    <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-800 space-y-1.5">
-      <div className="flex items-center gap-2">
-        <input
-          ref={inputRef}
-          type="url"
-          inputMode="url"
-          placeholder="Paste Google Maps link…"
-          value={url}
-          onChange={(e) => { setUrl(e.target.value); setError(null) }}
-          onPaste={handlePaste}
-          onKeyDown={(e) => { if (e.key === 'Enter') go(); if (e.key === 'Escape') close() }}
-          className="flex-1 min-w-0 px-3 py-1.5 text-sm rounded-xl border border-sky-300 dark:border-sky-700 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-400"
-        />
-        <button
-          onClick={() => go()}
-          disabled={!url.trim() || loading}
-          className="px-3 py-1.5 bg-sky-500 text-white text-sm font-medium rounded-xl disabled:opacity-40 active:bg-sky-600 shrink-0"
-        >
-          {loading ? (
-            <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-            </svg>
-          ) : 'Go'}
-        </button>
-        <button
-          onClick={close}
-          className="p-1.5 text-gray-400 active:text-gray-600 shrink-0"
-          aria-label="Cancel"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
-            <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" />
-          </svg>
-        </button>
-      </div>
-      {error && (
-        <p className="text-xs text-red-500 dark:text-red-400 px-1">{error}</p>
-      )}
-    </div>
-  )
-}
-
 // ─── Main overlay ────────────────────────────────────────────────────────────
 
-export default function PlannerOverlay({ onImportLink, onResolveUrl }) {
+export default function PlannerOverlay() {
   const { tripDays }     = useTripConfig()
   const isPlannerOpen    = useAppStore((s) => s.isPlannerOpen)
   const setIsPlannerOpen = useAppStore((s) => s.setIsPlannerOpen)
@@ -1185,9 +1068,6 @@ export default function PlannerOverlay({ onImportLink, onResolveUrl }) {
           </button>
         )}
       </div>
-
-      {/* Import row */}
-      <InlineImport onResolveUrl={onResolveUrl} onFallback={onImportLink} />
 
       {/* View tabs */}
       <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-800">
