@@ -14,6 +14,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.8.3] — 2026-03-02
+
+### Fixed
+- **Netlify resolver URL** — `VITE_NETLIFY_RESOLVER_URL` was pointing to the stale `japanguide.netlify.app` site which lacked the `?mode=enrich` handler; corrected to `deft-lollipop-820a72.netlify.app` so Places API enrichment (address, rating, phone, opening hours, description) now works in the mobile app import flow
+
+---
+
 ## [1.8.0] — 2026-03-02
 
 ### Added
