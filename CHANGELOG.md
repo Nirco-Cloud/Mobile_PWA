@@ -14,6 +14,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.8.4] — 2026-03-02
+
+### Added
+- **LocationImportEditSheet** — full-screen editor that opens after a Google Maps link is resolved; pre-fills all Places API enrichment data (name, description, address, phone, rating, website, opening hours) as editable fields; includes amber ✍️ Personal Notes textarea (`dir="auto"` for Hebrew) and an inline day grid to assign the location to a trip day in one step
+- **Inline day picker in import flow** — 5-column grid showing all trip days; selecting a day creates a plan entry alongside saving the imported location
+
+### Changed
+- **ImportSheet** — no longer shows an inline success card after link resolution; hands off to `LocationImportEditSheet` and closes itself; now focused on URL input + saved imports list only
+
+---
+
 ## [1.8.3] — 2026-03-02
 
 ### Fixed

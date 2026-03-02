@@ -22,6 +22,7 @@ import MapComponent from './components/MapComponent.jsx'
 import ListComponent from './components/ListComponent.jsx'
 import BottomNav, { BOTTOM_NAV_HEIGHT } from './components/BottomNav.jsx'
 import ImportSheet from './components/ImportSheet.jsx'
+import LocationImportEditSheet from './components/LocationImportEditSheet.jsx'
 import PlannerOverlay from './components/PlannerOverlay.jsx'
 import LocationDetailSheet from './components/LocationDetailSheet.jsx'
 import OfflineToast from './components/OfflineToast.jsx'
@@ -44,6 +45,8 @@ export default function App() {
   const [showImport, setShowImport] = useState(false)
   const [importInitialUrl, setImportInitialUrl] = useState('')
   const [importAutoResolve, setImportAutoResolve] = useState(false)
+  const [importEditData, setImportEditData] = useState(null)
+  const [importEditSourceUrl, setImportEditSourceUrl] = useState('')
   const [qrConfigReceived, setQrConfigReceived] = useState(false)
   const setLocations = useAppStore((s) => s.setLocations)
   const setSyncStatus = useAppStore((s) => s.setSyncStatus)
@@ -298,6 +301,22 @@ export default function App() {
         }}
         initialUrl={importInitialUrl}
         autoResolve={importAutoResolve}
+        onResolved={(data, sourceUrl) => {
+          setShowImport(false)
+          setImportInitialUrl('')
+          setImportAutoResolve(false)
+          setImportEditData(data)
+          setImportEditSourceUrl(sourceUrl)
+        }}
+      />
+
+      <LocationImportEditSheet
+        data={importEditData}
+        sourceUrl={importEditSourceUrl}
+        onClose={() => {
+          setImportEditData(null)
+          setImportEditSourceUrl('')
+        }}
       />
 
       <BottomNav activeTab={showSettings ? 'settings' : activeTab} onTabChange={handleTabChange} />

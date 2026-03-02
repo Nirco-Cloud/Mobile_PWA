@@ -1,68 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAppStore } from '../store/appStore.js'
-import { saveImportedLocation, deleteImportedLocation } from '../db/importedLocations.js'
+import { deleteImportedLocation } from '../db/importedLocations.js'
 import { deletePlanEntry } from '../db/plannerDb.js'
 import DayPicker from './DayPicker.jsx'
-
-// Import categories — canonical keys matching categories.js
-const IMPORT_CATEGORIES = [
-  {
-    key: 'מסעדות ואוכל רחוב',
-    label: 'Restaurant',
-    color: '#f97316',
-    icon: 'M3 3h18M3 9h18M9 3v18M15 3v6M3 15h6M15 15h6M3 21h6M15 21h6',
-  },
-  {
-    key: 'קפה/תה/אלכוהול',
-    label: 'Cafe',
-    color: '#8b5cf6',
-    icon: 'M17 8h1a4 4 0 010 8h-1M3 8h14v9a4 4 0 01-4 4H7a4 4 0 01-4-4V8zM6 1v3M10 1v3M14 1v3',
-  },
-  {
-    key: 'איזורים ואתרים',
-    label: 'Attraction',
-    color: '#ec4899',
-    icon: 'M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 002 2 2 2 0 010 4 2 2 0 00-2 2v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 00-2-2 2 2 0 010-4 2 2 0 002-2V7a2 2 0 00-2-2H5z',
-  },
-  {
-    key: 'חנויות',
-    label: 'Shop',
-    color: '#10b981',
-    icon: 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z',
-  },
-  {
-    key: 'hotel',
-    label: 'Hotel',
-    color: '#8b5cf6',
-    icon: 'M3 7v11m0-7h18m0 0V7a2 2 0 00-2-2H5a2 2 0 00-2 2v4h18zm0 0v7m-9-4h.01',
-  },
-  {
-    key: 'train',
-    label: 'Train',
-    color: '#f97316',
-    icon: 'M12 4v16m-4-4l4 4 4-4M8 4h8a2 2 0 012 2v8a2 2 0 01-2 2H8a2 2 0 01-2-2V6a2 2 0 012-2z',
-  },
-  {
-    key: 'location',
-    label: 'Location',
-    color: '#6b7280',
-    icon: 'M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z',
-  },
-]
-
-
-function detectCategory(name) {
-  if (!name) return 'location'
-  const n = name.toLowerCase()
-  if (/hotel|inn|hostel|ryokan|lodge|resort|guesthouse|guest house|motel/.test(n)) return 'hotel'
-  if (/cafe|coffee|kissaten|tearoom|tea room|bakery|patisserie/.test(n))           return 'קפה/תה/אלכוהול'
-  if (/bar|pub|brewery|winery|sake/.test(n))                                       return 'קפה/תה/אלכוהול'
-  if (/store|shop|market|mall|boutique|department|supermarket|drugstore|pharmacy/.test(n)) return 'חנויות'
-  if (/shrine|jinja|temple|park|garden|museum|castle|tower|palace|onsen|hot spring|waterfall/.test(n)) return 'איזורים ואתרים'
-  if (/station|railway|terminal/.test(n))                                          return 'train'
-  if (/ramen|noodle|soba|udon|sushi|sashimi|izakaya|yakitori|omakase|kaiseki|restaurant|diner|eatery|bbq|grill|curry|tempura|tonkatsu|yakiniku/.test(n)) return 'מסעדות ואוכל רחוב'
-  return 'location'
-}
 
 const RESOLVER_URL = import.meta.env.VITE_NETLIFY_RESOLVER_URL
 
@@ -77,21 +17,16 @@ function isGoogleMapsUrl(text) {
 
 // ─── Main component ──────────────────────────────────────────────────────────
 
-export default function ImportSheet({ open, onClose, initialUrl = '', autoResolve = false }) {
+export default function ImportSheet({ open, onClose, initialUrl = '', autoResolve = false, onResolved }) {
   const [url, setUrl]               = useState('')
-  const [status, setStatus]         = useState('idle') // 'idle' | 'loading' | 'success' | 'error'
-  const [result, setResult]         = useState(null)
-  const [customName, setCustomName] = useState('')
-  const [category, setCategory]     = useState('location')
+  const [status, setStatus]         = useState('idle') // 'idle' | 'loading' | 'error'
   const [error, setError]           = useState(null)
   const [pickerLocation, setPickerLocation] = useState(null)
-  const [openingHoursOpen, setOpeningHoursOpen] = useState(false)
   const inputRef = useRef(null)
 
-  const importedLocations   = useAppStore((s) => s.importedLocations)
-  const addImportedLocation = useAppStore((s) => s.addImportedLocation)
+  const importedLocations      = useAppStore((s) => s.importedLocations)
   const removeImportedLocation = useAppStore((s) => s.removeImportedLocation)
-  const setSelection        = useAppStore((s) => s.setSelection)
+  const setSelection           = useAppStore((s) => s.setSelection)
   const planEntries         = useAppStore((s) => s.planEntries)
   const removePlanEntry     = useAppStore((s) => s.removePlanEntry)
 
@@ -108,10 +43,7 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
     if (!open) {
       setUrl('')
       setStatus('idle')
-      setResult(null)
       setError(null)
-      setCustomName('')
-      setCategory('location')
       setPickerLocation(null)
     }
   }, [open])
@@ -182,69 +114,16 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
         throw new Error('Could not extract coordinates from this link')
       }
 
-      const detectedCategory = data.enriched?.suggestedCategory || detectCategory(data.name || '')
-      setResult(data)
-      setCustomName(data.name || '')
-      setCategory(detectedCategory)
-      setStatus('success')
+      // Hand off to full-screen editor overlay
+      const resolvedUrl = url.trim()
+      setUrl('')
+      setStatus('idle')
+      onResolved?.(data, resolvedUrl)
+      onClose()
     } catch (err) {
       setError(err.name === 'AbortError' ? 'Request timed out — try again' : err.message)
       setStatus('error')
     }
-  }
-
-  // Save location to imported list and return the saved object
-  async function saveLocation() {
-    if (!result) return null
-    const alreadySaved = importedLocations.find((loc) => loc.sourceUrl === url.trim())
-    if (alreadySaved) return alreadySaved // already saved, reuse it
-
-    const e = result.enriched || {}
-    const loc = {
-      id: `imported_${Date.now()}`,
-      name: customName.trim() || `Imported ${new Date().toLocaleDateString()}`,
-      lat: result.lat,
-      lng: result.lng,
-      category,
-      importedAt: new Date().toISOString(),
-      sourceUrl: url,
-      address:      e.address      || '',
-      phone:        e.phone        || '',
-      website:      e.website      || '',
-      rating:       e.rating       ?? null,
-      openingHours: e.openingHours ?? null,
-      description:  e.description  || '',
-    }
-    await saveImportedLocation(loc)
-    addImportedLocation(loc)
-    return loc
-  }
-
-  // "Add to Day →" tapped — save location immediately, reset form, open DayPicker
-  async function handleAddToDay() {
-    const loc = await saveLocation()
-    if (!loc) return
-    // Reset the form so the saved list is visible behind the DayPicker
-    setStatus('idle')
-    setResult(null)
-    setUrl('')
-    setCustomName('')
-    setCategory('location')
-    setError(null)
-    setPickerLocation(loc)
-  }
-
-  // "Save only" — save to list without planning
-  async function handleSaveOnly() {
-    const loc = await saveLocation()
-    if (!loc) { setError('This location is already saved.'); return }
-    setStatus('idle')
-    setResult(null)
-    setUrl('')
-    setCustomName('')
-    setCategory('location')
-    setPickerLocation(null)
-    setError(null)
   }
 
   async function handleDelete(id) {
@@ -316,7 +195,6 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
               onChange={(e) => {
                 setUrl(e.target.value)
                 setStatus('idle')
-                setResult(null)
                 setError(null)
                 setPickerLocation(null)
               }}
@@ -343,152 +221,6 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
               {error}
             </div>
           )}
-
-          {/* Success: resolved preview */}
-          {status === 'success' && result && (() => {
-            const e = result.enriched || {}
-            return (
-              <div className="border border-sky-200 dark:border-sky-800 rounded-xl overflow-hidden">
-                {/* Coords bar */}
-                <div className="px-3 py-2 bg-sky-50 dark:bg-sky-900/20 flex items-center gap-2">
-                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-sky-500 shrink-0">
-                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-                  </svg>
-                  <p className="text-xs text-sky-600 dark:text-sky-400 font-mono">
-                    {result.lat.toFixed(6)}, {result.lng.toFixed(6)}
-                  </p>
-                  {e.rating != null && (
-                    <span className="ml-auto text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full px-2 py-0.5 font-medium shrink-0">
-                      ⭐ {e.rating}
-                    </span>
-                  )}
-                </div>
-
-                <div className="px-3 py-3 space-y-3">
-                  {/* Name */}
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Name</label>
-                    <input
-                      type="text"
-                      value={customName}
-                      onChange={(e) => setCustomName(e.target.value)}
-                      placeholder="Enter a name…"
-                      className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-400"
-                    />
-                  </div>
-
-                  {/* Description */}
-                  {e.description && (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 italic leading-snug">
-                      "{e.description}"
-                    </p>
-                  )}
-
-                  {/* Address */}
-                  {e.address && (
-                    <div className="flex gap-2 items-start">
-                      <span className="text-sm shrink-0">📍</span>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">{e.address}</p>
-                    </div>
-                  )}
-
-                  {/* Phone */}
-                  {e.phone && (
-                    <div className="flex gap-2 items-center">
-                      <span className="text-sm shrink-0">📞</span>
-                      <a href={`tel:${e.phone}`} className="text-sm text-sky-600 dark:text-sky-400">{e.phone}</a>
-                    </div>
-                  )}
-
-                  {/* Website */}
-                  {e.website && (
-                    <div className="flex gap-2 items-center">
-                      <span className="text-sm shrink-0">🌐</span>
-                      <a
-                        href={e.website}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-sm text-sky-600 dark:text-sky-400 truncate"
-                      >
-                        {e.website.replace(/^https?:\/\//, '')}
-                      </a>
-                    </div>
-                  )}
-
-                  {/* Opening hours */}
-                  {e.openingHours?.length > 0 && (
-                    <div>
-                      <button
-                        onClick={() => setOpeningHoursOpen((v) => !v)}
-                        className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400"
-                      >
-                        <span>🕐</span>
-                        <span>Opening hours</span>
-                        <span className="text-gray-400 text-xs">{openingHoursOpen ? '▲' : '▼'}</span>
-                      </button>
-                      {openingHoursOpen && (
-                        <ul className="mt-1.5 space-y-0.5 pl-6">
-                          {e.openingHours.map((h, i) => (
-                            <li key={i} className="text-xs text-gray-500 dark:text-gray-400">{h}</li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Category chips */}
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Category</label>
-                    <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-                      {IMPORT_CATEGORIES.map((c) => {
-                        const selected = category === c.key
-                        return (
-                          <button
-                            key={c.key}
-                            onClick={() => setCategory(c.key)}
-                            className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors whitespace-nowrap ${
-                              selected
-                                ? 'border-transparent text-white'
-                                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 active:bg-gray-50 dark:active:bg-gray-700'
-                            }`}
-                            style={selected ? { backgroundColor: c.color, borderColor: c.color } : {}}
-                          >
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                              strokeLinecap="round" strokeLinejoin="round"
-                              className="w-3.5 h-3.5 shrink-0"
-                              style={selected ? {} : { color: c.color }}
-                            >
-                              <path d={c.icon} />
-                            </svg>
-                            {c.label}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Primary action: Add to Day */}
-                  <button
-                    onClick={handleAddToDay}
-                    className="w-full py-3 bg-sky-500 text-white text-sm font-semibold rounded-xl active:bg-sky-600 flex items-center justify-center gap-2"
-                  >
-                    Add to Day
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4">
-                      <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </button>
-
-                  {/* Secondary action: Save only */}
-                  <button
-                    onClick={handleSaveOnly}
-                    className="w-full py-2 text-sm text-gray-500 dark:text-gray-400 active:text-gray-700 dark:active:text-gray-300"
-                  >
-                    Save to list only
-                  </button>
-                </div>
-              </div>
-            )
-          })()}
 
           {/* Saved imports list */}
           {importedLocations.length > 0 && (
