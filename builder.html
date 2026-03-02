@@ -42,7 +42,7 @@
 <script type="text/babel">
 const { useState, useRef, useEffect } = React
 
-const BUILDER_VERSION = '1.8.0'
+const BUILDER_VERSION = '1.8.3'
 
 // ─── Trip Config ──────────────────────────────────────────────────────────────
 const TRIP_START = new Date(2026, 10, 3)  // Nov 3, 2026
@@ -886,7 +886,7 @@ function LocationEditPanel({ location, isNew, onSave, onCancel, onDelete, onAddB
     }
     if (isNew) saved.id = genLocId(form.name, form.latitude || 0, form.longitude || 0)
     if (isNew && selectedDay && onAddBoth) {
-      onAddBoth({ name: saved.name, latitude: saved.latitude, longitude: saved.longitude, category: saved.category, description: saved.description }, selectedDay)
+      onAddBoth(saved, selectedDay)
     } else {
       onSave(saved)
     }
@@ -1092,20 +1092,9 @@ function DayPickerModal({ loc, planEntries, onSelect, onClose }) {
 }
 
 // ─── Locations List ───────────────────────────────────────────────────────────
-function LocationsList({ locations, preFillLocation, onClearPreFillLocation, onUpdateLocations, onSetDirty, onRequestDayPicker, onDeleteLocation, onAddBoth, onNewFormClose, onFocusLoc }) {
+function LocationsList({ locations, onRequestDayPicker, onFocusLoc, onOpenEditor }) {
   const [search, setSearch]       = useState('')
   const [catFilter, setCatFilter] = useState('')
-  const [editingLoc, setEditingLoc] = useState(null)
-  const [showNewForm, setShowNewForm] = useState(false)
-
-  // Auto-open new form from tools pre-fill
-  useEffect(() => {
-    if (preFillLocation) {
-      setShowNewForm(true)
-      setEditingLoc(preFillLocation)
-      onClearPreFillLocation()
-    }
-  }, [preFillLocation])
 
   const filtered = locations.filter(l => {
     const q = search.toLowerCase()
@@ -1114,34 +1103,6 @@ function LocationsList({ locations, preFillLocation, onClearPreFillLocation, onU
       (!catFilter || l.category === catFilter)
     )
   })
-
-  function handleSaveLoc(saved) {
-    // For new locations: if the generated ID collides with an existing one, append a counter suffix
-    if (showNewForm) {
-      let id = saved.id
-      let counter = 2
-      while (locations.some(l => l.id === id)) {
-        id = `${saved.id.slice(0, 56)}-${counter++}`
-      }
-      if (id !== saved.id) saved = { ...saved, id }
-    }
-    const idx = locations.findIndex(l => l.id === saved.id)
-    const isNewSave = idx < 0
-    const updated = idx >= 0
-      ? locations.map(l => l.id === saved.id ? saved : l)
-      : [...locations, saved]
-    onUpdateLocations(updated)
-    setEditingLoc(null)
-    setShowNewForm(false)
-    onSetDirty()
-    if (isNewSave) onNewFormClose?.()
-  }
-
-  function handleDeleteLoc(id) {
-    if (!confirm('Permanently delete this location? This cannot be undone.')) return
-    onDeleteLocation(id)
-    setEditingLoc(null)
-  }
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -1162,13 +1123,7 @@ function LocationsList({ locations, preFillLocation, onClearPreFillLocation, onU
           {CATEGORIES.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
         </select>
         <button
-          onClick={() => {
-            if (editingLoc) {
-              if (!confirm('You have an unsaved edit in progress. Discard changes?')) return
-            }
-            setShowNewForm(true)
-            setEditingLoc({ name: '', latitude: '', longitude: '', category: 'location', description: '' })
-          }}
+          onClick={() => onOpenEditor({ name: '', latitude: '', longitude: '', category: 'location', description: '' }, true)}
           className="px-3 py-1.5 text-sm font-semibold bg-sky-500 text-white rounded-lg hover:bg-sky-600 whitespace-nowrap transition-colors"
         >
           + New
@@ -1176,29 +1131,11 @@ function LocationsList({ locations, preFillLocation, onClearPreFillLocation, onU
       </div>
 
       <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
-        {/* New location form */}
-        {showNewForm && editingLoc && !editingLoc.id && (
-          <div className="mb-2">
-            <LocationEditPanel
-              location={editingLoc}
-              isNew={true}
-              onSave={handleSaveLoc}
-              onCancel={() => { setShowNewForm(false); setEditingLoc(null); onNewFormClose?.() }}
-              onDelete={() => {}}
-              onAddBoth={(data, day) => { onAddBoth(data, day); setShowNewForm(false); setEditingLoc(null); onNewFormClose?.() }}
-            />
-          </div>
-        )}
-
         <p className="text-xs text-slate-400 px-1">{filtered.length} of {locations.length}</p>
 
         {filtered.map(loc => (
           <div key={loc.id}>
-            <div
-              className={`flex items-center gap-2.5 px-3 py-2.5 bg-white rounded-xl border transition-all ${
-                editingLoc?.id === loc.id ? 'border-sky-300 ring-1 ring-sky-100' : 'border-slate-200'
-              }`}
-            >
+            <div className="flex items-center gap-2.5 px-3 py-2.5 bg-white rounded-xl border border-slate-200 transition-all">
               <img
                 src={getCatIconUrl(loc.category)}
                 className="w-4 h-4 shrink-0 cursor-pointer"
@@ -1214,18 +1151,9 @@ function LocationsList({ locations, preFillLocation, onClearPreFillLocation, onU
                 {loc.latitude?.toFixed(3)}, {loc.longitude?.toFixed(3)}
               </p>
               <button
-                onClick={() => {
-                if (editingLoc && editingLoc.id !== loc.id) {
-                  if (!confirm('You have an unsaved edit in progress. Discard changes and edit this location instead?')) return
-                }
-                setEditingLoc(editingLoc?.id === loc.id ? null : loc)
-              }}
+                onClick={() => onOpenEditor(loc, false)}
                 title="Edit location"
-                className={`ml-1 px-2 py-1 text-xs font-semibold border rounded-lg transition-colors shrink-0 ${
-                  editingLoc?.id === loc.id
-                    ? 'text-sky-700 border-sky-300 bg-sky-50'
-                    : 'text-slate-500 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                }`}
+                className="ml-1 px-2 py-1 text-xs font-semibold border rounded-lg transition-colors shrink-0 text-slate-500 border-slate-200 hover:border-slate-300 hover:bg-slate-50"
               >
                 Edit
               </button>
@@ -1237,17 +1165,6 @@ function LocationsList({ locations, preFillLocation, onClearPreFillLocation, onU
                 + Day
               </button>
             </div>
-            {editingLoc?.id === loc.id && (
-              <div className="mt-1.5">
-                <LocationEditPanel
-                  location={loc}
-                  isNew={false}
-                  onSave={handleSaveLoc}
-                  onCancel={() => setEditingLoc(null)}
-                  onDelete={() => handleDeleteLoc(loc.id)}
-                />
-              </div>
-            )}
           </div>
         ))}
 
@@ -1260,7 +1177,7 @@ function LocationsList({ locations, preFillLocation, onClearPreFillLocation, onU
 }
 
 // ─── Map View ─────────────────────────────────────────────────────────────────
-function MapView({ locations, planEntries, activeDay, mapsReady, focusCoords, onUpdateLocations, onSetDirty, onDeleteLocation, onRequestDayPicker }) {
+function MapView({ locations, planEntries, activeDay, mapsReady, focusCoords, onRequestDayPicker, onOpenEditor }) {
   const mapDivRef           = useRef(null)
   const mapRef              = useRef(null)
   const markersRef          = useRef([])
@@ -1268,7 +1185,6 @@ function MapView({ locations, planEntries, activeDay, mapsReady, focusCoords, on
   const highlightedMarkerRef = useRef(null) // currently highlighted icon marker
   const highlightRingRef     = useRef(null) // white badge ring behind highlighted icon
   const [selectedLoc, setSelectedLoc] = useState(null)
-  const [editingLoc,  setEditingLoc]  = useState(null)
 
   // Init map once Maps JS is ready
   useEffect(() => {
@@ -1337,7 +1253,7 @@ function MapView({ locations, planEntries, activeDay, mapsReady, focusCoords, on
           anchor: new google.maps.Point(14, 14),
         },
       })
-      marker.addListener('click', () => { setSelectedLoc(loc); setEditingLoc(null) })
+      marker.addListener('click', () => { setSelectedLoc(loc) })
       markersRef.current.push(marker)
       markerByIdRef.current[loc.id] = marker
     })
@@ -1365,24 +1281,6 @@ function MapView({ locations, planEntries, activeDay, mapsReady, focusCoords, on
         markersRef.current.push(marker)
       })
   }, [locations, planEntries, activeDay, mapsReady])
-
-  function handleSaveLoc(saved) {
-    const idx = locations.findIndex(l => l.id === saved.id)
-    const updated = idx >= 0
-      ? locations.map(l => l.id === saved.id ? saved : l)
-      : [...locations, saved]
-    onUpdateLocations(updated)
-    setEditingLoc(null)
-    setSelectedLoc(null)
-    onSetDirty()
-  }
-
-  function handleDeleteLoc(id) {
-    if (!confirm('Permanently delete this location?')) return
-    onDeleteLocation(id)
-    setEditingLoc(null)
-    setSelectedLoc(null)
-  }
 
   // No key configured
   if (!localStorage.getItem('builderMapsKey')) {
@@ -1415,7 +1313,7 @@ function MapView({ locations, planEntries, activeDay, mapsReady, focusCoords, on
       <div ref={mapDivRef} className="w-full h-full" />
 
       {/* Location info popup */}
-      {selectedLoc && !editingLoc && (
+      {selectedLoc && (
         <div className="absolute top-4 right-4 z-10 bg-white rounded-xl shadow-xl border border-slate-200 p-3 w-64">
           <div className="flex items-start gap-2 mb-2">
             <img src={getCatIconUrl(selectedLoc.category)} className="w-5 h-5 shrink-0" style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }} alt="" />
@@ -1431,7 +1329,7 @@ function MapView({ locations, planEntries, activeDay, mapsReady, focusCoords, on
           )}
           <div className="flex gap-2">
             <button
-              onClick={() => setEditingLoc(selectedLoc)}
+              onClick={() => { onOpenEditor(selectedLoc, false); setSelectedLoc(null) }}
               className="flex-1 py-1.5 text-xs font-semibold bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition-colors"
             >
               ✎ Edit
@@ -1443,19 +1341,6 @@ function MapView({ locations, planEntries, activeDay, mapsReady, focusCoords, on
               📅 Add to Plan
             </button>
           </div>
-        </div>
-      )}
-
-      {/* Inline edit panel */}
-      {editingLoc && (
-        <div className="absolute top-4 right-4 z-20 w-80 max-h-[calc(100%-2rem)] overflow-y-auto shadow-2xl">
-          <LocationEditPanel
-            location={editingLoc}
-            isNew={false}
-            onSave={handleSaveLoc}
-            onCancel={() => { setEditingLoc(null); setSelectedLoc(null) }}
-            onDelete={() => handleDeleteLoc(editingLoc.id)}
-          />
         </div>
       )}
 
@@ -1521,14 +1406,25 @@ function MapsImporter({ targetDay, onPreFillEntry, onPreFillLocation }) {
 
   function handleAdd() {
     if (!result) return
-    onPreFillLocation({ name: result.name || '', latitude: result.lat, longitude: result.lng, category: 'location', description: '' })
+    const e = result.enriched
+    onPreFillLocation({
+      name:        result.name || '',
+      latitude:    result.lat,
+      longitude:   result.lng,
+      category:    e?.suggestedCategory || 'location',
+      description: e?.description || '',
+      address:     e?.address || '',
+      phone:       e?.phone || '',
+      website:     e?.website || '',
+      rating:      e?.rating || null,
+    })
     setResult(null); setUrl('')
   }
 
   return (
     <div className="space-y-3">
       <p className="text-xs text-slate-500">
-        Paste any Google Maps URL (shortened or full) to extract coordinates.
+        Paste any Google Maps URL (shortened or full) to extract coordinates and place details.
       </p>
       <textarea
         value={url}
@@ -1547,18 +1443,72 @@ function MapsImporter({ targetDay, onPreFillEntry, onPreFillLocation }) {
       {error && (
         <p className="text-xs text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
       )}
-      {result && (
-        <div className="rounded-xl p-3 space-y-2 border bg-sky-50 border-sky-200">
-          <p className="text-sm font-semibold text-sky-900">{result.name || 'Unnamed place'}</p>
-          <p className="text-xs font-mono text-sky-600">{result.lat}, {result.lng}</p>
-          <button
-            onClick={handleAdd}
-            className="w-full py-2 text-sm font-semibold bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition-colors"
-          >
-            Add Location →
-          </button>
-        </div>
-      )}
+      {result && (() => {
+        const e = result.enriched
+        return (
+          <div className="rounded-xl border bg-sky-50 border-sky-200 overflow-hidden">
+            {/* Header */}
+            <div className="px-3 pt-3 pb-2 space-y-1">
+              <p className="text-sm font-semibold text-sky-900">{result.name || 'Unnamed place'}</p>
+              <p className="text-xs font-mono text-sky-500">{result.lat?.toFixed(6)}, {result.lng?.toFixed(6)}</p>
+            </div>
+
+            {/* Enriched data */}
+            {e && (
+              <div className="px-3 pb-2 space-y-1.5 border-t border-sky-100 pt-2">
+                {e.address && (
+                  <p className="text-xs text-slate-600 leading-snug">📍 {e.address}</p>
+                )}
+                {e.description && (
+                  <p className="text-xs text-slate-600 italic leading-snug">"{e.description}"</p>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  {e.rating != null && (
+                    <span className="text-xs bg-amber-100 text-amber-800 rounded px-1.5 py-0.5 font-medium">
+                      ⭐ {e.rating}{e.ratingCount ? ` (${e.ratingCount.toLocaleString()})` : ''}
+                    </span>
+                  )}
+                  {e.suggestedCategory && (
+                    <span className="text-xs bg-indigo-100 text-indigo-800 rounded px-1.5 py-0.5 font-medium">
+                      🏷 {e.suggestedCategory}
+                    </span>
+                  )}
+                  {e.primaryType && (
+                    <span className="text-xs bg-slate-100 text-slate-600 rounded px-1.5 py-0.5">
+                      {e.primaryType.replace(/_/g, ' ')}
+                    </span>
+                  )}
+                </div>
+                {e.phone && (
+                  <p className="text-xs text-slate-500">📞 {e.phone}</p>
+                )}
+                {e.website && (
+                  <p className="text-xs text-slate-500 truncate">🌐 {e.website.replace(/^https?:\/\//, '')}</p>
+                )}
+                {e.openingHours && (
+                  <details className="text-xs">
+                    <summary className="text-slate-500 cursor-pointer select-none">🕐 Opening hours</summary>
+                    <ul className="mt-1 space-y-0.5 pl-2">
+                      {e.openingHours.map((h, i) => (
+                        <li key={i} className="text-slate-500">{h}</li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
+              </div>
+            )}
+
+            <div className="px-3 pb-3 pt-2">
+              <button
+                onClick={handleAdd}
+                className="w-full py-2 text-sm font-semibold bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition-colors"
+              >
+                Add Location →
+              </button>
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
@@ -1851,7 +1801,7 @@ function App() {
   const [showSetup,   setShowSetup]   = useState(false)
   const [statusMsg,   setStatusMsg]   = useState('')
   const [preFillEntry,    setPreFillEntry]    = useState(null)
-  const [preFillLocation, setPreFillLocation] = useState(null)
+  const [locEditorModal,  setLocEditorModal]  = useState(null)
   const [dayPickerLoc,    setDayPickerLoc]    = useState(null)
   const [mapsReady,     setMapsReady]     = useState(false)
   const [mapHeightPct,  setMapHeightPct]  = useState(55)
@@ -2144,15 +2094,34 @@ function App() {
   }
 
   function handlePreFillLocation(partial) {
-    setMainTab('locations')
-    setPreFillLocation(partial)
-    setMapHeightPct(20)
+    setLocEditorModal({ location: partial, isNew: true })
   }
 
-  function handleAddBoth({ name, latitude, longitude, category, description }, day) {
+  function handleLocEditorSave(saved) {
+    const isNew = locEditorModal?.isNew
+    if (isNew) {
+      let id = saved.id
+      let counter = 2
+      while (locations.some(l => l.id === id)) {
+        id = `${saved.id.slice(0, 56)}-${counter++}`
+      }
+      if (id !== saved.id) saved = { ...saved, id }
+      setLocations([...locations, saved])
+      status('Location added ✓')
+    } else {
+      setLocations(locations.map(l => l.id === saved.id ? saved : l))
+      status('Location saved ✓')
+    }
+    setDirty(true)
+    setLocEditorModal(null)
+  }
+
+  function handleAddBoth(locData, day) {
+    const { name, latitude, longitude, category, description } = locData
     const now = new Date().toISOString()
     const locId = genLocId(name, latitude || 0, longitude || 0)
     const loc = {
+      ...locData,
       id: locId, name: name || 'Unnamed', latitude, longitude,
       category: category || 'location', description: description || '', images: [], icon: '',
       source: 'builder', created_at: now,
@@ -2236,10 +2205,8 @@ function App() {
                 activeDay={activeDay}
                 mapsReady={mapsReady}
                 focusCoords={focusCoords}
-                onUpdateLocations={setLocations}
-                onSetDirty={() => setDirty(true)}
-                onDeleteLocation={handleDeleteLocation}
                 onRequestDayPicker={setDayPickerLoc}
+                onOpenEditor={(loc, isNew) => setLocEditorModal({ location: loc, isNew })}
               />
             )}
           </div>
@@ -2284,15 +2251,9 @@ function App() {
             ) : (
               <LocationsList
                 locations={locations}
-                preFillLocation={preFillLocation}
-                onClearPreFillLocation={() => setPreFillLocation(null)}
-                onUpdateLocations={setLocations}
-                onSetDirty={() => setDirty(true)}
                 onRequestDayPicker={setDayPickerLoc}
-                onDeleteLocation={handleDeleteLocation}
-                onAddBoth={handleAddBoth}
-                onNewFormClose={() => setMapHeightPct(55)}
                 onFocusLoc={setFocusCoords}
+                onOpenEditor={(loc, isNew) => setLocEditorModal({ location: loc, isNew })}
               />
             )}
           </div>
@@ -2309,6 +2270,28 @@ function App() {
       </div>
 
       {showSetup && <SetupModal onClose={() => setShowSetup(false)} onAfterSave={loadMaps} />}
+
+      {/* Location editor — floating overlay for all add/edit actions */}
+      {locEditorModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm"
+          onClick={() => setLocEditorModal(null)}
+        >
+          <div
+            className="bg-white rounded-t-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-y-auto p-4"
+            onClick={e => e.stopPropagation()}
+          >
+            <LocationEditPanel
+              location={locEditorModal.location}
+              isNew={locEditorModal.isNew}
+              onSave={handleLocEditorSave}
+              onCancel={() => setLocEditorModal(null)}
+              onDelete={locEditorModal.isNew ? () => {} : () => { handleDeleteLocation(locEditorModal.location.id); setLocEditorModal(null) }}
+              onAddBoth={locEditorModal.isNew ? (data, day) => { handleAddBoth(data, day); setLocEditorModal(null) } : undefined}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Day picker — rendered at root so fixed positioning is never trapped */}
       {dayPickerLoc && (

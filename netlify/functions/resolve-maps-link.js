@@ -111,6 +111,90 @@ function parseShareGooglePage(finalUrl, html) {
   return null
 }
 
+// Map Google Places types → builder CATEGORIES
+function mapGoogleTypeToCategory(types = [], primaryType = '') {
+  const all = [primaryType, ...types].filter(Boolean).map(t => t.toLowerCase())
+
+  if (all.some(t => t.includes('ramen'))) return 'Ramen'
+  if (all.some(t => t.includes('izakaya'))) return 'Izakaya'
+  if (all.some(t => t.includes('sushi'))) return 'סושי עממי ולא יקר'
+  if (all.some(t => t.includes('cafe') || t.includes('coffee') || t.includes('tea') || t === 'bar')) return 'קפה/תה/אלכוהול'
+  if (all.some(t => t.includes('restaurant') || t.includes('food') || t.includes('meal'))) return 'מסעדות ואוכל רחוב'
+  if (all.some(t => t.includes('snack') || t.includes('bakery') || t.includes('confectionery') || t.includes('dessert') || t.includes('ice_cream'))) return 'חטיפים ומלוחים'
+  if (all.some(t => t.includes('hotel') || t.includes('lodging') || t.includes('motel') || t.includes('inn') || t.includes('hostel'))) return 'hotel'
+  if (all.some(t => t.includes('train') || t.includes('subway') || t.includes('transit') || t.includes('station') || t.includes('railway'))) return 'train'
+  if (all.some(t => t.includes('store') || t.includes('shop') || t.includes('mall') || t.includes('market') || t.includes('supermarket') || t.includes('department'))) return 'חנויות'
+  if (all.some(t => t.includes('shrine') || t.includes('temple') || t.includes('park') || t.includes('tourist') || t.includes('landmark') || t.includes('museum') || t.includes('castle') || t.includes('garden') || t.includes('natural'))) return 'איזורים ואתרים'
+  if (all.some(t => t.includes('amusement') || t.includes('entertainment') || t.includes('night_club') || t.includes('bowling') || t.includes('arcade'))) return 'activity'
+
+  return null
+}
+
+async function enrichWithPlacesAPI(name, coords) {
+  const apiKey = process.env.GOOGLE_PLACES_API_KEY
+  if (!apiKey || !name || !coords) return null
+
+  try {
+    const response = await fetch('https://places.googleapis.com/v1/places:searchText', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': apiKey,
+        'X-Goog-FieldMask': [
+          'places.id',
+          'places.displayName',
+          'places.formattedAddress',
+          'places.types',
+          'places.primaryType',
+          'places.rating',
+          'places.userRatingCount',
+          'places.editorialSummary',
+          'places.regularOpeningHours',
+          'places.internationalPhoneNumber',
+          'places.websiteUri',
+        ].join(','),
+      },
+      body: JSON.stringify({
+        textQuery: name,
+        locationBias: {
+          circle: {
+            center: { latitude: coords.lat, longitude: coords.lng },
+            radius: 150.0,
+          },
+        },
+        maxResultCount: 1,
+        languageCode: 'en',
+      }),
+    })
+
+    if (!response.ok) return null
+
+    const data = await response.json()
+    const place = data.places?.[0]
+    if (!place) return null
+
+    const types = place.types || []
+    const primaryType = place.primaryType || ''
+
+    return {
+      placeId: place.id || null,
+      displayName: place.displayName?.text || null,
+      address: place.formattedAddress || null,
+      types,
+      primaryType,
+      suggestedCategory: mapGoogleTypeToCategory(types, primaryType),
+      rating: place.rating || null,
+      ratingCount: place.userRatingCount || null,
+      phone: place.internationalPhoneNumber || null,
+      website: place.websiteUri || null,
+      openingHours: place.regularOpeningHours?.weekdayDescriptions || null,
+      description: place.editorialSummary?.text || null,
+    }
+  } catch {
+    return null
+  }
+}
+
 export const handler = async (event) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -239,14 +323,19 @@ export const handler = async (event) => {
       }
     }
 
+    // Step 4: enrich with Places API (non-blocking — failure returns basic data)
+    const enriched = await enrichWithPlacesAPI(name, coords)
+
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
         lat: coords.lat,
         lng: coords.lng,
-        name,
+        name: enriched?.displayName || name,
         finalUrl,
+        // Places API enrichment (null if API not configured or place not found)
+        enriched: enriched || null,
       }),
     }
   } catch (err) {

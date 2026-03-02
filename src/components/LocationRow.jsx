@@ -66,9 +66,38 @@ const LocationRow = forwardRef(function LocationRow({ location, distance, isSele
               </p>
             )}
             {location.address && (
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
                 {location.address}
               </p>
+            )}
+            {(location.rating != null || location.phone || location.website) && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {location.rating != null && (
+                  <span className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded px-1.5 py-0.5 font-medium">
+                    ⭐ {location.rating}
+                  </span>
+                )}
+                {location.phone && (
+                  <a
+                    href={`tel:${location.phone}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-xs bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400 rounded px-1.5 py-0.5"
+                  >
+                    📞 {location.phone}
+                  </a>
+                )}
+                {location.website && (
+                  <a
+                    href={location.website}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded px-1.5 py-0.5"
+                  >
+                    🌐 Website
+                  </a>
+                )}
+              </div>
             )}
             <div className="flex gap-2">
               {(() => {
