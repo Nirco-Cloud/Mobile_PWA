@@ -69,7 +69,6 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
 
     setStatus('loading')
     setError(null)
-    setResult(null)
     setPickerLocation(null)
 
     try {
