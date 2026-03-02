@@ -1,7 +1,7 @@
-import { get, set, del } from 'idb-keyval'
-import { kvStore, KEYS } from './db.js'
+import { get, set, del, getMany, setMany } from 'idb-keyval'
+import { kvStore, planStore, KEYS } from './db.js'
 import { writeLocations } from './locations.js'
-import { writeAllPlanEntries, normalizePlanEntry } from './plannerDb.js'
+import { readAllPlanEntriesIncludingDeleted, normalizePlanEntry } from './plannerDb.js'
 import { precacheImages } from '../workers/imagePrecache.js'
 
 const JSON_FILES = ['locations.json']
@@ -34,16 +34,26 @@ export async function initializeData() {
   if (done) return
 
   const base = import.meta.env.BASE_URL
-  const allRecords = []
 
-  await Promise.all(
+  const results = await Promise.allSettled(
     JSON_FILES.map(async (file) => {
       const res = await fetch(`${base}data/${file}`)
-      if (!res.ok) throw new Error(`Failed to fetch ${file}`)
+      if (!res.ok) throw new Error(`Failed to fetch ${file}: HTTP ${res.status}`)
       const data = await res.json()
-      allRecords.push(...extractRecords(data).map(normalizeRecord))
+      return extractRecords(data).map(normalizeRecord)
     }),
   )
+
+  const allRecords = []
+  const errors = []
+  for (const result of results) {
+    if (result.status === 'fulfilled') allRecords.push(...result.value)
+    else errors.push(result.reason.message)
+  }
+
+  if (allRecords.length === 0) {
+    throw new Error(`All data files failed to load: ${errors.join('; ')}`)
+  }
 
   await writeLocations(allRecords)
 
@@ -74,10 +84,20 @@ export async function initializePlan() {
     const data = await res.json()
     const entries = Array.isArray(data) ? data : (data.entries ?? data.plan ?? [])
     const validated = entries
-      .filter((e) => e.id && typeof e.day === 'number' && e.name)
+      .filter((e) => e.id && typeof e.day === 'number' && e.day >= 1 && e.name)
       .map(normalizePlanEntry)
     if (validated.length > 0) {
-      await writeAllPlanEntries(validated)
+      // LWW merge: only write baseline entry if no local copy exists or local is older
+      const existing = await readAllPlanEntriesIncludingDeleted()
+      const existingMap = new Map(existing.map((e) => [e.id, e]))
+      const toWrite = validated.filter((incoming) => {
+        const local = existingMap.get(incoming.id)
+        if (!local) return true
+        return (incoming.updatedAt ?? '') > (local.updatedAt ?? '')
+      })
+      if (toWrite.length > 0) {
+        await setMany(toWrite.map((e) => [e.id, e]), planStore)
+      }
     }
   } catch {
     // No baseline plan or fetch failed — continue without it

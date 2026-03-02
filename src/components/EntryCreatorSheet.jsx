@@ -40,7 +40,7 @@ export default function EntryCreatorSheet({ targetDay, onClose }) {
     const entry = {
       id: `plan_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
       day: targetDay,
-      order: dayEntries.length + 1,
+      order: Date.now(),
       type: selectedType,
       locationId: null,
       name: derivedName,
@@ -58,9 +58,11 @@ export default function EntryCreatorSheet({ targetDay, onClose }) {
     onClose()
   }
 
+  const requiredMetaKey = typeDef?.metaFields?.[0]?.key
   const canSave = selectedType === 'note'
     ? note.trim().length > 0
-    : name.trim().length > 0 || (typeDef?.deriveName && typeDef.deriveName(meta) !== typeDef.label)
+    : (name.trim().length > 0 || (typeDef?.deriveName && typeDef.deriveName(meta) !== typeDef.label)) &&
+      (!requiredMetaKey || (meta[requiredMetaKey] ?? '').toString().trim().length > 0)
 
   return (
     <>

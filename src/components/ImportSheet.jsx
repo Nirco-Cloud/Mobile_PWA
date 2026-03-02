@@ -140,7 +140,14 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
     setPickerLocation(null)
 
     try {
-      const res = await fetch(`${RESOLVER_URL}?url=${encodeURIComponent(trimmed)}`)
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 12000)
+      let res
+      try {
+        res = await fetch(`${RESOLVER_URL}?url=${encodeURIComponent(trimmed)}`, { signal: controller.signal })
+      } finally {
+        clearTimeout(timeoutId)
+      }
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed to resolve')
 
@@ -165,7 +172,7 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
       setCategory(detectedCategory)
       setStatus('success')
     } catch (err) {
-      setError(err.message)
+      setError(err.name === 'AbortError' ? 'Request timed out — try again' : err.message)
       setStatus('error')
     }
   }

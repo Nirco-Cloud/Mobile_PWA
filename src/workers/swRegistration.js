@@ -3,6 +3,10 @@ import { useRegisterSW } from 'virtual:pwa-register/react'
 export function useServiceWorker() {
   const { updateServiceWorker } = useRegisterSW({
     onRegistered(r) {
+      if (!r) {
+        console.warn('[SW] Registration returned undefined — service worker may not be active')
+        return
+      }
       console.log('[SW] Registered:', r)
     },
     onRegisterError(error) {

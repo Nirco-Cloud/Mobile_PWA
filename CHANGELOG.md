@@ -14,6 +14,38 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.7.7] — 2026-03-02
+
+### Fixed
+- **GPS denial** — `PERMISSION_DENIED` error now stops polling immediately and shows "GPS access denied — enable location in browser settings" in the Settings GPS section instead of silently waiting forever
+- **GitHub token whitespace** — whitespace-only tokens are now correctly treated as unconfigured in both boot and `syncPlanEntries` (was being accepted as a valid token)
+- **Plan import LWW merge** — `initializePlan` (baseline `plan.json` load) now applies Last-Write-Wins per entry instead of blindly overwriting local edits; user changes to plan entries survive app reinstalls and first-launch reloads
+- **Duplicate plan entry order** — replaced `dayEntries.length + 1` order assignment with `Date.now()` in both `EntryCreatorSheet` and `DayPicker`; concurrent saves no longer produce duplicate order values
+- **Required meta field gate** — `canSave` in `EntryCreatorSheet` now also checks that the first (primary) meta field is non-empty before enabling Save; prevents saving flights without airline, hotels without confirmation number, etc.
+- **Battery event listener leak** — `useBattery` now correctly removes the same function references it added, preventing accumulation of orphaned listeners
+- **GitHub sync: concurrent calls** — `syncInProgress` ref guard prevents a second `triggerSync()` from overlapping a running sync
+- **GitHub sync: IDB data loss** — replaced destructive `clear→setMany` with safe `setMany→delMany(staleKeys)` so a write failure mid-sync no longer empties the plan store
+- **GitHub sync: corrupt file** — `atob`/`JSON.parse` in pull is now wrapped in try/catch; a corrupted remote file throws a clean error instead of crashing the sync
+- **GitHub sync: 401/403/429** — explicit error codes surfaced as human-readable messages: "token invalid or expired" and "rate limit exceeded — try again later"
+- **Plan file partial failure** — `initializeData` switched from `Promise.all` to `Promise.allSettled`; a single JSON file failing no longer blocks successfully-fetched files from loading
+- **Netlify resolver timeout** — `resolve-maps-link` function now aborts after 8 s with a 504 and clear user message instead of hanging until Netlify's 10 s hard limit
+- **Import sheet timeout** — Google Maps link resolver fetch in `ImportSheet` now aborts after 12 s with a "Request timed out" message
+- **Location row missing coords** — Maps and WhatsApp links in `LocationRow` are now disabled (greyed out) when lat/lng are absent, preventing broken deep-links
+- **planFocusDay bounds** — `setPlanFocusDay` and `setTripDates` now clamp the focused day to `[1, tripDays]`; changing trip length can no longer leave the planner on a non-existent day
+- **Maps API key missing** — `MapComponent` now renders a friendly error overlay when `VITE_GOOGLE_MAPS_API_KEY` is absent instead of crashing with a blank map
+- **Builder: duplicate location IDs** — new locations whose generated ID collides with an existing one now get a numeric suffix (`-2`, `-3`, …) instead of silently overwriting
+- **Builder: null-island coordinates** — saving a location at (0, 0) now prompts for confirmation; out-of-range lat/lng values are rejected before save
+- **Builder: invalid plan entries on file load** — entries with `day < 1` are now filtered out when opening a plan file in the builder
+- **Builder: unsaved edit guard** — clicking Edit or New while another location is being edited now shows a confirmation dialog instead of silently discarding changes
+- **`parsePlanFile` day filter** — entries with `day < 1` are filtered in `parsePlanFile` (matches `initializePlan` validation)
+- **Service worker null guard** — `onRegistered` now guards against `r === undefined` before logging
+- **Boot fallback empty IDB** — boot error path now explicitly logs when the IDB fallback also returns 0 records, distinguishing "served from cache" from "truly empty"
+
+### Added
+- **Trip-ended banner** — TodayView shows an amber info banner ("The trip has ended — viewing past itinerary") when the current date is past the trip end date
+
+---
+
 ## [1.7.6] — 2026-03-02
 
 ### Fixed
@@ -264,6 +296,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > Local-only desktop admin panel (`builder.html`). Not deployed — opened directly in Chrome via File System Access API. Version tracked here for reference; changes are not committed to git.
 
 ## [Unreleased]
+
+---
+
+## [1.5.0] — 2026-03-02
+
+### Fixed
+- **Single commit on Save** — replaced two sequential Contents API calls (one per file) with a single Git Trees API commit; both `locations.json` and `plan.json` are now pushed atomically in one commit → one workflow run instead of two
 
 ---
 

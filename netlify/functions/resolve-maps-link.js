@@ -143,14 +143,23 @@ export const handler = async (event) => {
   }
 
   try {
-    const response = await fetch(url, {
-      redirect: 'follow',
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        Accept: 'text/html,application/xhtml+xml',
-      },
-    })
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 8000)
+
+    let response
+    try {
+      response = await fetch(url, {
+        redirect: 'follow',
+        signal: controller.signal,
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          Accept: 'text/html,application/xhtml+xml',
+        },
+      })
+    } finally {
+      clearTimeout(timeoutId)
+    }
 
     const finalUrl = response.url
 
@@ -241,6 +250,13 @@ export const handler = async (event) => {
       }),
     }
   } catch (err) {
+    if (err.name === 'AbortError') {
+      return {
+        statusCode: 504,
+        headers,
+        body: JSON.stringify({ error: 'URL resolution timed out — the link took too long to respond' }),
+      }
+    }
     return {
       statusCode: 500,
       headers,

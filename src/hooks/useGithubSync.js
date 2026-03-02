@@ -16,6 +16,7 @@ export function useGithubSync() {
 
   const [isOnline, setIsOnline] = useState(navigator.onLine)
   const resetTimer = useRef(null)
+  const syncInProgress = useRef(false)
 
   useEffect(() => {
     const goOnline = () => setIsOnline(true)
@@ -29,6 +30,8 @@ export function useGithubSync() {
   }, [])
 
   const triggerSync = useCallback(async () => {
+    if (syncInProgress.current) return
+    syncInProgress.current = true
     if (resetTimer.current) clearTimeout(resetTimer.current)
 
     setGithubSyncStatus('syncing')
@@ -46,9 +49,15 @@ export function useGithubSync() {
         ? 'No GitHub token configured'
         : err.message === 'CONFLICT'
         ? 'Conflict — tap sync again'
+        : err.message === 'AUTH_FAILED'
+        ? 'GitHub token is invalid or expired — update in Settings'
+        : err.message === 'RATE_LIMITED'
+        ? 'GitHub API rate limit exceeded — try again later'
         : err.message
       setGithubSyncError(msg)
       setGithubSyncStatus('error')
+    } finally {
+      syncInProgress.current = false
     }
 
     // Auto-reset status after 4 seconds

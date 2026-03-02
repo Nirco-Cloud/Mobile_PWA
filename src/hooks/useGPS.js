@@ -6,6 +6,7 @@ const DEMO_POSITION = { lat: 35.6870, lng: 139.6988 }
 
 export function useGPS() {
   const setPosition = useAppStore((s) => s.setPosition)
+  const setGpsDenied = useAppStore((s) => s.setGpsDenied)
   const pollInterval = useAppStore((s) => s.pollInterval)
   const demoMode = useAppStore((s) => s.demoMode)
   const pollIntervalRef = useRef(pollInterval)
@@ -35,7 +36,15 @@ export function useGPS() {
         (pos) => {
           setPosition({ lat: pos.coords.latitude, lng: pos.coords.longitude })
         },
-        (err) => console.warn('GPS error:', err),
+        (err) => {
+          if (err.code === 1) {
+            // PERMISSION_DENIED — stop polling, no point retrying
+            if (timerRef.current) clearTimeout(timerRef.current)
+            setGpsDenied(true)
+            return
+          }
+          console.warn('GPS error:', err)
+        },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
       )
       timerRef.current = setTimeout(poll, pollIntervalRef.current)
@@ -56,5 +65,5 @@ export function useGPS() {
       if (timerRef.current) clearTimeout(timerRef.current)
       document.removeEventListener('visibilitychange', onVisible)
     }
-  }, [setPosition, demoMode])
+  }, [setPosition, setGpsDenied, demoMode])
 }

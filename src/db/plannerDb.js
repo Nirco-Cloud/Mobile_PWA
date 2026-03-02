@@ -97,7 +97,7 @@ export function parsePlanFile(jsonString) {
     }
 
     const validated = entries
-      .filter((e) => e.id && typeof e.day === 'number' && e.name)
+      .filter((e) => e.id && typeof e.day === 'number' && e.day >= 1 && e.name)
       .map(normalizePlanEntry)
     if (validated.length === 0) {
       return { entries: null, error: 'File contains no valid plan entries.' }

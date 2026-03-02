@@ -350,7 +350,8 @@ function haversineDistance(a, b) {
 }
 
 function TodayView() {
-  const { tripDays, formatDayLabel } = useTripConfig()
+  const { tripDays, formatDayLabel, getTodayDayNumber } = useTripConfig()
+  const todayCalendarDay = getTodayDayNumber()
   const routesLib            = useMapsLibrary('routes')
   const allPlanEntries       = useAppStore((s) => s.planEntries)
   const planEntries          = useVisiblePlanEntries()
@@ -660,6 +661,11 @@ function TodayView() {
 
   return (
     <>
+      {todayCalendarDay > tripDays && (
+        <div className="mx-4 mt-2 px-3 py-2 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-xs text-amber-700 dark:text-amber-300 text-center">
+          The trip has ended — viewing past itinerary
+        </div>
+      )}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Day navigation */}
         <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100 dark:border-gray-800">

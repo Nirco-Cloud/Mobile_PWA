@@ -1,4 +1,4 @@
-import { get as idbGet, set as idbSet, clear as idbClear, setMany } from 'idb-keyval'
+import { get as idbGet, set as idbSet, keys as idbKeys, setMany, delMany } from 'idb-keyval'
 import { kvStore, planStore, KEYS } from './db.js'
 import {
   readAllPlanEntriesIncludingDeleted,
@@ -56,15 +56,22 @@ export async function pullFromGithub(config) {
     return { entries: null, sha: null }
   }
 
+  if (res.status === 401 || res.status === 403) throw new Error('AUTH_FAILED')
   if (!res.ok) {
     const body = await res.text()
     throw new Error(`GitHub GET ${res.status}: ${body}`)
   }
 
   const data = await res.json()
-  const decoded = atob(data.content)
-  const parsed = JSON.parse(decoded)
-  const entries = (parsed.entries ?? []).map(normalizePlanEntry)
+  if (!data.sha) throw new Error('GitHub response missing file SHA')
+  let entries
+  try {
+    const decoded = atob(data.content.replace(/\n/g, ''))
+    const parsed = JSON.parse(decoded)
+    entries = (parsed.entries ?? []).map(normalizePlanEntry).filter((e) => !!e.id)
+  } catch {
+    throw new Error('GitHub sync file is corrupted or unreadable')
+  }
   return { entries, sha: data.sha }
 }
 
@@ -89,9 +96,9 @@ export async function pushToGithub(config, entries, sha) {
     body: JSON.stringify(body),
   })
 
-  if (res.status === 409) {
-    throw new Error('CONFLICT')
-  }
+  if (res.status === 409) throw new Error('CONFLICT')
+  if (res.status === 401 || res.status === 403) throw new Error('AUTH_FAILED')
+  if (res.status === 429) throw new Error('RATE_LIMITED')
   if (!res.ok) {
     const text = await res.text()
     throw new Error(`GitHub PUT ${res.status}: ${text}`)
@@ -142,41 +149,55 @@ export async function syncPlanEntries() {
   }
 
   const config = await getGithubConfig()
-  if (!config.token) {
+  if (!config.token?.trim()) {
     throw new Error('NO_TOKEN')
   }
 
   // 1. Read local entries (including tombstones)
   const localEntries = await readAllPlanEntriesIncludingDeleted()
 
-  // 2. Pull remote
-  const { entries: remoteEntries, sha } = await pullFromGithub(config)
+  // Retry loop: on 409 conflict re-pull fresh SHA and retry (max 2 retries)
+  for (let attempt = 0; attempt <= 2; attempt++) {
+    // 2. Pull remote
+    const { entries: remoteEntries, sha } = await pullFromGithub(config)
 
-  // 3. Merge
-  const merged = remoteEntries
-    ? mergeEntries(localEntries, remoteEntries)
-    : localEntries
+    // 3. Merge
+    const merged = remoteEntries
+      ? mergeEntries(localEntries, remoteEntries)
+      : localEntries
 
-  // 4. Purge old tombstones
-  const cleaned = purgeStaleTombstones(merged)
+    // 4. Purge old tombstones and drop any entries with missing ids
+    const cleaned = purgeStaleTombstones(merged).filter((e) => !!e.id)
 
-  // 5. Write merged data back to IndexedDB (including tombstones for future sync)
-  await idbClear(planStore)
-  if (cleaned.length > 0) {
-    const pairs = cleaned.map((e) => [e.id, e])
-    await setMany(pairs, planStore)
-  }
+    // 5. Write merged data back to IndexedDB (including tombstones for future sync).
+    //    Write first, then delete stale keys — avoids data loss if write fails mid-way
+    //    (unlike clear→setMany which would leave the store empty on a write failure).
+    if (cleaned.length > 0) {
+      await setMany(cleaned.map((e) => [e.id, e]), planStore)
+    }
+    const existingKeys = await idbKeys(planStore)
+    const newIds = new Set(cleaned.map((e) => e.id))
+    const staleKeys = existingKeys.filter((k) => !newIds.has(k))
+    if (staleKeys.length > 0) {
+      await delMany(staleKeys, planStore)
+    }
 
-  // 6. Push merged to GitHub
-  await pushToGithub(config, cleaned, sha)
+    // 6. Push merged to GitHub
+    try {
+      await pushToGithub(config, cleaned, sha)
+    } catch (err) {
+      if (err.message === 'CONFLICT' && attempt < 2) continue // re-pull fresh SHA and retry
+      throw err
+    }
 
-  // 7. Save timestamp
-  const now = new Date().toISOString()
-  await setLastSyncTime(now)
+    // 7. Save timestamp
+    const now = new Date().toISOString()
+    await setLastSyncTime(now)
 
-  // 8. Return live entries (without tombstones) for the store
-  return {
-    entries: cleaned.filter((e) => !e.deletedAt),
-    syncedAt: now,
+    // 8. Return live entries (without tombstones) for the store
+    return {
+      entries: cleaned.filter((e) => !e.deletedAt),
+      syncedAt: now,
+    }
   }
 }

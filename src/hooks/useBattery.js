@@ -7,6 +7,8 @@ export function useBattery() {
 
   useEffect(() => {
     let battery = null
+    let onLevelChange = null
+    let onChargingChange = null
 
     function updateInterval(b) {
       const level = b.level
@@ -19,16 +21,18 @@ export function useBattery() {
       if (!battery) return
 
       updateInterval(battery)
-      battery.addEventListener('levelchange', () => updateInterval(battery))
-      battery.addEventListener('chargingchange', () => updateInterval(battery))
+      onLevelChange = () => updateInterval(battery)
+      onChargingChange = () => updateInterval(battery)
+      battery.addEventListener('levelchange', onLevelChange)
+      battery.addEventListener('chargingchange', onChargingChange)
     }
 
     init()
 
     return () => {
       if (battery) {
-        battery.removeEventListener('levelchange', () => updateInterval(battery))
-        battery.removeEventListener('chargingchange', () => updateInterval(battery))
+        if (onLevelChange) battery.removeEventListener('levelchange', onLevelChange)
+        if (onChargingChange) battery.removeEventListener('chargingchange', onChargingChange)
       }
     }
   }, [setBatteryLevel, setPollInterval])

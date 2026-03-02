@@ -8,6 +8,8 @@ export const useAppStore = create(
     // GPS
     position: null,
     setPosition: (position) => set({ position }),
+    gpsDenied: false,
+    setGpsDenied: (v) => set({ gpsDenied: v }),
 
     // Battery
     batteryLevel: 1,
@@ -56,7 +58,10 @@ export const useAppStore = create(
     // Trip dates (user-configurable)
     tripStart: DEFAULT_TRIP_START,
     tripEnd:   DEFAULT_TRIP_END,
-    setTripDates: (start, end) => set({ tripStart: start, tripEnd: end }),
+    setTripDates: (start, end) => set((s) => {
+      const tripDays = Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1)
+      return { tripStart: start, tripEnd: end, planFocusDay: Math.min(Math.max(1, s.planFocusDay), tripDays) }
+    }),
 
     // Planner
     planEntries: [],
@@ -74,7 +79,10 @@ export const useAppStore = create(
     plannerView: 'full',    // 'full' | '3day' | 'today'
     setPlannerView: (v) => set({ plannerView: v }),
     planFocusDay: 1,
-    setPlanFocusDay: (d) => set({ planFocusDay: d }),
+    setPlanFocusDay: (d) => set((s) => {
+      const tripDays = Math.max(1, Math.round((s.tripEnd - s.tripStart) / (1000 * 60 * 60 * 24)) + 1)
+      return { planFocusDay: Math.min(Math.max(1, d), tripDays) }
+    }),
     plannerTravelMode: 'DRIVING',  // 'DRIVING' | 'WALKING' | 'TRANSIT'
     setPlannerTravelMode: (m) => set({ plannerTravelMode: m }),
     routeLines: [],  // [{ entryId, color, path: [{lat,lng}], duration }]

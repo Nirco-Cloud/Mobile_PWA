@@ -35,7 +35,7 @@ export default function DayPicker({ location, onClose, onDone, pickerOnly = fals
     const entry = {
       id: `plan_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
       day,
-      order: dayEntries.length + 1,
+      order: Date.now(),
       type: 'location',
       locationId: location.id ?? null,
       name: location.name,

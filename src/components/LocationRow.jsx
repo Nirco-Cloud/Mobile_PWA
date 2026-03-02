@@ -71,26 +71,31 @@ const LocationRow = forwardRef(function LocationRow({ location, distance, isSele
               </p>
             )}
             <div className="flex gap-2">
-              <a
-                href={`https://www.google.com/maps/dir/?api=1${position ? `&origin=${position.lat},${position.lng}` : ''}&destination=${location.lat},${location.lng}`}
-                target="_blank"
-                rel="noreferrer"
-                className="flex-1 text-center py-2 px-2 text-sm font-medium bg-sky-500 text-white rounded active:bg-sky-600"
-                onClick={(e) => e.stopPropagation()}
-              >
-                Open in Maps
-              </a>
-              <a
-                href={`https://wa.me/?text=${encodeURIComponent(
-                  `${location.name}\nhttps://www.google.com/maps?q=${location.lat},${location.lng}`,
-                )}`}
-                target="_blank"
-                rel="noreferrer"
-                className="flex-1 text-center py-2 px-2 text-sm font-medium bg-green-500 text-white rounded active:bg-green-600"
-                onClick={(e) => e.stopPropagation()}
-              >
-                Share
-              </a>
+              {(() => {
+                const hasCoords = location.lat != null && location.lng != null
+                return (
+                  <>
+                    <a
+                      href={hasCoords ? `https://www.google.com/maps/dir/?api=1${position ? `&origin=${position.lat},${position.lng}` : ''}&destination=${location.lat},${location.lng}` : undefined}
+                      target={hasCoords ? '_blank' : undefined}
+                      rel="noreferrer"
+                      className={`flex-1 text-center py-2 px-2 text-sm font-medium bg-sky-500 text-white rounded active:bg-sky-600 ${!hasCoords ? 'opacity-50 pointer-events-none' : ''}`}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      Open in Maps
+                    </a>
+                    <a
+                      href={hasCoords ? `https://wa.me/?text=${encodeURIComponent(`${location.name}\nhttps://www.google.com/maps?q=${location.lat},${location.lng}`)}` : undefined}
+                      target={hasCoords ? '_blank' : undefined}
+                      rel="noreferrer"
+                      className={`flex-1 text-center py-2 px-2 text-sm font-medium bg-green-500 text-white rounded active:bg-green-600 ${!hasCoords ? 'opacity-50 pointer-events-none' : ''}`}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      Share
+                    </a>
+                  </>
+                )
+              })()}
               <button
                 onClick={(e) => { e.stopPropagation(); setShowDayPicker(true) }}
                 className="flex-1 text-center py-2 px-2 text-sm font-medium bg-indigo-500 text-white rounded active:bg-indigo-600"

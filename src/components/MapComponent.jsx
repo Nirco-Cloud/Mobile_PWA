@@ -433,6 +433,17 @@ export default function MapComponent() {
   const initialCenter = position ?? { lat: 35.6762, lng: 139.6503 } // Tokyo default
   const mapId = import.meta.env.VITE_GOOGLE_MAPS_MAP_ID || undefined
 
+  if (!import.meta.env.VITE_GOOGLE_MAPS_API_KEY) {
+    return (
+      <div className="relative w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800">
+        <p className="text-sm text-gray-500 dark:text-gray-400 px-6 text-center">
+          Google Maps API key not configured.
+          Add VITE_GOOGLE_MAPS_API_KEY to your .env file.
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div className="relative w-full h-full">
       <Map

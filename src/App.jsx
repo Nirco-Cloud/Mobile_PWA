@@ -48,6 +48,7 @@ export default function App() {
   const setSyncStatus = useAppStore((s) => s.setSyncStatus)
   const batteryLevel = useAppStore((s) => s.batteryLevel)
   const position = useAppStore((s) => s.position)
+  const gpsDenied = useAppStore((s) => s.gpsDenied)
   const setActiveCategories = useAppStore((s) => s.setActiveCategories)
   const setDefaultCategories = useAppStore((s) => s.setDefaultCategories)
   const setImportedLocations = useAppStore((s) => s.setImportedLocations)
@@ -173,7 +174,7 @@ export default function App() {
         }
         // Load GitHub sync config
         const ghConfig = await getGithubConfig()
-        if (ghConfig.token) setGithubConfigured(true)
+        if (ghConfig.token?.trim()) setGithubConfigured(true)
         const ghLastSync = await getLastSyncTime()
         if (ghLastSync) setGithubLastSync(ghLastSync)
 
@@ -190,6 +191,9 @@ export default function App() {
           const allLocs = migrateLocations([...records, ...importedRecords])
           setLocations(allLocs)
           setPlanEntries(enrichPlanEntries(planRecords, allLocs))
+          if (allLocs.length === 0) {
+            console.error('Boot fallback: IDB is also empty — no data available')
+          }
         } catch {
           // Nothing we can do
         }
@@ -267,6 +271,7 @@ export default function App() {
         <SettingsPanel
           batteryLevel={batteryLevel}
           position={position}
+          gpsDenied={gpsDenied}
           onResync={handleResync}
           onClose={() => setShowSettings(false)}
           bottomNavHeight={BOTTOM_NAV_HEIGHT}
@@ -299,7 +304,7 @@ export default function App() {
   )
 }
 
-function SettingsPanel({ batteryLevel, position, onResync, onClose, bottomNavHeight, qrConfigReceived, onDismissQrBanner, onSaveTripDates }) {
+function SettingsPanel({ batteryLevel, position, gpsDenied, onResync, onClose, bottomNavHeight, qrConfigReceived, onDismissQrBanner, onSaveTripDates }) {
   const syncStatus = useAppStore((s) => s.syncStatus)
   const locations  = useAppStore((s) => s.locations)
   const demoMode   = useAppStore((s) => s.demoMode)
@@ -684,11 +689,17 @@ function SettingsPanel({ batteryLevel, position, onResync, onClose, bottomNavHei
           <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
             GPS Status
           </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-300">
-            {position
-              ? `${position.lat.toFixed(5)}, ${position.lng.toFixed(5)}`
-              : 'Waiting for GPS...'}
-          </p>
+          {gpsDenied ? (
+            <p className="text-sm text-orange-500">
+              GPS access denied — enable location in browser settings
+            </p>
+          ) : (
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              {position
+                ? `${position.lat.toFixed(5)}, ${position.lng.toFixed(5)}`
+                : 'Waiting for GPS...'}
+            </p>
+          )}
         </section>
 
         {/* Battery */}
