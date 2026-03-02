@@ -42,7 +42,7 @@
 <script type="text/babel">
 const { useState, useRef, useEffect } = React
 
-const BUILDER_VERSION = '1.7.9'
+const BUILDER_VERSION = '1.8.0'
 
 // ─── Trip Config ──────────────────────────────────────────────────────────────
 const TRIP_START = new Date(2026, 10, 3)  // Nov 3, 2026
@@ -2056,10 +2056,14 @@ function App() {
         // Also push plan.json to the mobile sync repo (trip-data) so mobile sync picks it up
         if (syncRepo) {
           try {
+            // Stamp active entries with the push time so builder always wins over
+            // stale mobile tombstones (LWW: builder push time > any past mobile deletion).
+            // Tombstones keep their original timestamps so deletions still propagate.
+            const pushTime = new Date().toISOString()
             const syncPayload = JSON.stringify({
               version: '3.0.0',
-              syncedAt: new Date().toISOString(),
-              entries: planEntries,
+              syncedAt: pushTime,
+              entries: planEntries.map(e => e.deletedAt ? e : { ...e, updatedAt: pushTime }),
             }, null, 2)
             await ghPushFiles(token, syncRepo, 'main', [
               { path: 'plan.json', content: syncPayload },
