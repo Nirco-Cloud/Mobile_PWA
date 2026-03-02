@@ -14,6 +14,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.7.9] — 2026-03-02
+
+### Added
+- **Personal Hebrew notes field** — locations now support a free-text `notes` field for personal comments in Hebrew (or any language); searchable in the mobile app list alongside name and description
+- **Notes display in LocationRow** — expanded row shows notes in an amber-styled block with `✍️` prefix and `dir="auto"` for correct RTL rendering
+
+### Changed
+- **Search now includes notes** — typing in the location search bar matches against `notes` in addition to `name` and `description`
+
+---
+
 ## [1.7.7] — 2026-03-02
 
 ### Fixed
@@ -296,6 +307,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > Local-only desktop admin panel (`builder.html`). Not deployed — opened directly in Chrome via File System Access API. Version tracked here for reference; changes are not committed to git.
 
 ## [Unreleased]
+
+---
+
+## [1.8.4] — 2026-03-02
+
+### Added
+- **Personal Hebrew notes field** — LocationEditPanel now includes a `notes` textarea with `dir="auto"` and amber styling; optional, not required for save; pre-filled empty when importing from Maps
 
 ---
 

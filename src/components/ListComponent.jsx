@@ -66,7 +66,8 @@ export default function ListComponent() {
       list = list.filter(
         (l) =>
           l.name.toLowerCase().includes(q) ||
-          (l.description && l.description.toLowerCase().includes(q)),
+          (l.description && l.description.toLowerCase().includes(q)) ||
+          (l.notes && l.notes.toLowerCase().includes(q)),
       )
     }
     if (position) {

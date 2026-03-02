@@ -42,7 +42,7 @@
 <script type="text/babel">
 const { useState, useRef, useEffect } = React
 
-const BUILDER_VERSION = '1.8.3'
+const BUILDER_VERSION = '1.8.4'
 
 // ─── Trip Config ──────────────────────────────────────────────────────────────
 const TRIP_START = new Date(2026, 10, 3)  // Nov 3, 2026
@@ -855,6 +855,7 @@ function LocationEditPanel({ location, isNew, onSave, onCancel, onDelete, onAddB
     longitude:   location.longitude   != null ? location.longitude : '',
     category:    location.category    || 'location',
     description: location.description || '',
+    notes:       location.notes       || '',
   }))
   const [selectedDay, setSelectedDay] = useState(null)
   const [showDayGrid, setShowDayGrid] = useState(false)
@@ -980,6 +981,18 @@ function LocationEditPanel({ location, isNew, onSave, onCancel, onDelete, onAddB
             onChange={e => setForm(f => ({...f, description: e.target.value}))}
             rows={3}
             className="w-full px-2.5 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 resize-none"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-amber-600 mb-1">✍️ Personal Notes / הערות אישיות</label>
+          <textarea
+            value={form.notes}
+            onChange={e => setForm(f => ({...f, notes: e.target.value}))}
+            dir="auto"
+            rows={4}
+            placeholder="הוסף הערות אישיות... searchable in the mobile app"
+            className="w-full px-2.5 py-1.5 text-sm border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none bg-amber-50 placeholder:text-amber-300"
           />
         </div>
       </div>

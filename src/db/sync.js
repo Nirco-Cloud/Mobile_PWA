@@ -14,6 +14,7 @@ function normalizeRecord(r) {
     lng: r.lng ?? r.longitude,
     category: r.category ?? '',
     description: r.description ?? '',
+    notes: r.notes ?? '',
     address: r.address ?? '',
     phone: r.phone ?? '',
     website: r.website ?? '',

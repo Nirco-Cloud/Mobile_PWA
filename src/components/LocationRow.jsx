@@ -60,6 +60,11 @@ const LocationRow = forwardRef(function LocationRow({ location, distance, isSele
                 loading="lazy"
               />
             )}
+            {location.notes && (
+              <p className="text-sm text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 rounded px-2 py-1 mb-2" dir="auto">
+                ✍️ {location.notes}
+              </p>
+            )}
             {location.description && (
               <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">
                 {location.description}
