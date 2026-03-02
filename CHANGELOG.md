@@ -310,6 +310,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.8.5] — 2026-03-02
+
+### Added
+- **Enrichment fields in LocationEditPanel** — address, phone, website, rating now appear as editable inputs pre-filled from Places API data when importing a Maps link
+- **Opening hours read-only display** — if Places API returned opening hours they appear as a read-only list in the form and are stored on save
+
+---
+
 ## [1.8.4] — 2026-03-02
 
 ### Added

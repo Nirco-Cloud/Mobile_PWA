@@ -42,7 +42,7 @@
 <script type="text/babel">
 const { useState, useRef, useEffect } = React
 
-const BUILDER_VERSION = '1.8.4'
+const BUILDER_VERSION = '1.8.5'
 
 // ─── Trip Config ──────────────────────────────────────────────────────────────
 const TRIP_START = new Date(2026, 10, 3)  // Nov 3, 2026
@@ -855,6 +855,10 @@ function LocationEditPanel({ location, isNew, onSave, onCancel, onDelete, onAddB
     longitude:   location.longitude   != null ? location.longitude : '',
     category:    location.category    || 'location',
     description: location.description || '',
+    address:     location.address     || '',
+    phone:       location.phone       || '',
+    website:     location.website     || '',
+    rating:      location.rating      != null ? location.rating : '',
     notes:       location.notes       || '',
   }))
   const [selectedDay, setSelectedDay] = useState(null)
@@ -983,6 +987,24 @@ function LocationEditPanel({ location, isNew, onSave, onCancel, onDelete, onAddB
             className="w-full px-2.5 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 resize-none"
           />
         </div>
+
+        <InputField label="Address" value={form.address} onChange={v => setForm(f => ({...f, address: v}))} placeholder="580 Nakanochō, Kyoto…" />
+
+        <div className="grid grid-cols-2 gap-2">
+          <InputField label="Phone" value={form.phone} onChange={v => setForm(f => ({...f, phone: v}))} placeholder="+81 75-255-0181" />
+          <InputField label="Rating" value={form.rating} onChange={v => setForm(f => ({...f, rating: v}))} type="number" placeholder="4.2" />
+        </div>
+
+        <InputField label="Website" value={form.website} onChange={v => setForm(f => ({...f, website: v}))} placeholder="https://…" />
+
+        {location.openingHours?.length > 0 && (
+          <div>
+            <label className="block text-xs font-medium text-slate-500 mb-1">🕐 Opening Hours</label>
+            <ul className="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 space-y-0.5">
+              {location.openingHours.map((h, i) => <li key={i}>{h}</li>)}
+            </ul>
+          </div>
+        )}
 
         <div>
           <label className="block text-xs font-medium text-amber-600 mb-1">✍️ Personal Notes / הערות אישיות</label>
@@ -1427,9 +1449,10 @@ function MapsImporter({ targetDay, onPreFillEntry, onPreFillLocation }) {
       category:    e?.suggestedCategory || 'location',
       description: e?.description || '',
       address:     e?.address || '',
-      phone:       e?.phone || '',
-      website:     e?.website || '',
-      rating:      e?.rating || null,
+      phone:        e?.phone || '',
+      website:      e?.website || '',
+      rating:       e?.rating || null,
+      openingHours: e?.openingHours || null,
     })
     setResult(null); setUrl('')
   }
