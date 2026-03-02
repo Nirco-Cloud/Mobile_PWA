@@ -1,3 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#f59e0b">
-  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 2l1.09 3.26H16.5l-2.77 2.01 1.06 3.26L12 10.51l-2.79 2.02 1.06-3.26L7.5 7.26h3.41L12 4z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40">
+  <!-- Custom / generic location pin -->
+  <circle cx="20" cy="20" r="18" fill="#f59e0b" stroke="white" stroke-width="2"/>
+  <path d="M20 9c-3.87 0-7 3.13-7 7 0 5.25 7 15 7 15s7-9.75 7-15c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="white"/>
 </svg>
