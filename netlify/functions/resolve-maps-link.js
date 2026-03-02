@@ -130,42 +130,55 @@ function mapGoogleTypeToCategory(types = [], primaryType = '') {
   return null
 }
 
+// coords is optional — omit for share.google links where we have no location bias
 async function enrichWithPlacesAPI(name, coords) {
   const apiKey = process.env.GOOGLE_PLACES_API_KEY
-  if (!apiKey || !name || !coords) return null
+  if (!apiKey || !name) return null
 
   try {
-    const response = await fetch('https://places.googleapis.com/v1/places:searchText', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Goog-Api-Key': apiKey,
-        'X-Goog-FieldMask': [
-          'places.id',
-          'places.displayName',
-          'places.formattedAddress',
-          'places.types',
-          'places.primaryType',
-          'places.rating',
-          'places.userRatingCount',
-          'places.editorialSummary',
-          'places.regularOpeningHours',
-          'places.internationalPhoneNumber',
-          'places.websiteUri',
-        ].join(','),
-      },
-      body: JSON.stringify({
+    const placesController = new AbortController()
+    const placesTimeout = setTimeout(() => placesController.abort(), 4000)
+    let response
+    try {
+      const body = {
         textQuery: name,
-        locationBias: {
+        maxResultCount: 1,
+        languageCode: 'en',
+      }
+      if (coords) {
+        body.locationBias = {
           circle: {
             center: { latitude: coords.lat, longitude: coords.lng },
             radius: 150.0,
           },
+        }
+      }
+      response = await fetch('https://places.googleapis.com/v1/places:searchText', {
+        signal: placesController.signal,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': apiKey,
+          'X-Goog-FieldMask': [
+            'places.id',
+            'places.displayName',
+            'places.formattedAddress',
+            'places.location',
+            'places.types',
+            'places.primaryType',
+            'places.rating',
+            'places.userRatingCount',
+            'places.editorialSummary',
+            'places.regularOpeningHours',
+            'places.internationalPhoneNumber',
+            'places.websiteUri',
+          ].join(','),
         },
-        maxResultCount: 1,
-        languageCode: 'en',
-      }),
-    })
+        body: JSON.stringify(body),
+      })
+    } finally {
+      clearTimeout(placesTimeout)
+    }
 
     if (!response.ok) return null
 
@@ -175,11 +188,15 @@ async function enrichWithPlacesAPI(name, coords) {
 
     const types = place.types || []
     const primaryType = place.primaryType || ''
+    const location = place.location
+      ? { lat: place.location.latitude, lng: place.location.longitude }
+      : null
 
     return {
       placeId: place.id || null,
       displayName: place.displayName?.text || null,
       address: place.formattedAddress || null,
+      location,
       types,
       primaryType,
       suggestedCategory: mapGoogleTypeToCategory(types, primaryType),
@@ -228,7 +245,7 @@ export const handler = async (event) => {
 
   try {
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 8000)
+    const timeoutId = setTimeout(() => controller.abort(), 5000)
 
     let response
     try {
@@ -261,6 +278,22 @@ export const handler = async (event) => {
 
       const placeName = parseShareGooglePage(finalUrl, html)
       if (placeName) {
+        // Try Places API — it can give us coords + full enrichment without geocoding
+        const enriched = await enrichWithPlacesAPI(placeName, null)
+        if (enriched?.location) {
+          return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({
+              lat: enriched.location.lat,
+              lng: enriched.location.lng,
+              name: enriched.displayName || placeName,
+              finalUrl,
+              enriched,
+            }),
+          }
+        }
+        // Places API unavailable or no match — fall back to client geocoding
         return {
           statusCode: 200,
           headers,

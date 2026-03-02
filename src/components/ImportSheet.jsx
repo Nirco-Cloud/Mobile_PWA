@@ -183,6 +183,7 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
     const alreadySaved = importedLocations.find((loc) => loc.sourceUrl === url.trim())
     if (alreadySaved) return alreadySaved // already saved, reuse it
 
+    const e = result.enriched || {}
     const loc = {
       id: `imported_${Date.now()}`,
       name: customName.trim() || `Imported ${new Date().toLocaleDateString()}`,
@@ -191,6 +192,12 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
       category,
       importedAt: new Date().toISOString(),
       sourceUrl: url,
+      address:      e.address      || '',
+      phone:        e.phone        || '',
+      website:      e.website      || '',
+      rating:       e.rating       ?? null,
+      openingHours: e.openingHours ?? null,
+      description:  e.description  || '',
     }
     await saveImportedLocation(loc)
     addImportedLocation(loc)
