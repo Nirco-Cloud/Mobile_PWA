@@ -919,6 +919,7 @@ export default function PlannerOverlay({ onImportLink }) {
   const setPlannerView_  = useAppStore((s) => s.setPlannerView)
   const planFocusDay     = useAppStore((s) => s.planFocusDay)
   const setPlanRecap     = useAppStore((s) => s.setPlanRecap)
+  const planCount        = useAppStore((s) => s.planEntries.filter((e) => !e.deletedAt).length)
   const { triggerSync, status: ghStatus, configured: ghConfigured } = useGithubSync()
 
   // Clear recap when switching views
@@ -1052,7 +1053,7 @@ export default function PlannerOverlay({ onImportLink }) {
           </svg>
         </button>
         <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100 flex-1">
-          Trip Planner
+          Trip Planner{planCount > 0 ? ` (${planCount})` : ''}
         </h2>
         {ghConfigured && (
           <button
