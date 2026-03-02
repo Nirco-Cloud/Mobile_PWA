@@ -27,6 +27,11 @@ export const useAppStore = create(
     clearSelection: () =>
       set({ selectedLocationId: null, selectionSource: null }),
 
+    // Detail sheet
+    detailLocationId: null,
+    setDetailLocationId: (id) => set({ detailLocationId: id }),
+    clearDetailLocation: () => set({ detailLocationId: null }),
+
     // Dark mode
     isDark: false,
     setIsDark: (isDark) => set({ isDark }),

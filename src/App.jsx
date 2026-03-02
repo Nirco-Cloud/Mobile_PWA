@@ -23,6 +23,7 @@ import ListComponent from './components/ListComponent.jsx'
 import BottomNav, { BOTTOM_NAV_HEIGHT } from './components/BottomNav.jsx'
 import ImportSheet from './components/ImportSheet.jsx'
 import PlannerOverlay from './components/PlannerOverlay.jsx'
+import LocationDetailSheet from './components/LocationDetailSheet.jsx'
 import OfflineToast from './components/OfflineToast.jsx'
 
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
@@ -286,6 +287,7 @@ export default function App() {
 
       <PlannerOverlay onImportLink={handleImportFAB} />
 
+      <LocationDetailSheet />
 
       <ImportSheet
         open={showImport}

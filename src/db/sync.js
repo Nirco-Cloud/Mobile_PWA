@@ -19,6 +19,7 @@ function normalizeRecord(r) {
     phone: r.phone ?? '',
     website: r.website ?? '',
     rating: r.rating ?? null,
+    openingHours: r.openingHours ?? null,
     imageUrl: r.imageUrl ?? '',
     thumbnailUrl: r.thumbnailUrl ?? '',
     icon: r.icon ?? '',

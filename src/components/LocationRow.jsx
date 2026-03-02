@@ -4,12 +4,18 @@ import { formatDistance } from '../utils/haversine.js'
 import DayPicker from './DayPicker.jsx'
 
 const LocationRow = forwardRef(function LocationRow({ location, distance, isSelected, isExpanded, onToggle }, ref) {
-  const setSelection  = useAppStore((s) => s.setSelection)
-  const position      = useAppStore((s) => s.position)
+  const setSelection       = useAppStore((s) => s.setSelection)
+  const setDetailLocationId = useAppStore((s) => s.setDetailLocationId)
+  const position           = useAppStore((s) => s.position)
   const [showDayPicker, setShowDayPicker] = useState(false)
 
   function handleFocus() {
     setSelection(location.id, 'list')
+  }
+
+  function handleNameTap() {
+    setSelection(location.id, 'list')
+    setDetailLocationId(location.id)
   }
 
   return (
@@ -28,7 +34,7 @@ const LocationRow = forwardRef(function LocationRow({ location, distance, isSele
           <CategoryDot category={location.category} onClick={handleFocus} />
           <span
             className="flex-1 truncate text-base font-medium text-gray-800 dark:text-gray-100 cursor-pointer active:text-sky-600"
-            onClick={handleFocus}
+            onClick={handleNameTap}
           >
             {location.name}
           </span>

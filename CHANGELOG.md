@@ -14,6 +14,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.8.0] — 2026-03-02
+
+### Added
+- **LocationDetailSheet** — bottom sheet that slides up when tapping a location name in the list or a map marker; shows all rich data: notes (amber), description, address, phone, website, opening hours, rating, distance, coordinates
+- **Map marker → detail sheet** — tapping a map marker now opens the detail sheet AND still scrolls+highlights the list row
+- **Opening hours** — preserved through `normalizeRecord()` and displayed collapsibly in the detail sheet
+
+---
+
 ## [1.7.9] — 2026-03-02
 
 ### Added

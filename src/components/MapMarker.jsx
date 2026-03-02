@@ -4,11 +4,13 @@ import { useAppStore } from '../store/appStore.js'
 import { getCategoryIcon } from '../config/categories.js'
 
 export default function MapMarker({ location, isSelected }) {
-  const setSelection = useAppStore((s) => s.setSelection)
+  const setSelection        = useAppStore((s) => s.setSelection)
+  const setDetailLocationId = useAppStore((s) => s.setDetailLocationId)
 
   const handleClick = useCallback(() => {
     setSelection(location.id, 'map')
-  }, [location.id, setSelection])
+    setDetailLocationId(location.id)
+  }, [location.id, setSelection, setDetailLocationId])
 
   const size = isSelected ? 40 : 28
 
