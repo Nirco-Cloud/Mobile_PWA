@@ -140,6 +140,14 @@ This file provides Claude Code with the full context needed to build, extend, an
 
 ---
 
+## Allowed Bash Operations
+
+The following Bash commands are pre-approved and do not require confirmation:
+- `git add <specific files> && git commit -m "..." && git push` — committing and pushing changes
+- `npm run build` — building the project
+
+---
+
 ## Key Constraints & Reminders
 
 - **Never break offline mode.** Every feature must degrade gracefully with no network.

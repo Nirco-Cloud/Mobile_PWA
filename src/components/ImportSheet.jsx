@@ -85,6 +85,7 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
   const [category, setCategory]     = useState('location')
   const [error, setError]           = useState(null)
   const [pickerLocation, setPickerLocation] = useState(null)
+  const [openingHoursOpen, setOpeningHoursOpen] = useState(false)
   const inputRef = useRef(null)
 
   const importedLocations   = useAppStore((s) => s.importedLocations)
@@ -166,7 +167,7 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
         throw new Error('Could not extract coordinates from this link')
       }
 
-      const detectedCategory = detectCategory(data.name || '')
+      const detectedCategory = data.enriched?.suggestedCategory || detectCategory(data.name || '')
       setResult(data)
       setCustomName(data.name || '')
       setCategory(detectedCategory)
@@ -329,83 +330,150 @@ export default function ImportSheet({ open, onClose, initialUrl = '', autoResolv
           )}
 
           {/* Success: resolved preview */}
-          {status === 'success' && result && (
-            <div className="border border-sky-200 dark:border-sky-800 rounded-xl overflow-hidden">
-              {/* Coords bar */}
-              <div className="px-3 py-2 bg-sky-50 dark:bg-sky-900/20 flex items-center gap-2">
-                <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-sky-500 shrink-0">
-                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-                </svg>
-                <p className="text-xs text-sky-600 dark:text-sky-400 font-mono">
-                  {result.lat.toFixed(6)}, {result.lng.toFixed(6)}
-                </p>
-              </div>
-
-              <div className="px-3 py-3 space-y-3">
-                {/* Name */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Name</label>
-                  <input
-                    type="text"
-                    value={customName}
-                    onChange={(e) => setCustomName(e.target.value)}
-                    placeholder="Enter a name…"
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-400"
-                  />
-                </div>
-
-                {/* Category chips */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Category</label>
-                  <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-                    {IMPORT_CATEGORIES.map((c) => {
-                      const selected = category === c.key
-                      return (
-                        <button
-                          key={c.key}
-                          onClick={() => setCategory(c.key)}
-                          className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors whitespace-nowrap ${
-                            selected
-                              ? 'border-transparent text-white'
-                              : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 active:bg-gray-50 dark:active:bg-gray-700'
-                          }`}
-                          style={selected ? { backgroundColor: c.color, borderColor: c.color } : {}}
-                        >
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                            strokeLinecap="round" strokeLinejoin="round"
-                            className="w-3.5 h-3.5 shrink-0"
-                            style={selected ? {} : { color: c.color }}
-                          >
-                            <path d={c.icon} />
-                          </svg>
-                          {c.label}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-
-                {/* Primary action: Add to Day */}
-                <button
-                  onClick={handleAddToDay}
-                  className="w-full py-3 bg-sky-500 text-white text-sm font-semibold rounded-xl active:bg-sky-600 flex items-center justify-center gap-2"
-                >
-                  Add to Day
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4">
-                    <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
+          {status === 'success' && result && (() => {
+            const e = result.enriched || {}
+            return (
+              <div className="border border-sky-200 dark:border-sky-800 rounded-xl overflow-hidden">
+                {/* Coords bar */}
+                <div className="px-3 py-2 bg-sky-50 dark:bg-sky-900/20 flex items-center gap-2">
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-sky-500 shrink-0">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
                   </svg>
-                </button>
+                  <p className="text-xs text-sky-600 dark:text-sky-400 font-mono">
+                    {result.lat.toFixed(6)}, {result.lng.toFixed(6)}
+                  </p>
+                  {e.rating != null && (
+                    <span className="ml-auto text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full px-2 py-0.5 font-medium shrink-0">
+                      ⭐ {e.rating}
+                    </span>
+                  )}
+                </div>
 
-                {/* Secondary action: Save only */}
-                <button
-                  onClick={handleSaveOnly}
-                  className="w-full py-2 text-sm text-gray-500 dark:text-gray-400 active:text-gray-700 dark:active:text-gray-300"
-                >
-                  Save to list only
-                </button>
+                <div className="px-3 py-3 space-y-3">
+                  {/* Name */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Name</label>
+                    <input
+                      type="text"
+                      value={customName}
+                      onChange={(e) => setCustomName(e.target.value)}
+                      placeholder="Enter a name…"
+                      className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-400"
+                    />
+                  </div>
+
+                  {/* Description */}
+                  {e.description && (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 italic leading-snug">
+                      "{e.description}"
+                    </p>
+                  )}
+
+                  {/* Address */}
+                  {e.address && (
+                    <div className="flex gap-2 items-start">
+                      <span className="text-sm shrink-0">📍</span>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{e.address}</p>
+                    </div>
+                  )}
+
+                  {/* Phone */}
+                  {e.phone && (
+                    <div className="flex gap-2 items-center">
+                      <span className="text-sm shrink-0">📞</span>
+                      <a href={`tel:${e.phone}`} className="text-sm text-sky-600 dark:text-sky-400">{e.phone}</a>
+                    </div>
+                  )}
+
+                  {/* Website */}
+                  {e.website && (
+                    <div className="flex gap-2 items-center">
+                      <span className="text-sm shrink-0">🌐</span>
+                      <a
+                        href={e.website}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-sm text-sky-600 dark:text-sky-400 truncate"
+                      >
+                        {e.website.replace(/^https?:\/\//, '')}
+                      </a>
+                    </div>
+                  )}
+
+                  {/* Opening hours */}
+                  {e.openingHours?.length > 0 && (
+                    <div>
+                      <button
+                        onClick={() => setOpeningHoursOpen((v) => !v)}
+                        className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400"
+                      >
+                        <span>🕐</span>
+                        <span>Opening hours</span>
+                        <span className="text-gray-400 text-xs">{openingHoursOpen ? '▲' : '▼'}</span>
+                      </button>
+                      {openingHoursOpen && (
+                        <ul className="mt-1.5 space-y-0.5 pl-6">
+                          {e.openingHours.map((h, i) => (
+                            <li key={i} className="text-xs text-gray-500 dark:text-gray-400">{h}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Category chips */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Category</label>
+                    <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+                      {IMPORT_CATEGORIES.map((c) => {
+                        const selected = category === c.key
+                        return (
+                          <button
+                            key={c.key}
+                            onClick={() => setCategory(c.key)}
+                            className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors whitespace-nowrap ${
+                              selected
+                                ? 'border-transparent text-white'
+                                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 active:bg-gray-50 dark:active:bg-gray-700'
+                            }`}
+                            style={selected ? { backgroundColor: c.color, borderColor: c.color } : {}}
+                          >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                              strokeLinecap="round" strokeLinejoin="round"
+                              className="w-3.5 h-3.5 shrink-0"
+                              style={selected ? {} : { color: c.color }}
+                            >
+                              <path d={c.icon} />
+                            </svg>
+                            {c.label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Primary action: Add to Day */}
+                  <button
+                    onClick={handleAddToDay}
+                    className="w-full py-3 bg-sky-500 text-white text-sm font-semibold rounded-xl active:bg-sky-600 flex items-center justify-center gap-2"
+                  >
+                    Add to Day
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4">
+                      <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+
+                  {/* Secondary action: Save only */}
+                  <button
+                    onClick={handleSaveOnly}
+                    className="w-full py-2 text-sm text-gray-500 dark:text-gray-400 active:text-gray-700 dark:active:text-gray-300"
+                  >
+                    Save to list only
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            )
+          })()}
 
           {/* Saved imports list */}
           {importedLocations.length > 0 && (
