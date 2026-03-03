@@ -63,9 +63,10 @@ function MapController() {
   const planEntries   = useVisiblePlanEntries()
   const selectedStay  = useAppStore((s) => s.selectedStay)
   const mode          = useAppStore((s) => s.mode)
+  const locationsLoaded = useAppStore((s) => s.locations.length > 0)
   const userHasPanned = useRef(false)
 
-  // Animate map when selected stay changes (explore mode only)
+  // Animate map when selected stay changes OR when locations first load (explore mode only)
   useEffect(() => {
     if (!map || mode === 'overview') return
     const stay = getStayById(selectedStay)
@@ -77,7 +78,7 @@ function MapController() {
     _notifyPanStateChange?.(false) // show recenter FAB
     map.panTo(center)
     map.setZoom(computeZoomForStay(stay, locs))
-  }, [map, selectedStay]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [map, selectedStay, locationsLoaded]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Overview mode: no camera movement — only rendering layers change
 
