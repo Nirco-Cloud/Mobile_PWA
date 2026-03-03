@@ -1,5 +1,5 @@
 [build]
-  ignore = "exit 0"
+  command = "echo 'functions-only deploy'"
 
 [functions]
   directory = "netlify/functions"
