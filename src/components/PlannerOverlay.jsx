@@ -10,7 +10,7 @@ import { writeLocation } from '../db/locations.js'
 import { useTripConfig } from '../hooks/useTripConfig.js'
 import { BOTTOM_NAV_HEIGHT } from './BottomNav.jsx'
 import { getRouteColor, getDayColor } from '../config/routeColors.js'
-import { CATEGORIES } from '../config/categories.js'
+import { CATEGORIES, getCategoryColor } from '../config/categories.js'
 import EntryCard from './EntryCard.jsx'
 import EntryCreatorSheet from './EntryCreatorSheet.jsx'
 import DayPicker from './DayPicker.jsx'
@@ -48,26 +48,9 @@ function ViewTabs({ view, onSet, tripDays, focusDayLabel }) {
 
 // ─── Category color dot ───────────────────────────────────────────────────────
 
-const CATEGORY_COLORS = {
-  'Izakaya': '#f59e0b', 'Ramen': '#ef4444',
-  'סושי יקר ומוקפד': '#14b8a6', 'סושי עממי ולא יקר': '#2dd4bf',
-  'מסעדות גבוהות / הזמנה': '#8b5cf6',
-  'מסעדות ואוכל רחוב': '#f97316',
-  'קפה/תה/אלכוהול': '#ec4899',
-  'חטיפים ומלוחים': '#eab308',
-  'חנויות': '#10b981',
-  'איזורים ואתרים': '#3b82f6',
-  'location': '#3b82f6', 'Location': '#3b82f6',
-  'activity': '#ec4899', 'Activity': '#ec4899',
-  'hotel': '#6366f1',    'Hotel': '#6366f1',
-  'train': '#6b7280',    'Train': '#6b7280',
-  'Restaurant': '#f97316',
-}
-
 function LocDot({ category }) {
-  const color = CATEGORY_COLORS[category] ?? '#9ca3af'
   return (
-    <span style={{ width: 8, height: 8, minWidth: 8, borderRadius: '50%', backgroundColor: color, display: 'inline-block' }} />
+    <span style={{ width: 8, height: 8, minWidth: 8, borderRadius: '50%', backgroundColor: getCategoryColor(category), display: 'inline-block' }} />
   )
 }
 

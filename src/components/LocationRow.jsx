@@ -1,6 +1,7 @@
 import { forwardRef, useState } from 'react'
 import { useAppStore } from '../store/appStore.js'
 import { formatDistance } from '../utils/haversine.js'
+import { getCategoryColor } from '../config/categories.js'
 import DayPicker from './DayPicker.jsx'
 
 const LocationRow = forwardRef(function LocationRow({ location, distance, isSelected, isExpanded, onToggle }, ref) {
@@ -163,21 +164,13 @@ const LocationRow = forwardRef(function LocationRow({ location, distance, isSele
 })
 
 function CategoryDot({ category, onClick }) {
-  const colors = {
-    'Izakaya': 'bg-amber-500',
-    'Ramen': 'bg-orange-500',
-    'איזורים ואתרים': 'bg-blue-500',
-    'חטיפים ומלוחים': 'bg-yellow-500',
-    'חנויות': 'bg-pink-400',
-    'מסעדות גבוהות / הזמנה': 'bg-purple-500',
-    'מסעדות ואוכל רחוב': 'bg-red-500',
-    'סושי יקר ומוקפד': 'bg-teal-500',
-    'סושי עממי ולא יקר': 'bg-teal-400',
-    'קפה/תה/אלכוהול': 'bg-rose-400',
-    default: 'bg-gray-400',
-  }
-  const color = colors[category] ?? colors.default
-  return <span className={`w-2 h-2 rounded-full shrink-0 cursor-pointer ${color}`} onClick={onClick} />
+  return (
+    <span
+      className="w-2 h-2 rounded-full shrink-0 cursor-pointer"
+      style={{ backgroundColor: getCategoryColor(category) }}
+      onClick={onClick}
+    />
+  )
 }
 
 export default LocationRow

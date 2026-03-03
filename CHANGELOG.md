@@ -14,6 +14,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.17.0] — 2026-03-04
+
+### Changed
+- **Single source of truth for category colors** — `color` field added to each entry in `categories.js`; `getCategoryColor()` helper exported and used by `ListComponent`, `LocationRow`, and `PlannerOverlay` — no more duplicated color maps
+- **Category chips now match canonical order exactly** — `CHIP_GROUPS` derived directly from `CATEGORIES` (one chip per category, same order); previously combined chips (Sushi×2, Attractions×3) are now split into individual chips
+
+---
+
 ## [2.16.0] — 2026-03-04
 
 ### Changed

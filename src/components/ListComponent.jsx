@@ -2,27 +2,19 @@ import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { set as idbSet } from 'idb-keyval'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useAppStore } from '../store/appStore.js'
-import { ALL_CATEGORY_KEYS } from '../config/categories.js'
+import { CATEGORIES, ALL_CATEGORY_KEYS } from '../config/categories.js'
 import { haversine } from '../utils/haversine.js'
 import { getPOIsForStay } from '../config/stays.js'
 import LocationRow from './LocationRow.jsx'
 import SkeletonList from './SkeletonList.jsx'
 
-// ── Chip groups — each merges related category keys into one chip ─────────────
-const CHIP_GROUPS = [
-  { id: 'izakaya',    label: 'Izakaya',     keys: ['Izakaya'],                                         color: '#f59e0b' },
-  { id: 'ramen',      label: 'Ramen',       keys: ['Ramen'],                                           color: '#ef4444' },
-  { id: 'sushi',      label: 'Sushi',       keys: ['סושי יקר ומוקפד', 'סושי עממי ולא יקר'],           color: '#14b8a6' },
-  { id: 'finedining', label: 'Fine Dining', keys: ['מסעדות גבוהות / הזמנה'],                          color: '#8b5cf6' },
-  { id: 'street',     label: 'Street Food', keys: ['מסעדות ואוכל רחוב'],                              color: '#f97316' },
-  { id: 'cafe',       label: 'Cafe',        keys: ['קפה/תה/אלכוהול'],                                  color: '#ec4899' },
-  { id: 'snacks',     label: 'Snacks',      keys: ['חטיפים ומלוחים'],                                  color: '#eab308' },
-  { id: 'shopping',   label: 'Shopping',    keys: ['חנויות'],                                          color: '#10b981' },
-  { id: 'restaurant', label: 'Restaurant',  keys: ['Restaurant'],                                      color: '#f97316' },
-  { id: 'sights',     label: 'Attractions', keys: ['איזורים ואתרים', 'Location', 'Activity'],          color: '#3b82f6' },
-  { id: 'hotels',     label: 'Hotels',      keys: ['Hotel'],                                           color: '#6366f1' },
-  { id: 'other',      label: 'Other',       keys: ['Train'],                                           color: '#6b7280' },
-]
+// ── Chip groups — one chip per category, order mirrors categories.js ──────────
+const CHIP_GROUPS = CATEGORIES.map((c) => ({
+  id:    c.key,
+  label: c.label,
+  keys:  [c.key],
+  color: c.color,
+}))
 
 export default function ListComponent() {
   const locations           = useAppStore((s) => s.locations)
