@@ -188,6 +188,15 @@ export const handler = async (event) => {
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'Missing url parameter' }) }
   }
 
+  // share.google links require JavaScript execution to resolve — not possible server-side
+  if (/share\.google/i.test(rawUrl)) {
+    return {
+      statusCode: 422,
+      headers,
+      body: JSON.stringify({ error: 'share_google_unsupported' }),
+    }
+  }
+
   try {
     // Step 1: Resolve redirects + get final URL and body
     const { finalUrl, body } = await resolveUrl(rawUrl)

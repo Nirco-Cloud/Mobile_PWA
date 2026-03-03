@@ -12,7 +12,11 @@ import { CATEGORIES } from '../config/categories.js'
 const RESOLVER_URL = 'https://deft-lollipop-820a72.netlify.app/.netlify/functions/resolve-maps-link'
 
 function isMapsUrl(str) {
-  return /maps\.app\.goo\.gl|google\.[a-z.]+\/maps|goo\.gl\/maps/i.test(str)
+  return /maps\.app\.goo\.gl|google\.[a-z.]+\/maps|goo\.gl\/maps|share\.google/i.test(str)
+}
+
+function isShareGoogleUrl(str) {
+  return /share\.google/i.test(str)
 }
 
 function extractUrlFromText(text) {
@@ -71,7 +75,11 @@ export default function ShareConfirmSheet({ onClose }) {
       const res = await fetch(endpoint)
       const data = await res.json()
       if (!res.ok) {
-        setErrorMsg(data.error ?? 'Failed to resolve URL')
+        if (data.error === 'share_google_unsupported') {
+          setErrorMsg('share.google links require a browser to open first. In Google Maps, tap Share → Copy link, then paste the full URL here.')
+        } else {
+          setErrorMsg(data.error ?? 'Failed to resolve URL')
+        }
         setStatus('error')
         return
       }
