@@ -6,7 +6,7 @@ import { getRouteColor, getDayColor } from '../config/routeColors.js'
 import { useVisiblePlanEntries } from '../hooks/useVisiblePlanEntries.js'
 import { getCategoryIcon } from '../config/categories.js'
 import { ENTRY_TYPES } from '../config/entryTypes.js'
-import { stays, getStayById, getStayCenter, getPOIsForStay } from '../config/stays.js'
+import { stays, getStayById, getStayCenter, getPOIsForStay, computeZoomForStay } from '../config/stays.js'
 import { haversine } from '../utils/haversine.js'
 
 // Return the category icon URL for a plan entry (via its linked location)
@@ -76,7 +76,7 @@ function MapController() {
     userHasPanned.current = true // disable GPS auto-center while browsing a stay
     _notifyPanStateChange?.(false) // show recenter FAB
     map.panTo(center)
-    map.setZoom(stay.regionZoom)
+    map.setZoom(computeZoomForStay(stay, locs))
   }, [map, selectedStay]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Overview mode: no camera movement — only rendering layers change

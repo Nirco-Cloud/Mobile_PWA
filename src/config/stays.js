@@ -98,6 +98,29 @@ export function getStayById(id) {
   return stays.find((s) => s.id === id) ?? null
 }
 
+/**
+ * Compute the best initial zoom for a stay based on POI density near the hotel.
+ * Dense areas (e.g. Tokyo Shinjuku) get a tighter zoom so markers are readable.
+ *
+ * Density is measured as non-hotel POIs within 700 m of the hotel center:
+ *   ≥ 20 POIs  →  zoom 16  (very dense — street level)
+ *   ≥ 10 POIs  →  zoom 15  (moderate density)
+ *   < 10 POIs  →  stay.regionZoom  (sparse — use configured wide view)
+ */
+export function computeZoomForStay(stay, locations) {
+  const center = getStayCenter(stay, locations)
+  if (!center) return stay.regionZoom
+
+  const nearby = locations.filter((l) => {
+    if (l.lat == null || l.lng == null || l.category === 'hotel') return false
+    return haversine(l.lat, l.lng, center.lat, center.lng) <= 700
+  })
+
+  if (nearby.length >= 20) return 16
+  if (nearby.length >= 10) return 15
+  return stay.regionZoom
+}
+
 /** Filter allPOIs to those within the stay's radius.
  *  @param {string}   stayId
  *  @param {object[]} allPOIs
