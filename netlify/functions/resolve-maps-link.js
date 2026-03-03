@@ -249,10 +249,15 @@ export const handler = async (event) => {
     const urlName = extractNameFromUrl(finalUrl) || extractNameFromUrl(rawUrl)
 
     if (!coords && !placeId) {
+      // Detect share.google / token-based links that don't resolve to a Maps URL
+      const isTokenLink = /share\.google/i.test(rawUrl) || /share\.google/i.test(finalUrl)
+        || (/maps\/search/i.test(rawUrl) && rawUrl.match(/[?&]query=([^&]+)/))
       return {
         statusCode: 422,
         headers,
-        body: JSON.stringify({ error: 'Could not extract location from URL' }),
+        body: JSON.stringify({
+          error: isTokenLink ? 'share_google_unsupported' : 'Could not extract location from URL',
+        }),
       }
     }
 
