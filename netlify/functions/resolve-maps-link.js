@@ -89,6 +89,10 @@ function extractCoords(url, body) {
   m = body.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)
   if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) }
 
+  // Strategy 5: ?ll=lat,lng or &ll=lat,lng (older goo.gl/maps redirect targets)
+  m = url.match(/[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/)
+  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) }
+
   return null
 }
 

@@ -12,11 +12,7 @@ import { CATEGORIES } from '../config/categories.js'
 const RESOLVER_URL = 'https://deft-lollipop-820a72.netlify.app/.netlify/functions/resolve-maps-link'
 
 function isMapsUrl(str) {
-  return /maps\.app\.goo\.gl|google\.[a-z.]+\/maps|goo\.gl\/maps|share\.google/i.test(str)
-}
-
-function isShareGoogleUrl(str) {
-  return /share\.google/i.test(str)
+  return /maps\.app\.goo\.gl|maps\.google\.|google\.[a-z.]+\/maps|goo\.gl\/maps|share\.google/i.test(str)
 }
 
 function extractUrlFromText(text) {
