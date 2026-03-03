@@ -221,22 +221,43 @@ async function fetchPlaceByTextSearch(query, apiKey, regionCode = null) {
 }
 
 /**
- * Primary lookup: Geocode → Place Details.
- * Falls back to Text Search if Geocoding fails.
+ * Primary lookup: Geocode → Place Details → Nearby Search → Text Search.
+ * Geocoding is the most accurate for landmarks.
+ * If Place Details fails on the geocoded place_id (old-format IDs sometimes
+ * don't work in Places API New), fall back to Nearby Search using the
+ * geocoded coordinates before resorting to Text Search.
  */
 async function resolveByName(query, apiKey, regionCode = null) {
-  // 1. Geocoding API — accurate place_id for landmarks and named places
+  let geocodedCoords = null
+
+  // 1. Geocoding API — accurate coordinates + place_id for landmarks
   try {
     const geo = await geocodePlace(query, apiKey, regionCode)
+    console.log('Geocode result:', JSON.stringify(geo))
     if (geo?.placeId) {
       const place = await fetchPlaceDetailsNew(geo.placeId, apiKey)
       if (place) return place
     }
+    // Keep coords even if Place Details failed — use for Nearby Search
+    if (geo?.lat && geo?.lng) geocodedCoords = { lat: geo.lat, lng: geo.lng }
   } catch (e) {
     console.warn('Geocoding failed:', e.message)
   }
 
-  // 2. Text Search fallback
+  // 2. Nearby Search using geocoded coordinates (more targeted than Text Search)
+  if (geocodedCoords) {
+    try {
+      const nearbyId = await fetchNearbyPlaceNew(geocodedCoords.lat, geocodedCoords.lng, apiKey)
+      if (nearbyId) {
+        const place = await fetchPlaceDetailsNew(nearbyId, apiKey)
+        if (place) return place
+      }
+    } catch (e) {
+      console.warn('Nearby search fallback failed:', e.message)
+    }
+  }
+
+  // 3. Text Search — last resort
   try {
     return await fetchPlaceByTextSearch(query, apiKey, regionCode)
   } catch (e) {
