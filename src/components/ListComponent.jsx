@@ -81,8 +81,8 @@ export default function ListComponent() {
     // 3. Category filter
     list = list.filter((l) => activeCategories.includes(l.category))
 
-    if (query.trim()) {
-      const q = query.toLowerCase()
+    const q = query.trim().toLowerCase()
+    if (q) {
       list = list.filter(
         (l) =>
           l.name.toLowerCase().includes(q) ||
@@ -91,7 +91,6 @@ export default function ListComponent() {
       )
     }
     // Merge user-added POIs (always included, filtered by query only)
-    const q = query.trim().toLowerCase()
     const userPoisFiltered = userPois
       .filter((p) => {
         if (!q) return true

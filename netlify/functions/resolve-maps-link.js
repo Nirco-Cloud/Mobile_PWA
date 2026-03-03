@@ -1,14 +1,20 @@
 /**
  * resolve-maps-link.js
  * Netlify serverless function — resolves a Google Maps URL and enriches it
- * with Google Places API data.
+ * with Google Places API (New) data when a server-side key is available.
  *
  * GET /.netlify/functions/resolve-maps-link?url=<encoded-maps-url>
  *
  * Returns: { name, lat, lng, address, category, placeId, phone, website, rating, openingHours }
+ *
+ * Env vars:
+ *   GOOGLE_PLACES_API_KEY  — server-side key (unrestricted or IP-restricted).
+ *                            Must have "Places API (New)" enabled on the project.
+ *                            If absent or blocked, the function still returns coords
+ *                            and a name extracted from the URL.
  */
 
-// Google Place type → app category mapping (approved mapping)
+// Google Place type → app category mapping (approved)
 const TYPE_TO_CATEGORY = {
   restaurant:         'Restaurant',
   food:               'Restaurant',
@@ -38,20 +44,22 @@ const TYPE_TO_CATEGORY = {
 
 function mapTypes(types = []) {
   for (const t of types) {
-    if (TYPE_TO_CATEGORY[t]) return TYPE_TO_CATEGORY[t]
+    const mapped = TYPE_TO_CATEGORY[t.toLowerCase()]
+    if (mapped) return mapped
   }
   return 'Location'
 }
 
 /**
- * Follow redirects and return the final URL + HTML body.
- * Uses a browser-like UA so Google Maps doesn't refuse the request.
+ * Follow redirects and return the final URL + HTML body text.
+ * Uses a mobile UA so Google Maps serves a readable page.
  */
 async function resolveUrl(inputUrl) {
   const res = await fetch(inputUrl, {
     redirect: 'follow',
     headers: {
       'User-Agent': 'Mozilla/5.0 (Linux; Android 12; SM-G998B) AppleWebKit/537.36 Chrome/112.0.0.0 Mobile Safari/537.36',
+      'Accept-Language': 'en-US,en;q=0.9',
     },
   })
   const finalUrl = res.url
@@ -60,26 +68,24 @@ async function resolveUrl(inputUrl) {
 }
 
 /**
- * Extract lat/lng from a resolved URL.
- * Strategy 1: @lat,lng in URL path
- * Strategy 2: !3d<lat>!4d<lng> encoded in URL or body
- * Strategy 3: @lat,lng in body text
+ * Extract lat/lng from a resolved Google Maps URL or its HTML body.
+ * Tries four progressive strategies.
  */
 function extractCoords(url, body) {
-  // Strategy 1: @lat,lng,Xz in URL
+  // Strategy 1: @lat,lng[,Xz] in URL path
   let m = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)
   if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) }
 
-  // Strategy 2: !3d<lat>!4d<lng> (URL-encoded Android share links)
+  // Strategy 2: !3d<lat>!4d<lng> in URL (some share formats)
   m = url.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/)
   if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) }
 
-  // Strategy 3: encoded form %213d / %214d
+  // Strategy 3: percent-encoded form %213d / %214d
   const decoded = decodeURIComponent(url)
   m = decoded.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/)
   if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) }
 
-  // Strategy 4: @lat,lng in HTML body
+  // Strategy 4: @lat,lng in HTML body (canonical link or OG tags)
   m = body.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)
   if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) }
 
@@ -87,7 +93,7 @@ function extractCoords(url, body) {
 }
 
 /**
- * Extract place_id from the URL (if present).
+ * Extract place_id from URL or body (if present).
  */
 function extractPlaceId(url) {
   const m = url.match(/place_id[=:]([A-Za-z0-9_-]+)/)
@@ -95,36 +101,76 @@ function extractPlaceId(url) {
 }
 
 /**
- * Call Google Places API — Place Details by place_id.
+ * Extract place name from URL path segment /place/Name+Here/ or /maps/place/Name/
  */
-async function fetchPlaceDetails(placeId, apiKey) {
-  const fields = 'name,geometry,formatted_address,formatted_phone_number,website,rating,opening_hours,types,place_id'
-  const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=${fields}&key=${apiKey}`
-  const res = await fetch(url)
-  const data = await res.json()
-  if (data.status !== 'OK') return null
-  return data.result
+function extractNameFromUrl(url) {
+  // Matches /place/SomeName/ or /place/Some+Name/@...
+  const m = url.match(/\/place\/([^/@?]+)/)
+  if (!m) return null
+  // URL-decode and replace + with space
+  try {
+    return decodeURIComponent(m[1].replace(/\+/g, ' ')).trim() || null
+  } catch {
+    return m[1].replace(/\+/g, ' ').trim() || null
+  }
 }
 
 /**
- * Call Google Places API — Nearby Search by coordinates.
- * Returns the closest place (first result).
+ * Places API (New) — Nearby Search, returns first result's place_id.
+ * Requires key with "Places API (New)" enabled and no HTTP referrer restriction.
  */
-async function fetchNearbyPlace(lat, lng, apiKey) {
-  const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&rankby=distance&key=${apiKey}`
-  const res = await fetch(url)
+async function fetchNearbyPlaceNew(lat, lng, apiKey) {
+  const res = await fetch('https://places.googleapis.com/v1/places:searchNearby', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Goog-Api-Key': apiKey,
+      'X-Goog-FieldMask': 'places.id',
+    },
+    body: JSON.stringify({
+      locationRestriction: {
+        circle: { center: { latitude: lat, longitude: lng }, radius: 50 },
+      },
+      maxResultCount: 1,
+    }),
+  })
+  if (!res.ok) return null
   const data = await res.json()
-  if (data.status !== 'OK' || !data.results?.length) return null
-  // Return the closest result's place_id for a details lookup
-  return data.results[0].place_id
+  return data.places?.[0]?.id ?? null
 }
 
 /**
- * Format opening hours array from Google Places API.
+ * Places API (New) — Place Details by place_id.
  */
-function formatOpeningHours(openingHours) {
-  if (!openingHours?.weekday_text?.length) return []
-  return openingHours.weekday_text
+async function fetchPlaceDetailsNew(placeId, apiKey) {
+  const fieldMask = 'id,displayName,location,formattedAddress,internationalPhoneNumber,websiteUri,rating,currentOpeningHours,types'
+  const res = await fetch(`https://places.googleapis.com/v1/places/${placeId}`, {
+    headers: {
+      'X-Goog-Api-Key': apiKey,
+      'X-Goog-FieldMask': fieldMask,
+    },
+  })
+  if (!res.ok) return null
+  return res.json()
+}
+
+/**
+ * Map new Places API (New) place object to our response shape.
+ */
+function mapNewPlaceToResult(place, fallbackCoords) {
+  const types = place.types ?? []
+  return {
+    name:         place.displayName?.text ?? null,
+    lat:          place.location?.latitude  ?? fallbackCoords?.lat ?? null,
+    lng:          place.location?.longitude ?? fallbackCoords?.lng ?? null,
+    address:      place.formattedAddress    ?? null,
+    category:     mapTypes(types),
+    placeId:      place.id                  ?? null,
+    phone:        place.internationalPhoneNumber ?? null,
+    website:      place.websiteUri          ?? null,
+    rating:       place.rating              ?? null,
+    openingHours: place.currentOpeningHours?.weekdayDescriptions ?? [],
+  }
 }
 
 export const handler = async (event) => {
@@ -142,33 +188,16 @@ export const handler = async (event) => {
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'Missing url parameter' }) }
   }
 
-  const apiKey = process.env.GOOGLE_PLACES_API_KEY
-  if (!apiKey) {
-    return { statusCode: 500, headers, body: JSON.stringify({ error: 'Server misconfigured: missing API key' }) }
-  }
-
   try {
-    // Step 1: Resolve redirects + get final URL
+    // Step 1: Resolve redirects + get final URL and body
     const { finalUrl, body } = await resolveUrl(rawUrl)
 
-    // Step 2: Try to find place_id or coords
+    // Step 2: Extract coords, place_id, and name from URL
+    const coords  = extractCoords(finalUrl, body)
     const placeId = extractPlaceId(finalUrl) || extractPlaceId(body)
-    const coords = extractCoords(finalUrl, body)
+    const urlName = extractNameFromUrl(finalUrl) || extractNameFromUrl(rawUrl)
 
-    let placeDetails = null
-
-    if (placeId) {
-      // Prefer place_id → direct Details call
-      placeDetails = await fetchPlaceDetails(placeId, apiKey)
-    } else if (coords) {
-      // Fallback: nearest POI via Nearby Search → Details
-      const nearbyPlaceId = await fetchNearbyPlace(coords.lat, coords.lng, apiKey)
-      if (nearbyPlaceId) {
-        placeDetails = await fetchPlaceDetails(nearbyPlaceId, apiKey)
-      }
-    }
-
-    if (!placeDetails && !coords) {
+    if (!coords && !placeId) {
       return {
         statusCode: 422,
         headers,
@@ -176,18 +205,41 @@ export const handler = async (event) => {
       }
     }
 
-    // Step 3: Build response
-    const result = {
-      name:         placeDetails?.name ?? 'Unnamed Place',
-      lat:          placeDetails?.geometry?.location?.lat ?? coords?.lat ?? null,
-      lng:          placeDetails?.geometry?.location?.lng ?? coords?.lng ?? null,
-      address:      placeDetails?.formatted_address ?? null,
-      category:     mapTypes(placeDetails?.types),
-      placeId:      placeDetails?.place_id ?? placeId ?? null,
-      phone:        placeDetails?.formatted_phone_number ?? null,
-      website:      placeDetails?.website ?? null,
-      rating:       placeDetails?.rating ?? null,
-      openingHours: formatOpeningHours(placeDetails?.opening_hours),
+    // Step 3: Enrich via Places API (New) if key is available
+    const apiKey = process.env.GOOGLE_PLACES_API_KEY
+    let place = null
+
+    if (apiKey) {
+      try {
+        let resolvedPlaceId = placeId
+        if (!resolvedPlaceId && coords) {
+          resolvedPlaceId = await fetchNearbyPlaceNew(coords.lat, coords.lng, apiKey)
+        }
+        if (resolvedPlaceId) {
+          place = await fetchPlaceDetailsNew(resolvedPlaceId, apiKey)
+        }
+      } catch (apiErr) {
+        console.warn('Places API enrichment failed (non-fatal):', apiErr.message)
+      }
+    }
+
+    // Step 4: Build response — API data where available, URL extraction as fallback
+    let result
+    if (place) {
+      result = mapNewPlaceToResult(place, coords)
+    } else {
+      result = {
+        name:         urlName ?? 'Unnamed Place',
+        lat:          coords?.lat  ?? null,
+        lng:          coords?.lng  ?? null,
+        address:      null,
+        category:     'Location',
+        placeId:      placeId ?? null,
+        phone:        null,
+        website:      null,
+        rating:       null,
+        openingHours: [],
+      }
     }
 
     return { statusCode: 200, headers, body: JSON.stringify(result) }

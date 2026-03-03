@@ -258,12 +258,15 @@ async function handleResync() {
     try {
       await initializeData()
       await initializePlan()
-      const [records, planRecords] = await Promise.all([
+      const [records, planRecords, userPoisRecords] = await Promise.all([
         readAllLocations(),
         readAllPlanEntries(),
+        readAllUserPois(),
       ])
-      setLocations(migrateLocations(records))
-      setPlanEntries(enrichPlanEntries(planRecords, migrateLocations(records)))
+      const allLocs = migrateLocations(records)
+      setLocations(allLocs)
+      setPlanEntries(enrichPlanEntries(planRecords, allLocs))
+      setUserPois(userPoisRecords)
       setSyncStatus('done')
     } catch (err) {
       console.error('Resync error:', err)
