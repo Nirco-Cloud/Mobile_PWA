@@ -251,6 +251,35 @@ async function resolveByName(query, apiKey, regionCode = null) {
   }
 }
 
+/**
+ * Text Search biased to a specific lat/lng circle (500m radius).
+ * Use when we have both a place name AND coordinates — much more accurate
+ * than Nearby Search, which returns whatever business happens to be closest.
+ */
+async function fetchPlaceByNameAndCoords(name, lat, lng, apiKey) {
+  const fieldMask = 'places.id,places.displayName,places.location,places.formattedAddress,places.internationalPhoneNumber,places.websiteUri,places.rating,places.currentOpeningHours,places.types'
+  const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Goog-Api-Key': apiKey,
+      'X-Goog-FieldMask': fieldMask,
+    },
+    body: JSON.stringify({
+      textQuery: name,
+      locationBias: {
+        circle: {
+          center: { latitude: lat, longitude: lng },
+          radius: 500.0,
+        },
+      },
+    }),
+  })
+  if (!res.ok) return null
+  const data = await res.json()
+  return data.places?.[0] ?? null
+}
+
 async function fetchNearbyPlaceNew(lat, lng, apiKey) {
   const res = await fetch('https://places.googleapis.com/v1/places:searchNearby', {
     method: 'POST',
@@ -413,10 +442,15 @@ export const handler = async (event) => {
     if (apiKey) {
       try {
         let resolvedPlaceId = placeId
-        if (!resolvedPlaceId && coords) {
+        if (!resolvedPlaceId && urlName && coords) {
+          // Name + coords available: use Text Search with location bias (most accurate)
+          place = await fetchPlaceByNameAndCoords(urlName, coords.lat, coords.lng, apiKey)
+        }
+        if (!place && !resolvedPlaceId && coords) {
+          // Fallback: blind Nearby Search
           resolvedPlaceId = await fetchNearbyPlaceNew(coords.lat, coords.lng, apiKey)
         }
-        if (resolvedPlaceId) {
+        if (!place && resolvedPlaceId) {
           place = await fetchPlaceDetailsNew(resolvedPlaceId, apiKey)
         }
       } catch (apiErr) {

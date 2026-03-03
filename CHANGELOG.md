@@ -14,6 +14,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.13.0] — 2026-03-04
+
+### Fixed
+- **`maps.app.goo.gl` place name resolution** — when a URL contains both a place name (from `/place/NAME/` path) and exact pin coordinates (`!3d!4d`), now uses Text Search with 500m `locationBias` instead of blind Nearby Search. This fixes cases like "Portobello Two" where Nearby Search was returning the wrong nearby business (e.g. Layla Bakery 30m away).
+
+---
+
 ## [2.6.0] — 2026-03-03
 
 ### Changed
