@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useAppStore } from '../store/appStore.js'
-import { stays } from '../config/stays.js'
+import { stays, getStayCenter } from '../config/stays.js'
 
 const SORTED_STAYS = [...stays].sort((a, b) => a.order - b.order)
 
@@ -9,6 +9,9 @@ export default function TopBar() {
   const setSelectedStay = useAppStore((s) => s.setSelectedStay)
   const mode            = useAppStore((s) => s.mode)
   const setMode         = useAppStore((s) => s.setMode)
+  const demoMode        = useAppStore((s) => s.demoMode)
+  const setPosition     = useAppStore((s) => s.setPosition)
+  const locations       = useAppStore((s) => s.locations)
   const [dropdownOpen, setDropdownOpen] = useState(false)
 
   const currentStay = stays.find((s) => s.id === selectedStay) ?? stays[0]
@@ -48,6 +51,10 @@ export default function TopBar() {
                   key={stay.id}
                   onClick={() => {
                     setSelectedStay(stay.id)
+                    if (demoMode) {
+                      const center = getStayCenter(stay, locations)
+                      if (center) setPosition(center)
+                    }
                     setDropdownOpen(false)
                   }}
                   className={`w-full flex items-center gap-3 px-4 py-3 text-sm text-left transition-colors ${
