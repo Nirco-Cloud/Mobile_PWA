@@ -16,9 +16,10 @@ import { useBattery } from './hooks/useBattery.js'
 import { useDarkMode } from './hooks/useDarkMode.js'
 import { useServiceWorker } from './workers/swRegistration.js'
 import SplashScreen from './components/SplashScreen.jsx'
-import SplitLayout from './components/SplitLayout.jsx'
 import MapComponent from './components/MapComponent.jsx'
 import ListComponent from './components/ListComponent.jsx'
+import TopBar from './components/TopBar.jsx'
+import MapBottomControls from './components/MapBottomControls.jsx'
 import BottomNav, { BOTTOM_NAV_HEIGHT } from './components/BottomNav.jsx'
 import PlannerOverlay from './components/PlannerOverlay.jsx'
 import LocationDetailSheet from './components/LocationDetailSheet.jsx'
@@ -43,8 +44,10 @@ const setPlanEntries   = useAppStore((s) => s.setPlanEntries)
   const setIsPlannerOpen = useAppStore((s) => s.setIsPlannerOpen)
   const setPlannerPanelH = useAppStore((s) => s.setPlannerPanelH)
   const setTripDates       = useAppStore((s) => s.setTripDates)
-  const setGithubConfigured = useAppStore((s) => s.setGithubConfigured)
-  const setGithubLastSync   = useAppStore((s) => s.setGithubLastSync)
+  const setGithubConfigured  = useAppStore((s) => s.setGithubConfigured)
+  const setGithubLastSync    = useAppStore((s) => s.setGithubLastSync)
+  const showNearbyList       = useAppStore((s) => s.showNearbyList)
+  const setShowNearbyList    = useAppStore((s) => s.setShowNearbyList)
 
   // Restore persisted active category filter on mount
   useEffect(() => {
@@ -174,7 +177,7 @@ const setPlanEntries   = useAppStore((s) => s.setPlanEntries)
       setTimeout(() => setShowSplash(false), remaining)
     }
     boot()
-  }, [setLocations, setSyncStatus, setImportedLocations, setPlanEntries])
+  }, [setLocations, setSyncStatus, setPlanEntries])
 
   function handleTabChange(tab) {
     if (tab === 'plan') {
@@ -182,13 +185,16 @@ const setPlanEntries   = useAppStore((s) => s.setPlanEntries)
       setIsPlannerOpen(opening)
       if (opening) setPlannerPanelH(85)
       setShowSettings(false)
+      setShowNearbyList(false)
     } else if (tab === 'settings') {
       setShowSettings(true)
       setIsPlannerOpen(false)
+      setShowNearbyList(false)
     } else {
       setActiveTab(tab)
       setShowSettings(false)
       setIsPlannerOpen(false)
+      setShowNearbyList(false)
     }
   }
 
@@ -216,11 +222,47 @@ async function handleResync() {
       <SplashScreen visible={showSplash} />
 
       {!showSettings ? (
-        <SplitLayout
-          bottomNavHeight={BOTTOM_NAV_HEIGHT}
-          mapSlot={<MapComponent />}
-          listSlot={isPlannerOpen ? null : <ListComponent />}
-        />
+        <div
+          className="flex flex-col w-full overflow-hidden"
+          style={{
+            height: `calc(100dvh - ${BOTTOM_NAV_HEIGHT}px - env(safe-area-inset-bottom))`,
+            paddingTop: 'env(safe-area-inset-top)',
+          }}
+        >
+          <TopBar />
+
+          {/* Map + Nearby overlay */}
+          <div className="relative flex-1 overflow-hidden" style={{ minHeight: 0 }}>
+            <MapComponent />
+
+            {/* Nearby list — slide-up overlay */}
+            {showNearbyList && !isPlannerOpen && (
+              <div
+                className="absolute bottom-0 left-0 right-0 flex flex-col bg-white dark:bg-gray-900 rounded-t-2xl shadow-2xl overflow-hidden"
+                style={{ height: '55%' }}
+              >
+                {/* Drag handle + close */}
+                <div className="flex-shrink-0 flex items-center justify-between px-4 pt-2 pb-1">
+                  <div className="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-600 mx-auto" />
+                  <button
+                    onClick={() => setShowNearbyList(false)}
+                    className="absolute right-3 top-2 p-1 text-gray-400 active:text-gray-600"
+                    aria-label="Close nearby list"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4">
+                      <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                </div>
+                <div className="flex-1 overflow-hidden min-h-0">
+                  <ListComponent />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <MapBottomControls />
+        </div>
       ) : (
         <SettingsPanel
           batteryLevel={batteryLevel}

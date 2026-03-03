@@ -124,5 +124,25 @@ export const useAppStore = create(
       set((s) => ({
         locations: s.locations.map((l) => l.id === updated.id ? updated : l),
       })),
+
+    // ── V2: Stay-based navigation ─────────────────────────────────────────────
+    selectedStay: 'tokyo_start',
+    setSelectedStay: (selectedStay) => set({ selectedStay }),
+
+    // View mode: 'explore' | 'overview'
+    mode: 'explore',
+    setMode: (mode) => set({ mode }),
+
+    // Walking mode — filter to POIs within 1.5 km of user's position
+    walkingMode: false,
+    setWalkingMode: (walkingMode) => set({ walkingMode }),
+
+    // Quick filter for map bottom controls: 'all' | 'hotels'
+    quickFilter: 'all',
+    setQuickFilter: (quickFilter) => set({ quickFilter }),
+
+    // Nearby list overlay (triggered by bottom control)
+    showNearbyList: false,
+    setShowNearbyList: (showNearbyList) => set({ showNearbyList }),
   })),
 )

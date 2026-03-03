@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, Fragment } from 'react'
+import { useEffect, useRef, useState, useCallback, useMemo, Fragment } from 'react'
 import { Map, useMap, useApiIsLoaded, AdvancedMarker } from '@vis.gl/react-google-maps'
 import { useAppStore } from '../store/appStore.js'
 import MapMarker from './MapMarker.jsx'
@@ -6,6 +6,8 @@ import { getRouteColor, getDayColor } from '../config/routeColors.js'
 import { useVisiblePlanEntries } from '../hooks/useVisiblePlanEntries.js'
 import { getCategoryIcon } from '../config/categories.js'
 import { ENTRY_TYPES } from '../config/entryTypes.js'
+import { stays, getStayById, getStayCenter, getPOIsForStay } from '../config/stays.js'
+import { haversine } from '../utils/haversine.js'
 
 // Return the category icon URL for a plan entry (via its linked location)
 function getEntryIconSrc(entry, locations) {
@@ -32,10 +34,11 @@ function PlanMarkerIcon({ entry, locations, size = 16 }) {
 
 const DEFAULT_ZOOM = 12
 
-// Module-level singletons — shared between MapController and MapComponent (one map in this app)
+// Module-level singletons — shared between MapController and MapComponent
 let _mapInstance = null
 let _notifyPanStateChange = null // (isCentered: bool) => void
 
+// ── MapMarkers ─────────────────────────────────────────────────────────────────
 function MapMarkers({ locations, selectedLocationId }) {
   const map = useMap()
   if (!map) return null
@@ -48,6 +51,7 @@ function MapMarkers({ locations, selectedLocationId }) {
   ))
 }
 
+// ── MapController ──────────────────────────────────────────────────────────────
 function MapController() {
   const map           = useMap()
   const position      = useAppStore((s) => s.position)
@@ -57,7 +61,36 @@ function MapController() {
   const planRecapDay  = useAppStore((s) => s.planRecapDay)
   const planRecapMode = useAppStore((s) => s.planRecapMode)
   const planEntries   = useVisiblePlanEntries()
+  const selectedStay  = useAppStore((s) => s.selectedStay)
+  const mode          = useAppStore((s) => s.mode)
   const userHasPanned = useRef(false)
+
+  // Animate map when selected stay changes (explore mode only)
+  useEffect(() => {
+    if (!map || mode === 'overview') return
+    const stay = getStayById(selectedStay)
+    if (!stay) return
+    const locs = useAppStore.getState().locations
+    const center = getStayCenter(stay, locs)
+    if (!center) return
+    userHasPanned.current = true // disable GPS auto-center while browsing a stay
+    _notifyPanStateChange?.(false) // show recenter FAB
+    map.panTo(center)
+    map.setZoom(stay.regionZoom)
+  }, [map, selectedStay]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fit map to all stay centers when overview mode activates
+  useEffect(() => {
+    if (!map || mode !== 'overview') return
+    if (!window.google?.maps?.LatLngBounds) return
+    const locs = useAppStore.getState().locations
+    const bounds = new window.google.maps.LatLngBounds()
+    stays.forEach((stay) => {
+      const center = getStayCenter(stay, locs)
+      if (center) bounds.extend(center)
+    })
+    if (!bounds.isEmpty()) map.fitBounds(bounds, 40)
+  }, [map, mode]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fit map to planned stops when planner opens or focused day changes
   useEffect(() => {
@@ -126,6 +159,84 @@ function MapController() {
   return null
 }
 
+// ── OverviewMapLayer ───────────────────────────────────────────────────────────
+// Shows hotel markers + connecting polyline when mode === 'overview'
+function OverviewMapLayer() {
+  const map       = useMap()
+  const mode      = useAppStore((s) => s.mode)
+  const locations = useAppStore((s) => s.locations)
+  const polyRef   = useRef(null)
+
+  const stayPoints = useMemo(() => {
+    const sorted = [...stays].sort((a, b) => a.order - b.order)
+    return sorted.map((stay) => ({
+      stay,
+      center: getStayCenter(stay, locations),
+    }))
+  }, [locations])
+
+  // Draw polyline connecting stays in order
+  useEffect(() => {
+    if (polyRef.current) { polyRef.current.setMap(null); polyRef.current = null }
+    if (!map || mode !== 'overview') return
+    if (!window.google?.maps?.Polyline) return
+    const path = stayPoints.map((p) => p.center).filter(Boolean)
+    if (path.length < 2) return
+    polyRef.current = new window.google.maps.Polyline({
+      path,
+      geodesic: true,
+      map,
+      strokeColor: '#0ea5e9',
+      strokeOpacity: 0.75,
+      strokeWeight: 3,
+    })
+    return () => { polyRef.current?.setMap(null); polyRef.current = null }
+  }, [map, mode, stayPoints])
+
+  if (mode !== 'overview') return null
+
+  return (
+    <>
+      {stayPoints.map(({ stay, center }) => {
+        if (!center) return null
+        return (
+          <AdvancedMarker key={stay.id} position={center}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+              {/* Numbered circle */}
+              <div style={{
+                width: 38, height: 38, borderRadius: '50%',
+                border: '2.5px solid white', backgroundColor: '#0ea5e9',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                cursor: 'default',
+              }}>
+                <span style={{ color: 'white', fontSize: 14, fontWeight: 700, lineHeight: 1 }}>
+                  {stay.order}
+                </span>
+              </div>
+              {/* Label */}
+              <div style={{
+                backgroundColor: 'white',
+                border: '1px solid #bae6fd',
+                borderRadius: 6,
+                padding: '2px 7px',
+                fontSize: 10,
+                fontWeight: 600,
+                color: '#0369a1',
+                whiteSpace: 'nowrap',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.18)',
+              }}>
+                {stay.label}
+              </div>
+            </div>
+          </AdvancedMarker>
+        )
+      })}
+    </>
+  )
+}
+
+// ── PlanMapLayer ───────────────────────────────────────────────────────────────
 function PlanMapLayer() {
   const map                  = useMap()
   const isPlannerOpen        = useAppStore((s) => s.isPlannerOpen)
@@ -155,7 +266,6 @@ function PlanMapLayer() {
   const displayDay = planFocusDay ?? 1
   const recapActive = planRecapDay !== null
 
-  // Build day groups for multi-day views (full/3day) OR recap mode from any view
   function buildDayGroups() {
     const withCoords = planEntries.filter((e) => e.lat != null && e.lng != null)
     const grouped = {}
@@ -165,26 +275,21 @@ function PlanMapLayer() {
     })
     Object.values(grouped).forEach((arr) => arr.sort((a, b) => a.order - b.order))
     let days = Object.keys(grouped).map(Number).sort((a, b) => a - b)
-    // Recap filtering
     if (recapActive) {
       if (planRecapMode === 'single') {
-        // "D9 Route" — only this day
         days = days.filter((d) => d === planRecapDay)
       } else {
-        // "D9+ On Map" — from selected day onward
         days = days.filter((d) => d >= planRecapDay)
       }
     }
     return days.map((d) => ({ day: d, stops: grouped[d] }))
   }
 
-  // Today view: single focused day stops (only when recap is NOT active)
   const showTodayView = isDayView && !recapActive
   const todayStops = showTodayView ? planEntries
     .filter((e) => e.day === displayDay && e.lat != null && e.lng != null)
     .sort((a, b) => a.order - b.order) : []
 
-  // Multi-day groups: active for full/3day views OR when recap toggle is on
   const showMultiDay = !isDayView || recapActive
   const dayGroups = showMultiDay ? buildDayGroups() : []
 
@@ -192,7 +297,6 @@ function PlanMapLayer() {
   const routeKey  = routeLines.map((r) => `${r.entryId}:${r.path.length}`).join('|')
   const multiKey  = dayGroups.map((g) => `${g.day}:${g.stops.length}`).join('|')
 
-  // Multi-day solid polylines — chain across days (prev day's last stop → this day's stops)
   useEffect(() => {
     dayPolysRef.current.forEach((p) => p.setMap(null))
     dayPolysRef.current = []
@@ -219,7 +323,6 @@ function PlanMapLayer() {
     return () => { polys.forEach((p) => p.setMap(null)); dayPolysRef.current = [] }
   }, [map, active, showMultiDay, multiKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Today view: dashed red connector from GPS to stops (hidden during recap)
   useEffect(() => {
     if (seqPolyRef.current) { seqPolyRef.current.setMap(null); seqPolyRef.current = null }
     if (!map || !active || !showTodayView || !showConnectors || todayStops.length === 0) return
@@ -241,7 +344,6 @@ function PlanMapLayer() {
     return () => { polyline.setMap(null); seqPolyRef.current = null }
   }, [map, active, showTodayView, showConnectors, todayKey, position]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Today view: colored route polylines from Google Directions API (hidden during recap)
   useEffect(() => {
     routePolysRef.current.forEach((p) => p.setMap(null))
     routePolysRef.current = []
@@ -262,7 +364,6 @@ function PlanMapLayer() {
 
   return (
     <>
-      {/* === MULTI-DAY (Big Picture or Recap from day N onward) === */}
       {showMultiDay && dayGroups.map((group) => {
         const color = getDayColor(group.day)
         return (
@@ -280,7 +381,6 @@ function PlanMapLayer() {
                   onClick={() => handleMarkerClick(entry)}
                 >
                   <div style={{ position: 'relative', cursor: 'pointer' }}>
-                    {/* Main ring */}
                     <div style={{
                       width: ringSize, height: ringSize, borderRadius: '50%',
                       border: '2.5px solid white', backgroundColor: color,
@@ -291,7 +391,6 @@ function PlanMapLayer() {
                     }}>
                       <PlanMarkerIcon entry={entry} locations={locations} size={iconSize} />
                     </div>
-                    {/* D# badge — first stop of this day only */}
                     {isFirst && (
                       <div style={{
                         position: 'absolute', top: -7, left: -5,
@@ -304,7 +403,6 @@ function PlanMapLayer() {
                         D{group.day}
                       </div>
                     )}
-                    {/* Sequence number badge */}
                     <div style={{
                       position: 'absolute', bottom: -5, right: -5,
                       backgroundColor: 'white', border: `1.5px solid ${color}`,
@@ -322,10 +420,8 @@ function PlanMapLayer() {
         )
       })}
 
-      {/* === TODAY VIEW (single day, hidden during recap) === */}
       {showTodayView && (
         <>
-          {/* GPS origin dot */}
           {position && todayStops.length > 0 && (
             <AdvancedMarker key="origin-0" position={{ lat: position.lat, lng: position.lng }}>
               <div style={{
@@ -348,7 +444,6 @@ function PlanMapLayer() {
                 onClick={() => handleMarkerClick(entry)}
               >
                 <div style={{ position: 'relative', cursor: 'pointer' }}>
-                  {/* Main ring */}
                   <div style={{
                     width: 30, height: 30, borderRadius: '50%',
                     border: '2.5px solid white', backgroundColor: bgColor,
@@ -359,7 +454,6 @@ function PlanMapLayer() {
                   }}>
                     <PlanMarkerIcon entry={entry} locations={locations} size={16} />
                   </div>
-                  {/* Sequence number badge */}
                   <div style={{
                     position: 'absolute', bottom: -5, right: -5,
                     backgroundColor: 'white', border: `1.5px solid ${bgColor}`,
@@ -379,7 +473,7 @@ function PlanMapLayer() {
   )
 }
 
-// Dark map style used when mapId is not configured
+// ── Dark map styles ────────────────────────────────────────────────────────────
 const DARK_MAP_STYLES = [
   { elementType: 'geometry', stylers: [{ color: '#242f3e' }] },
   { elementType: 'labels.text.stroke', stylers: [{ color: '#242f3e' }] },
@@ -401,25 +495,55 @@ const DARK_MAP_STYLES = [
   { featureType: 'water', elementType: 'labels.text.stroke', stylers: [{ color: '#17263c' }] },
 ]
 
+// ── MapComponent (default export) ─────────────────────────────────────────────
 export default function MapComponent() {
-  const allLocations = useAppStore((s) => s.locations)
+  const allLocations     = useAppStore((s) => s.locations)
   const activeCategories = useAppStore((s) => s.activeCategories)
-  const isPlannerOpen = useAppStore((s) => s.isPlannerOpen)
-  const isDark = useAppStore((s) => s.isDark)
-  const locations = isPlannerOpen
-    ? []
-    : allLocations.filter((l) => activeCategories.includes(l.category))
-  const position = useAppStore((s) => s.position)
+  const isPlannerOpen    = useAppStore((s) => s.isPlannerOpen)
+  const isDark           = useAppStore((s) => s.isDark)
+  const position         = useAppStore((s) => s.position)
   const selectedLocationId = useAppStore((s) => s.selectedLocationId)
+  const setSelection     = useAppStore((s) => s.setSelection)
+  const selectedStay     = useAppStore((s) => s.selectedStay)
+  const mode             = useAppStore((s) => s.mode)
+  const walkingMode      = useAppStore((s) => s.walkingMode)
+  const quickFilter      = useAppStore((s) => s.quickFilter)
+
   const [mapReady, setMapReady] = useState(false)
   const [isCentered, setIsCentered] = useState(true)
-  const setSelection = useAppStore((s) => s.setSelection)
 
   // Subscribe to pan-state updates from MapController
   useEffect(() => {
     _notifyPanStateChange = setIsCentered
     return () => { _notifyPanStateChange = null }
   }, [])
+
+  // Filtering pipeline:
+  // All POIs → stay filter → walking filter → quick filter → category filter
+  const locations = useMemo(() => {
+    if (isPlannerOpen || mode === 'overview') return []
+
+    // 1. Stay-based filter
+    let list = getPOIsForStay(selectedStay, allLocations, allLocations)
+
+    // 2. Walking mode filter (1.5 km from user)
+    if (walkingMode && position) {
+      list = list.filter((poi) => {
+        if (poi.lat == null || poi.lng == null) return false
+        return haversine(poi.lat, poi.lng, position.lat, position.lng) <= 1500
+      })
+    }
+
+    // 3. Quick filter (hotels only)
+    if (quickFilter === 'hotels') {
+      list = list.filter((poi) => poi.category === 'hotel')
+    }
+
+    // 4. Category filter (respects user chip selection)
+    list = list.filter((l) => activeCategories.includes(l.category))
+
+    return list
+  }, [allLocations, selectedStay, walkingMode, position, quickFilter, activeCategories, isPlannerOpen, mode])
 
   const handleRecenter = useCallback(() => {
     const pos = useAppStore.getState().position
@@ -462,10 +586,11 @@ export default function MapComponent() {
         {mapReady && (
           <MapMarkers locations={locations} selectedLocationId={selectedLocationId} />
         )}
+        {mapReady && <OverviewMapLayer />}
         {mapReady && <PlanMapLayer />}
       </Map>
 
-      {/* Re-center FAB — sky-500 when auto-centered, gray when user has panned away */}
+      {/* Re-center FAB */}
       <button
         onClick={handleRecenter}
         className={`absolute bottom-4 right-4 w-12 h-12 bg-white dark:bg-gray-800 rounded-full shadow-lg flex items-center justify-center active:scale-95 transition-all ${

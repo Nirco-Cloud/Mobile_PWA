@@ -4,6 +4,7 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import { useAppStore } from '../store/appStore.js'
 import { ALL_CATEGORY_KEYS } from '../config/categories.js'
 import { haversine } from '../utils/haversine.js'
+import { getPOIsForStay } from '../config/stays.js'
 import LocationRow from './LocationRow.jsx'
 import SkeletonList from './SkeletonList.jsx'
 
@@ -29,6 +30,8 @@ export default function ListComponent() {
   const selectedLocationId  = useAppStore((s) => s.selectedLocationId)
   const activeCategories    = useAppStore((s) => s.activeCategories)
   const setActiveCategories = useAppStore((s) => s.setActiveCategories)
+  const selectedStay        = useAppStore((s) => s.selectedStay)
+  const walkingMode         = useAppStore((s) => s.walkingMode)
   const [query, setQuery]   = useState('')
   const [expandedId, setExpandedId] = useState(null)
   const containerRef        = useRef(null)
@@ -60,7 +63,20 @@ export default function ListComponent() {
 
   // Filter + sort
   const sortedLocations = useMemo(() => {
-    let list = locations.filter((l) => activeCategories.includes(l.category))
+    // 1. Stay-based filter
+    let list = getPOIsForStay(selectedStay, locations, locations)
+
+    // 2. Walking mode filter (1.5 km from user)
+    if (walkingMode && position) {
+      list = list.filter((l) => {
+        if (l.lat == null || l.lng == null) return false
+        return haversine(l.lat, l.lng, position.lat, position.lng) <= 1500
+      })
+    }
+
+    // 3. Category filter
+    list = list.filter((l) => activeCategories.includes(l.category))
+
     if (query.trim()) {
       const q = query.toLowerCase()
       list = list.filter(
@@ -76,7 +92,7 @@ export default function ListComponent() {
         .sort((a, b) => a._dist - b._dist)
     }
     return list
-  }, [locations, position, query, activeCategories])
+  }, [locations, position, query, activeCategories, selectedStay, walkingMode])
 
   // Keep stable ref in sync
   useEffect(() => {

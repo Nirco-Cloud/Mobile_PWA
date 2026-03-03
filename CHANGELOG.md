@@ -14,6 +14,28 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.0.0] — 2026-03-03 (PWA_V2 branch)
+
+### Added
+- **Stay architecture** — `src/config/stays.js` defines 7 stays (Tokyo Shinjuku, Hakone, Nakatsugawa, Takayama, Kanazawa, Kyoto, Tokyo Daiba) each with `hotelId`, fallback center coordinates, radius, and zoom level
+- **TopBar** — replaces category chip panel at the top; contains a stay selector dropdown (chronological order) and an Explore / Overview mode toggle
+- **MapBottomControls** — replaces dense filter panel at the bottom of the map; three quick-access buttons: Nearby (slide-up list overlay), Walking (1.5 km radius filter), Hotels (hotel-only quick filter)
+- **Stay-based POI filtering** — pipeline: All POIs → stay radius filter → walking filter → quick filter → category filter; applied in both MapComponent and ListComponent
+- **Animated stay transitions** — selecting a new stay triggers `map.panTo()` + `map.setZoom(regionZoom)` without recreating the map instance
+- **Overview mode** — hides all POIs; renders numbered hotel markers for each stay and draws a connecting polyline in chronological order across Japan
+- **Walking mode** — filters map markers and list rows to POIs within 1.5 km of the user's current GPS position (applied after stay filter)
+- **Nearby list overlay** — slide-up bottom sheet (55 % of map height) with full ListComponent inside, triggered by the Nearby control; closes on X or tab switch
+- **New state slices** — `selectedStay`, `mode`, `walkingMode`, `quickFilter`, `showNearbyList` in appStore
+
+### Changed
+- **Layout** — replaced split map+list with map-dominant layout: TopBar (48 px) + full-screen map + MapBottomControls (52 px) + BottomNav; list is now an optional overlay rather than a persistent panel
+- **ListComponent** — stay filter and walking filter applied before category filter in `sortedLocations` memo
+
+### Fixed
+- Removed stale `setImportedLocations` from `useEffect` dependency array in App.jsx (leftover from v1.9.0 import-feature removal)
+
+---
+
 ## [1.9.0] — 2026-03-03
 
 ### Removed
