@@ -221,29 +221,10 @@ export const handler = async (event) => {
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'Missing url parameter' }) }
   }
 
-  // share.google links require JavaScript execution to resolve — not possible server-side
-  if (/share\.google/i.test(rawUrl)) {
-    return {
-      statusCode: 422,
-      headers,
-      body: JSON.stringify({ error: 'share_google_unsupported' }),
-    }
-  }
-
-  // google.com/maps/search/?api=1&query=QUERY — handle two cases:
-  //   • query is a real place name → use Places Text Search API
-  //   • query is an opaque share token → return actionable error
+  // google.com/maps/search/?api=1&query=QUERY — try Places Text Search API first
   const searchMatch = rawUrl.match(/[?&]query=([^&]+)/)
   if (searchMatch && /maps\/search/i.test(rawUrl)) {
     const query = decodeURIComponent(searchMatch[1].replace(/\+/g, ' ')).trim()
-    if (looksLikeToken(query)) {
-      return {
-        statusCode: 422,
-        headers,
-        body: JSON.stringify({ error: 'share_google_unsupported' }),
-      }
-    }
-    // Real place name — try Places Text Search
     const apiKey = process.env.GOOGLE_PLACES_API_KEY
     if (apiKey) {
       try {
