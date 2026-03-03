@@ -185,6 +185,20 @@ async function geocodePlace(query, apiKey, regionCode = null) {
  * business name searches geographically (e.g. "Village Steakhouse Israel").
  * Landmarks are handled upstream by Geocoding before this is called.
  */
+async function enrichHebrewName(place, apiKey) {
+  if (!place?.id) return
+  try {
+    const res = await fetch(`https://places.googleapis.com/v1/places/${place.id}?languageCode=iw`, {
+      headers: { 'X-Goog-Api-Key': apiKey, 'X-Goog-FieldMask': 'displayName' },
+    })
+    if (res.ok) {
+      const data = await res.json()
+      const heName = data.displayName?.text
+      if (heName && heName !== place.displayName?.text) place._nameHe = heName
+    }
+  } catch { /* non-fatal */ }
+}
+
 async function fetchPlaceByTextSearch(query, apiKey, regionCode = null) {
   const fieldMask = 'places.id,places.displayName,places.location,places.formattedAddress,places.internationalPhoneNumber,places.websiteUri,places.rating,places.currentOpeningHours,places.types'
   const countryName = regionCode ? REGION_NAMES[regionCode] : null
@@ -202,7 +216,9 @@ async function fetchPlaceByTextSearch(query, apiKey, regionCode = null) {
   })
   if (!res.ok) return null
   const data = await res.json()
-  return data.places?.[0] ?? null
+  const place = data.places?.[0] ?? null
+  if (place) await enrichHebrewName(place, apiKey)
+  return place
 }
 
 /**
@@ -277,7 +293,9 @@ async function fetchPlaceByNameAndCoords(name, lat, lng, apiKey) {
   })
   if (!res.ok) return null
   const data = await res.json()
-  return data.places?.[0] ?? null
+  const place = data.places?.[0] ?? null
+  if (place) await enrichHebrewName(place, apiKey)
+  return place
 }
 
 async function fetchNearbyPlaceNew(lat, lng, apiKey) {
@@ -302,19 +320,27 @@ async function fetchNearbyPlaceNew(lat, lng, apiKey) {
 
 async function fetchPlaceDetailsNew(placeId, apiKey) {
   const fieldMask = 'id,displayName,location,formattedAddress,internationalPhoneNumber,websiteUri,rating,currentOpeningHours,types'
-  const res = await fetch(`https://places.googleapis.com/v1/places/${placeId}`, {
-    headers: {
-      'X-Goog-Api-Key': apiKey,
-      'X-Goog-FieldMask': fieldMask,
-    },
-  })
-  if (!res.ok) return null
-  return res.json()
+  const [enRes, heRes] = await Promise.all([
+    fetch(`https://places.googleapis.com/v1/places/${placeId}`, {
+      headers: { 'X-Goog-Api-Key': apiKey, 'X-Goog-FieldMask': fieldMask },
+    }),
+    fetch(`https://places.googleapis.com/v1/places/${placeId}?languageCode=iw`, {
+      headers: { 'X-Goog-Api-Key': apiKey, 'X-Goog-FieldMask': 'displayName' },
+    }),
+  ])
+  if (!enRes.ok) return null
+  const place = await enRes.json()
+  if (heRes.ok) {
+    const heData = await heRes.json()
+    const heName = heData.displayName?.text
+    if (heName && heName !== place.displayName?.text) place._nameHe = heName
+  }
+  return place
 }
 
 function mapPlaceToResult(place, fallbackCoords) {
   const types = place.types ?? []
-  return {
+  const result = {
     name:         place.displayName?.text ?? null,
     lat:          place.location?.latitude  ?? fallbackCoords?.lat ?? null,
     lng:          place.location?.longitude ?? fallbackCoords?.lng ?? null,
@@ -326,6 +352,8 @@ function mapPlaceToResult(place, fallbackCoords) {
     rating:       place.rating              ?? null,
     openingHours: place.currentOpeningHours?.weekdayDescriptions ?? [],
   }
+  if (place._nameHe) result.nameHe = place._nameHe
+  return result
 }
 
 // ─── Handler ──────────────────────────────────────────────────────────────────

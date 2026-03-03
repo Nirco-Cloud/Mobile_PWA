@@ -14,6 +14,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.14.0] — 2026-03-04
+
+### Added
+- **Hebrew name (`nameHe`)** — resolver now fetches the Hebrew display name in parallel alongside English for every resolved place. Included in the JSON response as `nameHe` (omitted if not available or identical to English name).
+
+---
+
 ## [2.13.0] — 2026-03-04
 
 ### Fixed
