@@ -79,22 +79,33 @@ export default function TopBar() {
         )}
       </div>
 
-      {/* Explore | Overview segmented control */}
+      {/* Explore | Overview — sliding pill toggle */}
       <div
-        className="flex rounded-full p-[3px] text-sm"
+        className="relative flex rounded-full p-[3px]"
         style={{ backgroundColor: '#111111' }}
       >
+        {/* Sliding white pill */}
+        <div
+          className="absolute rounded-full bg-white"
+          style={{
+            top: 3, bottom: 3,
+            width: 'calc(50% - 1.5px)',
+            transform: `translateX(${mode === 'overview' ? 'calc(100% + 3px)' : '0%'})`,
+            transition: 'transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.22)',
+          }}
+        />
         {['explore', 'overview'].map((m) => (
           <button
             key={m}
             onClick={() => setMode(m)}
-            className="px-3.5 py-[5px] rounded-full font-medium capitalize tracking-wide"
+            className="relative flex-1 px-3.5 py-[5px] rounded-full font-medium capitalize tracking-wide"
             style={{
-              transition: 'background-color 160ms ease, color 160ms ease, box-shadow 160ms ease',
-              backgroundColor: mode === m ? '#ffffff' : 'transparent',
-              color: mode === m ? '#111111' : '#777777',
-              boxShadow: mode === m ? '0 1px 4px rgba(0,0,0,0.25)' : 'none',
               fontSize: 13,
+              color: mode === m ? '#111111' : '#777777',
+              transition: 'color 160ms ease',
+              zIndex: 1,
+              background: 'none',
             }}
           >
             {m}
