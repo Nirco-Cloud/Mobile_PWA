@@ -31,7 +31,7 @@ export default function ListComponent() {
   const activeCategories    = useAppStore((s) => s.activeCategories)
   const setActiveCategories = useAppStore((s) => s.setActiveCategories)
   const selectedStay        = useAppStore((s) => s.selectedStay)
-  const walkingMode         = useAppStore((s) => s.walkingMode)
+  const mapFilter           = useAppStore((s) => s.mapFilter)
   const [query, setQuery]   = useState('')
   const [expandedId, setExpandedId] = useState(null)
   const containerRef        = useRef(null)
@@ -66,12 +66,14 @@ export default function ListComponent() {
     // 1. Stay-based filter
     let list = getPOIsForStay(selectedStay, locations, locations)
 
-    // 2. Walking mode filter (1.5 km from user)
-    if (walkingMode && position) {
+    // 2. Map filter mode (mutually exclusive, mirrors MapComponent)
+    if (mapFilter === 'walking' && position) {
       list = list.filter((l) => {
         if (l.lat == null || l.lng == null) return false
         return haversine(l.lat, l.lng, position.lat, position.lng) <= 1500
       })
+    } else if (mapFilter === 'hotels') {
+      list = list.filter((l) => l.category === 'hotel')
     }
 
     // 3. Category filter
@@ -92,7 +94,7 @@ export default function ListComponent() {
         .sort((a, b) => a._dist - b._dist)
     }
     return list
-  }, [locations, position, query, activeCategories, selectedStay, walkingMode])
+  }, [locations, position, query, activeCategories, selectedStay, mapFilter])
 
   // Keep stable ref in sync
   useEffect(() => {

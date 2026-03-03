@@ -506,8 +506,7 @@ export default function MapComponent() {
   const setSelection     = useAppStore((s) => s.setSelection)
   const selectedStay     = useAppStore((s) => s.selectedStay)
   const mode             = useAppStore((s) => s.mode)
-  const walkingMode      = useAppStore((s) => s.walkingMode)
-  const quickFilter      = useAppStore((s) => s.quickFilter)
+  const mapFilter        = useAppStore((s) => s.mapFilter)
 
   const [mapReady, setMapReady] = useState(false)
   const [isCentered, setIsCentered] = useState(true)
@@ -526,24 +525,21 @@ export default function MapComponent() {
     // 1. Stay-based filter
     let list = getPOIsForStay(selectedStay, allLocations, allLocations)
 
-    // 2. Walking mode filter (1.5 km from user)
-    if (walkingMode && position) {
+    // 2. Map filter mode (mutually exclusive)
+    if (mapFilter === 'walking' && position) {
       list = list.filter((poi) => {
         if (poi.lat == null || poi.lng == null) return false
         return haversine(poi.lat, poi.lng, position.lat, position.lng) <= 1500
       })
-    }
-
-    // 3. Quick filter (hotels only)
-    if (quickFilter === 'hotels') {
+    } else if (mapFilter === 'hotels') {
       list = list.filter((poi) => poi.category === 'hotel')
     }
 
-    // 4. Category filter (respects user chip selection)
+    // 3. Category filter (respects user chip selection)
     list = list.filter((l) => activeCategories.includes(l.category))
 
     return list
-  }, [allLocations, selectedStay, walkingMode, position, quickFilter, activeCategories, isPlannerOpen, mode])
+  }, [allLocations, selectedStay, mapFilter, position, activeCategories, isPlannerOpen, mode])
 
   const handleRecenter = useCallback(() => {
     const pos = useAppStore.getState().position

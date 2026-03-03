@@ -1,19 +1,21 @@
 import { useAppStore } from '../store/appStore.js'
 
 export default function MapBottomControls() {
-  const walkingMode      = useAppStore((s) => s.walkingMode)
-  const setWalkingMode   = useAppStore((s) => s.setWalkingMode)
-  const quickFilter      = useAppStore((s) => s.quickFilter)
-  const setQuickFilter   = useAppStore((s) => s.setQuickFilter)
+  const mapFilter        = useAppStore((s) => s.mapFilter)
+  const setMapFilter     = useAppStore((s) => s.setMapFilter)
   const showNearbyList   = useAppStore((s) => s.showNearbyList)
   const setShowNearbyList = useAppStore((s) => s.setShowNearbyList)
+
+  function toggle(filter) {
+    setMapFilter(mapFilter === filter ? 'all' : filter)
+  }
 
   return (
     <div
       className="flex-shrink-0 flex items-stretch bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700"
       style={{ height: 52 }}
     >
-      {/* Nearby */}
+      {/* Nearby — controls list overlay only, no map filter */}
       <button
         onClick={() => setShowNearbyList(!showNearbyList)}
         className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors active:bg-gray-50 dark:active:bg-gray-800/60 ${
@@ -26,18 +28,15 @@ export default function MapBottomControls() {
           <line x1="4" y1="18" x2="12" y2="18" strokeLinecap="round" />
         </svg>
         <span className="text-xs font-medium">Nearby</span>
-        {showNearbyList && (
-          <span className="absolute top-0 left-0 right-0 h-0.5 bg-sky-500 rounded-b-sm" />
-        )}
       </button>
 
       <div className="self-stretch my-2 w-px bg-gray-200 dark:bg-gray-700" />
 
-      {/* Walking */}
+      {/* Walking — mutually exclusive map filter */}
       <button
-        onClick={() => setWalkingMode(!walkingMode)}
+        onClick={() => toggle('walking')}
         className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors active:bg-gray-50 dark:active:bg-gray-800/60 ${
-          walkingMode ? 'text-sky-500' : 'text-gray-500 dark:text-gray-400'
+          mapFilter === 'walking' ? 'text-sky-500' : 'text-gray-500 dark:text-gray-400'
         }`}
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
@@ -48,18 +47,18 @@ export default function MapBottomControls() {
           <path d="M14 22l-1-3" strokeLinecap="round" />
         </svg>
         <span className="text-xs font-medium">Walking</span>
-        {walkingMode && (
-          <span className="text-xs text-sky-400" style={{ fontSize: 9, marginTop: -2 }}>1.5 km</span>
+        {mapFilter === 'walking' && (
+          <span style={{ fontSize: 9, marginTop: -2, color: '#38bdf8' }}>1.5 km</span>
         )}
       </button>
 
       <div className="self-stretch my-2 w-px bg-gray-200 dark:bg-gray-700" />
 
-      {/* Hotels */}
+      {/* Hotels — mutually exclusive map filter */}
       <button
-        onClick={() => setQuickFilter(quickFilter === 'hotels' ? 'all' : 'hotels')}
+        onClick={() => toggle('hotels')}
         className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors active:bg-gray-50 dark:active:bg-gray-800/60 ${
-          quickFilter === 'hotels' ? 'text-sky-500' : 'text-gray-500 dark:text-gray-400'
+          mapFilter === 'hotels' ? 'text-sky-500' : 'text-gray-500 dark:text-gray-400'
         }`}
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
