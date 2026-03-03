@@ -10,6 +10,7 @@ import { writeLocation } from '../db/locations.js'
 import { useTripConfig } from '../hooks/useTripConfig.js'
 import { BOTTOM_NAV_HEIGHT } from './BottomNav.jsx'
 import { getRouteColor, getDayColor } from '../config/routeColors.js'
+import { CATEGORIES } from '../config/categories.js'
 import EntryCard from './EntryCard.jsx'
 import EntryCreatorSheet from './EntryCreatorSheet.jsx'
 import DayPicker from './DayPicker.jsx'
@@ -150,7 +151,7 @@ function LocationPickerSheet({ targetDay, onClose }) {
                 </p>
                 {loc.category && (
                   <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                    {loc.category}
+                    {CATEGORIES.find((c) => c.key === loc.category)?.label ?? loc.category}
                   </p>
                 )}
               </div>

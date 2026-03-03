@@ -84,6 +84,11 @@ const LocationRow = forwardRef(function LocationRow({ location, distance, isSele
                 {location.address}
               </p>
             )}
+            {location.openingHours && location.openingHours.length > 0 && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                🕐 {location.openingHours[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]}
+              </p>
+            )}
             {(location.rating != null || location.phone || location.website) && (
               <div className="flex flex-wrap gap-2 mb-2">
                 {location.rating != null && (
@@ -119,7 +124,7 @@ const LocationRow = forwardRef(function LocationRow({ location, distance, isSele
                 return (
                   <>
                     <a
-                      href={hasCoords ? `https://www.google.com/maps/dir/?api=1${position ? `&origin=${position.lat},${position.lng}` : ''}&destination=${location.lat},${location.lng}` : undefined}
+                      href={hasCoords ? `google.navigation:q=${location.lat},${location.lng}` : undefined}
                       target={hasCoords ? '_blank' : undefined}
                       rel="noreferrer"
                       className={`flex-1 text-center py-2 px-2 text-sm font-medium bg-sky-500 text-white rounded active:bg-sky-600 ${!hasCoords ? 'opacity-50 pointer-events-none' : ''}`}
