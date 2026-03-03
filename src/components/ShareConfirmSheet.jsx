@@ -71,11 +71,7 @@ export default function ShareConfirmSheet({ onClose }) {
       const res = await fetch(endpoint)
       const data = await res.json()
       if (!res.ok) {
-        if (data.error === 'share_google_unsupported') {
-          setErrorMsg('This link type can\'t be resolved automatically. In Google Maps: tap ··· → Share → Copy link, then paste that URL here.')
-        } else {
-          setErrorMsg(data.error ?? 'Failed to resolve URL')
-        }
+        setErrorMsg(data.error ?? 'Failed to resolve URL')
         setStatus('error')
         return
       }
