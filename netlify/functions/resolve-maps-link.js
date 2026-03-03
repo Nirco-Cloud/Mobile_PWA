@@ -157,25 +157,57 @@ const REGION_NAMES = {
   za: 'South Africa', eg: 'Egypt', ma: 'Morocco',
 }
 
+/**
+ * Returns true if any significant word from the query appears in the result name.
+ * Used to validate that Text Search returned the right place, not a nearby business
+ * that just has the query word in its address.
+ */
+function resultMatchesQuery(resultName, query) {
+  if (!resultName || !query) return false
+  const normalize = (s) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  const words = normalize(query).split(/\s+/).filter((w) => w.length > 2)
+  const name = normalize(resultName)
+  return words.some((w) => name.includes(w))
+}
+
+/**
+ * Text Search with smart fallback:
+ * 1. Try with just regionCode (no country name) — best for landmarks
+ * 2. If result name doesn't match query, retry with country name appended — best for ambiguous business names
+ */
 async function fetchPlaceByTextSearch(query, apiKey, regionCode = null) {
   const fieldMask = 'places.id,places.displayName,places.location,places.formattedAddress,places.internationalPhoneNumber,places.websiteUri,places.rating,places.currentOpeningHours,places.types'
-  // Append country name to query for strong geographic anchoring
+
+  async function doSearch(textQuery, rc) {
+    const body = { textQuery }
+    if (rc) body.regionCode = rc
+    const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': apiKey,
+        'X-Goog-FieldMask': fieldMask,
+      },
+      body: JSON.stringify(body),
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return data.places?.[0] ?? null
+  }
+
+  // Attempt 1: plain query + regionCode (finds landmarks correctly)
+  const place1 = await doSearch(query, regionCode)
+  if (place1 && resultMatchesQuery(place1.displayName?.text, query)) return place1
+
+  // Attempt 2: query + country name (anchors ambiguous business names by country)
   const countryName = regionCode ? REGION_NAMES[regionCode] : null
-  const textQuery = countryName ? `${query} ${countryName}` : query
-  const body = { textQuery }
-  if (regionCode) body.regionCode = regionCode
-  const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Goog-Api-Key': apiKey,
-      'X-Goog-FieldMask': fieldMask,
-    },
-    body: JSON.stringify(body),
-  })
-  if (!res.ok) return null
-  const data = await res.json()
-  return data.places?.[0] ?? null
+  if (countryName) {
+    const place2 = await doSearch(`${query} ${countryName}`, regionCode)
+    if (place2 && resultMatchesQuery(place2.displayName?.text, query)) return place2
+  }
+
+  // Return best available result (attempt 1 preferred, then attempt 2)
+  return place1 ?? null
 }
 
 async function fetchNearbyPlaceNew(lat, lng, apiKey) {
