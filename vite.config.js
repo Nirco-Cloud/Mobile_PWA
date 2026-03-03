@@ -46,6 +46,15 @@ export default defineConfig({
             purpose: 'maskable',
           },
         ],
+        share_target: {
+          action: '/Mobile_PWA/share-target',
+          method: 'GET',
+          params: {
+            url:   'url',
+            text:  'text',
+            title: 'title',
+          },
+        },
       },
       devOptions: {
         enabled: true,

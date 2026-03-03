@@ -33,6 +33,7 @@ export default function ListComponent() {
   const setActiveCategories = useAppStore((s) => s.setActiveCategories)
   const selectedStay        = useAppStore((s) => s.selectedStay)
   const mapFilter           = useAppStore((s) => s.mapFilter)
+  const userPois            = useAppStore((s) => s.userPois)
   const [query, setQuery]   = useState('')
   const [expandedId, setExpandedId] = useState(null)
   const containerRef        = useRef(null)
@@ -89,13 +90,28 @@ export default function ListComponent() {
           (l.notes && l.notes.toLowerCase().includes(q)),
       )
     }
+    // Merge user-added POIs (always included, filtered by query only)
+    const q = query.trim().toLowerCase()
+    const userPoisFiltered = userPois
+      .filter((p) => {
+        if (!q) return true
+        return (
+          p.name.toLowerCase().includes(q) ||
+          (p.notes && p.notes.toLowerCase().includes(q)) ||
+          (p.address && p.address.toLowerCase().includes(q))
+        )
+      })
+      .map((p) => ({ ...p, isUserPoi: true }))
+
+    const combined = [...list, ...userPoisFiltered]
+
     if (position) {
-      list = list
-        .map((l) => ({ ...l, _dist: haversine(position.lat, position.lng, l.lat, l.lng) }))
+      return combined
+        .map((l) => ({ ...l, _dist: l.lat != null ? haversine(position.lat, position.lng, l.lat, l.lng) : Infinity }))
         .sort((a, b) => a._dist - b._dist)
     }
-    return list
-  }, [locations, position, query, activeCategories, selectedStay, mapFilter])
+    return combined
+  }, [locations, position, query, activeCategories, selectedStay, mapFilter, userPois])
 
   // Keep stable ref in sync
   useEffect(() => {

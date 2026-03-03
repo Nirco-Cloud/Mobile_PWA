@@ -141,5 +141,18 @@ export const useAppStore = create(
     // Nearby list overlay (triggered by bottom control)
     showNearbyList: false,
     setShowNearbyList: (showNearbyList) => set({ showNearbyList }),
+
+    // User-added POIs (personal saved places from Google Maps links)
+    userPois: [],
+    setUserPois: (userPois) => set({ userPois }),
+    addUserPoi: (poi) => set((s) => ({ userPois: [...s.userPois, poi] })),
+    removeUserPoi: (id) => set((s) => ({ userPois: s.userPois.filter((p) => p.id !== id) })),
+    updateUserPoi: (updated) =>
+      set((s) => ({ userPois: s.userPois.map((p) => (p.id === updated.id ? updated : p)) })),
+
+    // Share target payload — set when app is opened via Web Share Target
+    shareTargetPayload: null,  // { url, text, title } | null
+    setShareTargetPayload: (payload) => set({ shareTargetPayload: payload }),
+    clearShareTargetPayload: () => set({ shareTargetPayload: null }),
   })),
 )

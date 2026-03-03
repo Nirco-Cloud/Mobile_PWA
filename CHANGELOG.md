@@ -14,7 +14,30 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [2.0.0] — 2026-03-03 (PWA_V2 branch)
+## [2.3.0] — 2026-03-03 (New_With_Import branch)
+
+### Added
+- **User-Added POI system** — save personal places from Google Maps links directly into the app
+- **Web Share Target** — app registers as a share target in the PWA manifest; sharing a Google Maps link from the Android share sheet opens the app and auto-resolves the place
+- **ShareConfirmSheet** — bottom sheet that resolves a Maps URL via the Netlify function, shows place details (name, address, rating, phone, website), allows name edit and personal note, saves to IndexedDB on confirm
+- **Netlify function `resolve-maps-link.js`** — server-side resolver: follows redirects, extracts coordinates/place_id from URL, calls Google Places API, returns `{name, lat, lng, address, category, placeId, phone, website, rating, openingHours}` with approved type→category mapping
+- **`userPoisStore`** — new IndexedDB store (`nirco-user-pois`) for personal places
+- **`userPoisDb.js`** — CRUD helpers: `saveUserPoi`, `readAllUserPois`, `deleteUserPoi`, `updateUserPoi`, `clearAllUserPois`, `getUserPoiByPlaceId`
+- **Personal Places section** in Settings — shows saved count, "+ Add from Maps link" button, "Clear All" destructive button
+- **userPois merged into map markers** — personal places appear on the map with a gold ★ badge overlay (always visible in explore mode, regardless of stay/category filter)
+- **userPois merged into list** — personal places appear in the location list with a gold ★ prefix, sorted by distance alongside regular POIs
+- **Duplicate detection** — checks `placeId` before saving; shows "Already saved as …" error if duplicate
+- **Restaurant category** — new category with orange icon (`restaurant.svg`)
+- **PascalCase category keys** — `hotel→Hotel`, `train→Train`, `location→Location`, `activity→Activity`; migration on boot for backward compatibility
+
+### Changed
+- `appStore.js` — added `userPois[]`, `setUserPois`, `addUserPoi`, `removeUserPoi`, `updateUserPoi`, `shareTargetPayload`, `setShareTargetPayload`, `clearShareTargetPayload`
+- Boot sequence now loads userPois in parallel with locations and plan entries
+- `vite.config.js` manifest now includes `share_target` registration
+
+---
+
+## [2.2.0] — 2026-03-03 (PWA_V2 branch)
 
 ### Added
 - **Stay architecture** — `src/config/stays.js` defines 7 stays (Tokyo Shinjuku, Hakone, Nakatsugawa, Takayama, Kanazawa, Kyoto, Tokyo Daiba) each with `hotelId`, fallback center coordinates, radius, and zoom level

@@ -7,6 +7,7 @@ import { getStayById, validateStayHotelIds } from './config/stays.js'
 import { initializeData, initializePlan } from './db/sync.js'
 import { readAllLocations } from './db/locations.js'
 import { readAllPlanEntries, enrichPlanEntries, deletePlanEntry } from './db/plannerDb.js'
+import { readAllUserPois, clearAllUserPois } from './db/userPoisDb.js'
 import { getGithubConfig, setGithubConfig, getLastSyncTime } from './db/githubSync.js'
 import { useGithubSync } from './hooks/useGithubSync.js'
 import { toDateInput, fromDateInput } from './config/trip.js'
@@ -24,6 +25,7 @@ import MapBottomControls from './components/MapBottomControls.jsx'
 import BottomNav, { BOTTOM_NAV_HEIGHT } from './components/BottomNav.jsx'
 import PlannerOverlay from './components/PlannerOverlay.jsx'
 import LocationDetailSheet from './components/LocationDetailSheet.jsx'
+import ShareConfirmSheet from './components/ShareConfirmSheet.jsx'
 import OfflineToast from './components/OfflineToast.jsx'
 
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
@@ -49,6 +51,10 @@ const setPlanEntries   = useAppStore((s) => s.setPlanEntries)
   const setGithubLastSync    = useAppStore((s) => s.setGithubLastSync)
   const showNearbyList       = useAppStore((s) => s.showNearbyList)
   const setShowNearbyList    = useAppStore((s) => s.setShowNearbyList)
+  const setUserPois          = useAppStore((s) => s.setUserPois)
+  const shareTargetPayload   = useAppStore((s) => s.shareTargetPayload)
+  const setShareTargetPayload = useAppStore((s) => s.setShareTargetPayload)
+  const [showShareSheet, setShowShareSheet] = useState(false)
 
   // Nearby panel drag-to-resize
   const [nearbyH, setNearbyH] = useState(55) // percent of map container
@@ -141,6 +147,20 @@ const setPlanEntries   = useAppStore((s) => s.setPlanEntries)
     window.history.replaceState(null, '', window.location.pathname + window.location.search)
   }, [setGithubConfigured])
 
+  // Detect Web Share Target — URL params when app is opened via share sheet
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const sharedUrl   = params.get('url')
+    const sharedText  = params.get('text')
+    const sharedTitle = params.get('title')
+    if (sharedUrl || sharedText) {
+      setShareTargetPayload({ url: sharedUrl, text: sharedText, title: sharedTitle })
+      setShowShareSheet(true)
+      // Clean URL so refresh doesn't re-trigger
+      window.history.replaceState(null, '', window.location.pathname)
+    }
+  }, [setShareTargetPayload])
+
   // Top-level hooks
   useServiceWorker()
   useGPS()
@@ -154,14 +174,16 @@ const setPlanEntries   = useAppStore((s) => s.setPlanEntries)
       try {
         await initializeData()
         await initializePlan()
-        const [records, planRecords] = await Promise.all([
+        const [records, planRecords, userPoisRecords] = await Promise.all([
           readAllLocations(),
           readAllPlanEntries(),
+          readAllUserPois(),
         ])
         const allLocs = migrateLocations(records)
         setLocations(allLocs)
         validateStayHotelIds(allLocs)
         setPlanEntries(enrichPlanEntries(planRecords, allLocs))
+        setUserPois(userPoisRecords)
         // Validate saved passphrase against encrypted data
         const savedPass = await idbGet('encPassphrase')
         if (savedPass) {
@@ -187,13 +209,15 @@ const setPlanEntries   = useAppStore((s) => s.setPlanEntries)
       } catch (err) {
         console.error('Boot error:', err)
         try {
-          const [records, planRecords] = await Promise.all([
+          const [records, planRecords, userPoisRecords] = await Promise.all([
             readAllLocations(),
             readAllPlanEntries(),
+            readAllUserPois(),
           ])
           const allLocs = migrateLocations(records)
           setLocations(allLocs)
           setPlanEntries(enrichPlanEntries(planRecords, allLocs))
+          setUserPois(userPoisRecords)
           if (allLocs.length === 0) {
             console.error('Boot fallback: IDB is also empty — no data available')
           }
@@ -207,7 +231,7 @@ const setPlanEntries   = useAppStore((s) => s.setPlanEntries)
       setTimeout(() => setShowSplash(false), remaining)
     }
     boot()
-  }, [setLocations, setSyncStatus, setPlanEntries])
+  }, [setLocations, setSyncStatus, setPlanEntries, setUserPois])
 
   function handleTabChange(tab) {
     if (tab === 'plan') {
@@ -311,6 +335,7 @@ async function handleResync() {
             setTripDates(start, end)
             await idbSet('tripDates', { start: start.toISOString(), end: end.toISOString() })
           }}
+          onOpenShareSheet={() => { setShowSettings(false); setShowShareSheet(true) }}
         />
       )}
 
@@ -318,13 +343,17 @@ async function handleResync() {
 
       <LocationDetailSheet />
 
+      {showShareSheet && (
+        <ShareConfirmSheet onClose={() => setShowShareSheet(false)} />
+      )}
+
 <BottomNav activeTab={showSettings ? 'settings' : activeTab} onTabChange={handleTabChange} />
       <OfflineToast />
     </APIProvider>
   )
 }
 
-function SettingsPanel({ batteryLevel, position, gpsDenied, onResync, onClose, bottomNavHeight, qrConfigReceived, onDismissQrBanner, onSaveTripDates }) {
+function SettingsPanel({ batteryLevel, position, gpsDenied, onResync, onClose, bottomNavHeight, qrConfigReceived, onDismissQrBanner, onSaveTripDates, onOpenShareSheet }) {
   const syncStatus     = useAppStore((s) => s.syncStatus)
   const locations      = useAppStore((s) => s.locations)
   const demoMode       = useAppStore((s) => s.demoMode)
@@ -334,6 +363,8 @@ function SettingsPanel({ batteryLevel, position, gpsDenied, onResync, onClose, b
   const setIsDark  = useAppStore((s) => s.setIsDark)
   const showTripConnectors    = useAppStore((s) => s.showTripConnectors)
   const setShowTripConnectors = useAppStore((s) => s.setShowTripConnectors)
+  const userPois     = useAppStore((s) => s.userPois)
+  const setUserPois  = useAppStore((s) => s.setUserPois)
   const planEntries    = useAppStore((s) => s.planEntries)
   const setPlanEntries = useAppStore((s) => s.setPlanEntries)
   const encPassphrase    = useAppStore((s) => s.encPassphrase)
@@ -703,6 +734,38 @@ function SettingsPanel({ batteryLevel, position, gpsDenied, onResync, onClose, b
               Red lines connect planned stops in order
             </p>
           )}
+        </section>
+
+        {/* Personal Places */}
+        <section className="space-y-2">
+          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+            Personal Places
+          </h3>
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            {userPois.length === 0
+              ? 'No saved places yet.'
+              : `${userPois.length} place${userPois.length === 1 ? '' : 's'} saved`}
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={onOpenShareSheet}
+              className="flex-1 py-2 bg-sky-500 text-white rounded-lg text-sm font-medium active:bg-sky-600"
+            >
+              + Add from Maps link
+            </button>
+            {userPois.length > 0 && (
+              <button
+                onClick={async () => {
+                  if (!confirm(`Delete all ${userPois.length} personal places?`)) return
+                  await clearAllUserPois()
+                  setUserPois([])
+                }}
+                className="px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-sm font-medium active:bg-red-200"
+              >
+                Clear All
+              </button>
+            )}
+          </div>
         </section>
 
         {/* GPS */}

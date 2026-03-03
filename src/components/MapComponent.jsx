@@ -496,6 +496,7 @@ export default function MapComponent() {
   const selectedStay     = useAppStore((s) => s.selectedStay)
   const mode             = useAppStore((s) => s.mode)
   const mapFilter        = useAppStore((s) => s.mapFilter)
+  const userPois         = useAppStore((s) => s.userPois)
 
   const [mapReady, setMapReady] = useState(false)
   const [isCentered, setIsCentered] = useState(true)
@@ -527,8 +528,13 @@ export default function MapComponent() {
     // 3. Category filter (respects user chip selection)
     list = list.filter((l) => activeCategories.includes(l.category))
 
-    return list
-  }, [allLocations, selectedStay, mapFilter, position, activeCategories, isPlannerOpen, mode])
+    // 4. Merge user-added POIs — always visible in explore mode, regardless of stay/category filter
+    const userPoisWithCoords = userPois
+      .filter((p) => p.lat != null && p.lng != null)
+      .map((p) => ({ ...p, isUserPoi: true }))
+
+    return [...list, ...userPoisWithCoords]
+  }, [allLocations, selectedStay, mapFilter, position, activeCategories, isPlannerOpen, mode, userPois])
 
   const handleRecenter = useCallback(() => {
     const pos = useAppStore.getState().position

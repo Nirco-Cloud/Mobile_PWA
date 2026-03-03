@@ -107,6 +107,27 @@ export default function MapMarker({ location, isSelected }) {
             transition: 'width 0.15s, height 0.15s, filter 0.15s',
           }}
         />
+        {/* User-saved badge — small gold star on top-right */}
+        {location.isUserPoi && (
+          <div style={{
+            position: 'absolute',
+            top: -(size / 2) - 6,
+            left: size / 2 - 6,
+            width: 14,
+            height: 14,
+            borderRadius: '50%',
+            backgroundColor: '#f59e0b',
+            border: '1.5px solid white',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.35)',
+            fontSize: 8,
+            lineHeight: 1,
+          }}>
+            ★
+          </div>
+        )}
       </div>
     </AdvancedMarker>
   )

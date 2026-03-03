@@ -33,9 +33,12 @@ const LocationRow = forwardRef(function LocationRow({ location, distance, isSele
         <div className="flex items-center gap-2 px-3 py-3 min-h-[56px]">
           <CategoryDot category={location.category} onClick={handleFocus} />
           <span
-            className="flex-1 truncate text-base font-medium text-gray-800 dark:text-gray-100 cursor-pointer active:text-sky-600"
+            className="flex-1 truncate text-base font-medium text-gray-800 dark:text-gray-100 cursor-pointer active:text-sky-600 inline-flex items-center gap-1"
             onClick={handleNameTap}
           >
+            {location.isUserPoi && (
+              <span className="text-amber-500 text-xs shrink-0">★</span>
+            )}
             {location.name}
           </span>
           {distance != null && (
