@@ -14,6 +14,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.5.0] — 2026-03-03
+
+### Fixed
+- **`share.google` links now resolve correctly** — fetches HTML body, extracts place name from embedded `/search?q=` href, uses Places Text Search with country name appended to query for correct geographic anchoring
+- **Wrong country results** — `rlz` parameter parsed for sharer's country code (e.g. IL=Israel, JP=Japan); country name appended to query ("Village Steakhouse Israel") prevents cross-country false matches
+- **`maps/search?query=TOKEN`** — opaque tokens now fall back to `share.google/TOKEN` resolution pipeline
+- **Premature `share_google_unsupported` rejection** removed — all link formats now attempt full resolution before returning an error
+
+---
+
 ## [2.4.0] — 2026-03-03
 
 ### Fixed
