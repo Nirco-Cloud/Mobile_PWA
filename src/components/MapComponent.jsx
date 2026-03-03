@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, useCallback, useMemo, Fragment } from 'react'
 import { Map, useMap, useApiIsLoaded, AdvancedMarker } from '@vis.gl/react-google-maps'
-import { MarkerClusterer, SuperClusterAlgorithm } from '@googlemaps/markerclusterer'
 import { useAppStore } from '../store/appStore.js'
 import MapMarker from './MapMarker.jsx'
 import { getRouteColor, getDayColor } from '../config/routeColors.js'
@@ -40,28 +39,14 @@ let _mapInstance = null
 let _notifyPanStateChange = null // (isCentered: bool) => void
 
 // ── MapMarkers ─────────────────────────────────────────────────────────────────
-// Hotels render independently; POIs are registered with MarkerClusterer.
 function MapMarkers({ locations, selectedLocationId }) {
   const map = useMap()
-  const [clusterer, setClusterer] = useState(null)
-
-  useEffect(() => {
-    if (!map) return
-    const mc = new MarkerClusterer({
-      map,
-      algorithm: new SuperClusterAlgorithm({ radius: 80, maxZoom: 14, minPoints: 2 }),
-    })
-    setClusterer(mc)
-    return () => { mc.clearMarkers(); mc.setMap(null) }
-  }, [map])
-
   if (!map) return null
   return locations.map((loc) => (
     <MapMarker
       key={loc.id}
       location={loc}
       isSelected={selectedLocationId === loc.id}
-      clusterer={loc.category !== 'hotel' ? clusterer : null}
     />
   ))
 }
