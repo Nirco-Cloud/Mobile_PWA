@@ -14,6 +14,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.16.0] — 2026-03-04
+
+### Changed
+- **Category chip order** — Restaurant moved to #1, Izakaya to #7, Activity to #12, Hotel to #15
+- **Location row button** — renamed "Edit" → "Expand" / "Close" to better reflect its toggle behaviour
+
+---
+
 ## [2.15.0] — 2026-03-04
 
 ### Added

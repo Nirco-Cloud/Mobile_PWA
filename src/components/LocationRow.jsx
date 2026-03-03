@@ -54,7 +54,7 @@ const LocationRow = forwardRef(function LocationRow({ location, distance, isSele
                 : 'text-gray-500 border-gray-200 dark:border-gray-700 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600'
             }`}
           >
-            Edit
+            {isExpanded ? 'Close' : 'Expand'}
           </button>
         </div>
 
