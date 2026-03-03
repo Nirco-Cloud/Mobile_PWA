@@ -1,5 +1,5 @@
-import { useCallback } from 'react'
-import { AdvancedMarker } from '@vis.gl/react-google-maps'
+import { useCallback, useEffect } from 'react'
+import { AdvancedMarker, useAdvancedMarkerRef } from '@vis.gl/react-google-maps'
 import { useAppStore } from '../store/appStore.js'
 import { getCategoryIcon } from '../config/categories.js'
 
@@ -63,26 +63,22 @@ function HotelMarker({ location, isSelected, onClick }) {
   )
 }
 
-export default function MapMarker({ location, isSelected }) {
-  const setSelection        = useAppStore((s) => s.setSelection)
-  const setDetailLocationId = useAppStore((s) => s.setDetailLocationId)
-
-  const handleClick = useCallback(() => {
-    setSelection(location.id, 'map')
-    setDetailLocationId(location.id)
-  }, [location.id, setSelection, setDetailLocationId])
-
-  // Hotel gets its own dominant marker style
-  if (location.category === 'hotel') {
-    return <HotelMarker location={location} isSelected={isSelected} onClick={handleClick} />
-  }
-
+// POI marker — registers with MarkerClusterer when clusterer prop is provided
+function PoiMapMarker({ location, isSelected, clusterer, onClick }) {
+  const [markerRef, marker] = useAdvancedMarkerRef()
   const size = isSelected ? 40 : 28
+
+  useEffect(() => {
+    if (!clusterer || !marker) return
+    clusterer.addMarker(marker)
+    return () => { clusterer.removeMarker(marker) }
+  }, [clusterer, marker])
 
   return (
     <AdvancedMarker
+      ref={markerRef}
       position={{ lat: location.lat, lng: location.lng }}
-      onClick={handleClick}
+      onClick={onClick}
       title={location.name}
     >
       <div style={{ position: 'relative', width: 0, height: 0 }}>
@@ -109,5 +105,29 @@ export default function MapMarker({ location, isSelected }) {
         />
       </div>
     </AdvancedMarker>
+  )
+}
+
+export default function MapMarker({ location, isSelected, clusterer }) {
+  const setSelection        = useAppStore((s) => s.setSelection)
+  const setDetailLocationId = useAppStore((s) => s.setDetailLocationId)
+
+  const handleClick = useCallback(() => {
+    setSelection(location.id, 'map')
+    setDetailLocationId(location.id)
+  }, [location.id, setSelection, setDetailLocationId])
+
+  // Hotel gets its own dominant marker style — never clustered
+  if (location.category === 'hotel') {
+    return <HotelMarker location={location} isSelected={isSelected} onClick={handleClick} />
+  }
+
+  return (
+    <PoiMapMarker
+      location={location}
+      isSelected={isSelected}
+      clusterer={clusterer}
+      onClick={handleClick}
+    />
   )
 }

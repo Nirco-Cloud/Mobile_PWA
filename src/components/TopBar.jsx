@@ -79,17 +79,21 @@ export default function TopBar() {
         )}
       </div>
 
-      {/* Explore | Overview segmented control — iOS pill style */}
-      <div className="flex rounded-lg bg-gray-100 dark:bg-gray-800 p-0.5 text-sm gap-0.5">
+      {/* Explore | Overview segmented control */}
+      <div
+        className="flex rounded-full p-0.5 text-sm gap-0.5"
+        style={{ backgroundColor: '#1F1F1F' }}
+      >
         {['explore', 'overview'].map((m) => (
           <button
             key={m}
             onClick={() => setMode(m)}
-            className={`px-3 py-1 rounded-md font-normal capitalize transition-all duration-200 ${
-              mode === m
-                ? 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 shadow-sm'
-                : 'text-gray-400 dark:text-gray-500 active:text-gray-600 dark:active:text-gray-300'
-            }`}
+            className="px-3 py-1 rounded-full font-normal capitalize"
+            style={{
+              transition: 'background-color 150ms',
+              backgroundColor: mode === m ? '#2B3A67' : 'transparent',
+              color: mode === m ? '#EAF0FF' : '#8A94B8',
+            }}
           >
             {m}
           </button>

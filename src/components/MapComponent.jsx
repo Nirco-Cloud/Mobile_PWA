@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback, useMemo, Fragment } from 'react'
 import { Map, useMap, useApiIsLoaded, AdvancedMarker } from '@vis.gl/react-google-maps'
+import { MarkerClusterer, SuperClusterAlgorithm } from '@googlemaps/markerclusterer'
 import { useAppStore } from '../store/appStore.js'
 import MapMarker from './MapMarker.jsx'
 import { getRouteColor, getDayColor } from '../config/routeColors.js'
@@ -39,14 +40,28 @@ let _mapInstance = null
 let _notifyPanStateChange = null // (isCentered: bool) => void
 
 // ── MapMarkers ─────────────────────────────────────────────────────────────────
+// Hotels render independently; POIs are registered with MarkerClusterer.
 function MapMarkers({ locations, selectedLocationId }) {
   const map = useMap()
+  const [clusterer, setClusterer] = useState(null)
+
+  useEffect(() => {
+    if (!map) return
+    const mc = new MarkerClusterer({
+      map,
+      algorithm: new SuperClusterAlgorithm({ radius: 80, maxZoom: 14, minPoints: 2 }),
+    })
+    setClusterer(mc)
+    return () => { mc.clearMarkers(); mc.setMap(null) }
+  }, [map])
+
   if (!map) return null
   return locations.map((loc) => (
     <MapMarker
       key={loc.id}
       location={loc}
       isSelected={selectedLocationId === loc.id}
+      clusterer={loc.category !== 'hotel' ? clusterer : null}
     />
   ))
 }
@@ -79,18 +94,7 @@ function MapController() {
     map.setZoom(stay.regionZoom)
   }, [map, selectedStay]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Fit map to all stay centers when overview mode activates
-  useEffect(() => {
-    if (!map || mode !== 'overview') return
-    if (!window.google?.maps?.LatLngBounds) return
-    const locs = useAppStore.getState().locations
-    const bounds = new window.google.maps.LatLngBounds()
-    stays.forEach((stay) => {
-      const center = getStayCenter(stay, locs)
-      if (center) bounds.extend(center)
-    })
-    if (!bounds.isEmpty()) map.fitBounds(bounds, 40)
-  }, [map, mode]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Overview mode: no camera movement — only rendering layers change
 
   // Fit map to planned stops when planner opens or focused day changes
   useEffect(() => {
