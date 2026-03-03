@@ -104,17 +104,18 @@ function extractShareGoogleData(body) {
  * Extract lat/lng from a resolved Google Maps URL or its HTML body.
  */
 function extractCoords(url, body) {
-  // Strategy 1: @lat,lng in URL
-  let m = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)
+  // Strategy 1: !3d<lat>!4d<lng> — actual pin location (highest priority)
+  // These encode the exact place coordinates, not the map viewport center
+  let m = url.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/)
   if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) }
 
-  // Strategy 2: !3d<lat>!4d<lng> in URL
-  m = url.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/)
-  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) }
-
-  // Strategy 3: percent-encoded !3d!4d
+  // Strategy 2: percent-encoded !3d!4d
   const decoded = decodeURIComponent(url)
   m = decoded.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/)
+  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) }
+
+  // Strategy 3: @lat,lng in URL — map viewport center (fallback, may be offset)
+  m = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)
   if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) }
 
   // Strategy 4: @lat,lng in HTML body
