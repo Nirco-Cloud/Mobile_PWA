@@ -6,7 +6,7 @@ import { useTripConfig } from '../hooks/useTripConfig.js'
 const DAYS_SHORT   = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-export default function DayPicker({ location, onClose, onDone, pickerOnly = false, jumpMode = false }) {
+export default function DayPicker({ location, onClose, onDone, pickerOnly = false, jumpMode = false, onSkip = null }) {
   const planEntries  = useAppStore((s) => s.planEntries)
   const addPlanEntry = useAppStore((s) => s.addPlanEntry)
   const { tripDays, dayToDate, getTodayDayNumber } = useTripConfig()
@@ -150,14 +150,22 @@ export default function DayPicker({ location, onClose, onDone, pickerOnly = fals
           )}
         </div>
 
-        {/* Cancel */}
-        <div className="px-4 pt-2 pb-3 border-t border-gray-100 dark:border-gray-800 mt-2">
+        {/* Cancel / Skip */}
+        <div className="px-4 pt-2 pb-3 border-t border-gray-100 dark:border-gray-800 mt-2 flex gap-2">
           <button
             onClick={onClose}
-            className="w-full py-3 text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-2xl bg-gray-100 dark:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 transition-colors"
+            className="flex-1 py-3 text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-2xl bg-gray-100 dark:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 transition-colors"
           >
             Cancel
           </button>
+          {onSkip && (
+            <button
+              onClick={onSkip}
+              className="flex-1 py-3 text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-2xl border border-gray-200 dark:border-gray-700 active:bg-gray-100 dark:active:bg-gray-800 transition-colors"
+            >
+              Save POI only
+            </button>
+          )}
         </div>
       </div>
     </>

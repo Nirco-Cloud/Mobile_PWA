@@ -18,6 +18,7 @@ import BookingsSection from './BookingsSection.jsx'
 import { ENTRY_TYPES } from '../config/entryTypes.js'
 import { useVisiblePlanEntries } from '../hooks/useVisiblePlanEntries.js'
 import { useGithubSync } from '../hooks/useGithubSync.js'
+import ShareConfirmSheet from './ShareConfirmSheet.jsx'
 
 // ─── View switcher tabs ──────────────────────────────────────────────────────
 
@@ -914,7 +915,9 @@ export default function PlannerOverlay() {
 
   // ── Drag-to-resize panel ────────────────────────────────────────────────────
   const PLANNER_SNAPS = [35, 65, 85]
-  const [panelH, setPanelH] = useState(85)       // % of viewport
+  const [panelH, setPanelH]           = useState(85)       // % of viewport
+  const [mapsSheetOpen, setMapsSheetOpen] = useState(false)
+  const [mapsSheetPoi, setMapsSheetPoi]   = useState(null)
   const panelRef      = useRef(null)
 
   // Sync external panel height commands (e.g. map marker tap) into local state
@@ -1038,6 +1041,17 @@ export default function PlannerOverlay() {
         <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100 flex-1">
           Trip Planner{planCount > 0 ? ` (${planCount})` : ''}
         </h2>
+        <button
+          onClick={() => setMapsSheetOpen(true)}
+          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-sky-300 dark:border-sky-700 text-sky-600 dark:text-sky-400 text-xs font-semibold active:bg-sky-50 dark:active:bg-sky-900/30"
+          aria-label="Add from Maps link"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
+            <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Maps
+        </button>
         {ghConfigured && (
           <button
             onClick={triggerSync}
@@ -1067,6 +1081,24 @@ export default function PlannerOverlay() {
       {/* Content */}
       {plannerView === 'full'  && <FullTripView />}
       {plannerView === 'today' && <TodayView />}
+
+      {/* Maps link import sheet */}
+      {mapsSheetOpen && (
+        <ShareConfirmSheet
+          onClose={() => setMapsSheetOpen(false)}
+          onSaved={(poi) => { setMapsSheetOpen(false); setMapsSheetPoi(poi) }}
+        />
+      )}
+
+      {/* Day picker after POI saved */}
+      {mapsSheetPoi && (
+        <DayPicker
+          location={mapsSheetPoi}
+          onClose={() => setMapsSheetPoi(null)}
+          onDone={() => setMapsSheetPoi(null)}
+          onSkip={() => setMapsSheetPoi(null)}
+        />
+      )}
     </div>
   )
 }

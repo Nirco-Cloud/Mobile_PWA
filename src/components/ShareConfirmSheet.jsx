@@ -22,7 +22,7 @@ function extractUrlFromText(text) {
   return m ? m[0] : null
 }
 
-export default function ShareConfirmSheet({ onClose }) {
+export default function ShareConfirmSheet({ onClose, onSaved }) {
   const addUserPoi         = useAppStore((s) => s.addUserPoi)
   const shareTargetPayload = useAppStore((s) => s.shareTargetPayload)
   const clearShareTargetPayload = useAppStore((s) => s.clearShareTargetPayload)
@@ -104,7 +104,11 @@ export default function ShareConfirmSheet({ onClose }) {
     addUserPoi(poi)
     setStatus('saved')
     clearShareTargetPayload()
-    setTimeout(onClose, 800)
+    if (onSaved) {
+      setTimeout(() => onSaved(poi), 400)
+    } else {
+      setTimeout(onClose, 800)
+    }
   }
 
   function handleClose() {

@@ -14,6 +14,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.6.0] — 2026-03-03
+
+### Changed
+- **"Add from Maps link" moved to Plan tab** — small `[🔗 Maps]` button inline with Trip Planner heading; removed from Settings tab
+- **DayPicker shown after saving POI** — after resolving and saving a Maps link, user is prompted to add it to a plan day; "Save POI only" skips adding to plan
+
+---
+
 ## [2.5.0] — 2026-03-03
 
 ### Fixed

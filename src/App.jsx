@@ -749,26 +749,18 @@ function SettingsPanel({ batteryLevel, position, gpsDenied, onResync, onClose, b
               ? 'No saved places yet.'
               : `${userPois.length} place${userPois.length === 1 ? '' : 's'} saved`}
           </p>
-          <div className="flex gap-2">
+          {userPois.length > 0 && (
             <button
-              onClick={onOpenShareSheet}
-              className="flex-1 py-2 bg-sky-500 text-white rounded-lg text-sm font-medium active:bg-sky-600"
+              onClick={async () => {
+                if (!confirm(`Delete all ${userPois.length} personal places?`)) return
+                await clearAllUserPois()
+                setUserPois([])
+              }}
+              className="px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-sm font-medium active:bg-red-200"
             >
-              + Add from Maps link
+              Clear All
             </button>
-            {userPois.length > 0 && (
-              <button
-                onClick={async () => {
-                  if (!confirm(`Delete all ${userPois.length} personal places?`)) return
-                  await clearAllUserPois()
-                  setUserPois([])
-                }}
-                className="px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-sm font-medium active:bg-red-200"
-              >
-                Clear All
-              </button>
-            )}
-          </div>
+          )}
         </section>
 
         {/* GPS */}
