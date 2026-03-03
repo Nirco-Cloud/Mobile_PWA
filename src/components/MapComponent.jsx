@@ -118,7 +118,9 @@ function MapController() {
       (s) => ({ id: s.selectedLocationId, source: s.selectionSource }),
       ({ id, source }) => {
         if (source !== 'list' || !id) return
-        const loc = useAppStore.getState().locations.find((l) => l.id === id)
+        const state = useAppStore.getState()
+        const loc = state.locations.find((l) => l.id === id)
+          ?? state.userPois.find((p) => p.id === id)
         if (loc) {
           map.panTo({ lat: loc.lat, lng: loc.lng })
           if (map.getZoom() < 17) map.setZoom(17)
