@@ -14,6 +14,30 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.4.0] — 2026-03-03
+
+### Fixed
+- **`demoMode` default `false`** — GPS was permanently locked to Shinjuku hotel for all users; real GPS distances now work out of the box
+- **"Open in Maps" deep link** — changed from `https://www.google.com/maps/dir/` web URL to `google.navigation:q=LAT,LNG`, which launches Google Maps turn-by-turn navigation directly
+- **Map re-centers on stay hotel after data loads** — stay-centering effect now fires when locations load from IndexedDB, not only on `selectedStay` change; hotel coordinates are used instead of the region fallback
+- **List → map pan for user-saved POIs** — clicking a userPoi row now correctly pans the map; previously only JSON locations were searched
+- **Category labels in Planner location picker** — raw Hebrew category keys (e.g. `מסעדות ואוכל רחוב`) replaced with human-readable English labels (e.g. "Street Food")
+- **Query filtering consistency** — `ListComponent` now uses a single trimmed `q` variable for both regular locations and userPois
+
+### Added
+- **Opening hours** — today's opening hours shown inline in expanded location rows (sourced from Places API)
+- **`share.google` link support** — new Google share format detected; returns actionable error: "tap ··· → Share → Copy link" instead of a generic 422
+- **Places Text Search** — `google.com/maps/search/?api=1&query=PLACE+NAME` URLs now resolved via Places API text search
+- **`?ll=lat,lng` coordinate extraction** — Strategy 5 in the resolver covers older `goo.gl/maps` redirect targets
+- **`maps.google.` domain** — added to `isMapsUrl()` regex for full coverage
+- **Opaque token detection** — `looksLikeToken()` distinguishes real place-name queries from share tokens; tokens return the `share_google_unsupported` error with guidance
+
+### Changed
+- Netlify function URL hardcoded in `ShareConfirmSheet` — no env var or GitHub Secret required
+- `netlify.toml` build command changed from `ignore = "exit 0"` (which blocked all deploys) to `echo 'functions-only deploy'`
+
+---
+
 ## [2.3.0] — 2026-03-03 (New_With_Import branch)
 
 ### Added
