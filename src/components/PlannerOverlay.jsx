@@ -682,23 +682,21 @@ const removePlanEntry      = useAppStore((s) => s.removePlanEntry)
             </button>
             <button
               onClick={() => {
-                if (planRecapMode === 'onward' && planRecapDay === activeDay) {
-                  setPlanRecap(activeDay, 'single')
+                if (planRecapMode === 'single' && planRecapDay === activeDay) {
+                  setPlanRecap(null, null)
                 } else {
-                  setPlanRecap(activeDay, 'onward')
+                  setPlanRecap(activeDay, 'single')
                 }
               }}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-colors text-white shadow-md min-h-[32px]"
-              style={{ backgroundColor: planRecapMode === 'onward' && planRecapDay === activeDay ? '#0ea5e9' : getDayColor(activeDay) }}
-              aria-label={planRecapMode === 'onward' && planRecapDay === activeDay ? 'Showing all days from today onward' : 'Show this day route on map'}
+              style={{ backgroundColor: getDayColor(activeDay) }}
+              aria-label="Show this day route on map"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5">
                 <path d="M3 6l3-3 3 3M6 3v12" strokeLinecap="round" strokeLinejoin="round" />
                 <path d="M21 18l-3 3-3-3M18 21V9" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              {planRecapMode === 'onward' && planRecapDay === activeDay
-                ? `Day ${activeDay}+ onward`
-                : `Day ${activeDay} route`}
+              Day {activeDay} route
             </button>
           </div>
           <p className="text-[11px] text-gray-400 dark:text-gray-500 text-center -mt-0.5">
