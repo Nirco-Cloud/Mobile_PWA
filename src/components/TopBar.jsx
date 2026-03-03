@@ -25,7 +25,7 @@ export default function TopBar() {
       <div className="relative">
         <button
           onClick={() => setDropdownOpen((v) => !v)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 font-semibold text-sm active:bg-sky-100 dark:active:bg-sky-900/50"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-medium text-sm active:bg-gray-200 dark:active:bg-gray-700 transition-colors"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5 shrink-0">
             <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
@@ -79,16 +79,16 @@ export default function TopBar() {
         )}
       </div>
 
-      {/* Explore | Overview segmented control */}
-      <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 text-sm">
+      {/* Explore | Overview segmented control — iOS pill style */}
+      <div className="flex rounded-lg bg-gray-100 dark:bg-gray-800 p-0.5 text-sm gap-0.5">
         {['explore', 'overview'].map((m) => (
           <button
             key={m}
             onClick={() => setMode(m)}
-            className={`px-3.5 py-1.5 font-medium capitalize transition-colors ${
+            className={`px-3 py-1 rounded-md font-normal capitalize transition-all duration-200 ${
               mode === m
-                ? 'bg-sky-500 text-white'
-                : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 active:bg-gray-50 dark:active:bg-gray-700/60'
+                ? 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 shadow-sm'
+                : 'text-gray-400 dark:text-gray-500 active:text-gray-600 dark:active:text-gray-300'
             }`}
           >
             {m}
