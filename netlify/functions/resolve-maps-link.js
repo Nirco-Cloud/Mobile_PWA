@@ -120,6 +120,35 @@ function extractNameFromUrl(url) {
 }
 
 /**
+ * Return true if str looks like an opaque share token (e.g. SVMAJ4QHNDKVlXBgj)
+ * vs a real place-name query (e.g. "Tokyo Tower" or "渋谷").
+ */
+function looksLikeToken(str) {
+  // Tokens: 8-30 chars, only alphanumeric + maybe hyphen/underscore, no spaces
+  return /^[A-Za-z0-9_-]{8,30}$/.test(str.trim())
+}
+
+/**
+ * Places API (New) — Text Search, finds a place by name string.
+ * Used when the Maps URL has ?query=PLACE+NAME format.
+ */
+async function fetchPlaceByTextSearch(query, apiKey) {
+  const fieldMask = 'places.id,places.displayName,places.location,places.formattedAddress,places.internationalPhoneNumber,places.websiteUri,places.rating,places.currentOpeningHours,places.types'
+  const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Goog-Api-Key': apiKey,
+      'X-Goog-FieldMask': fieldMask,
+    },
+    body: JSON.stringify({ textQuery: query }),
+  })
+  if (!res.ok) return null
+  const data = await res.json()
+  return data.places?.[0] ?? null
+}
+
+/**
  * Places API (New) — Nearby Search, returns first result's place_id.
  * Requires key with "Places API (New)" enabled and no HTTP referrer restriction.
  */
@@ -199,6 +228,34 @@ export const handler = async (event) => {
       headers,
       body: JSON.stringify({ error: 'share_google_unsupported' }),
     }
+  }
+
+  // google.com/maps/search/?api=1&query=QUERY — handle two cases:
+  //   • query is a real place name → use Places Text Search API
+  //   • query is an opaque share token → return actionable error
+  const searchMatch = rawUrl.match(/[?&]query=([^&]+)/)
+  if (searchMatch && /maps\/search/i.test(rawUrl)) {
+    const query = decodeURIComponent(searchMatch[1].replace(/\+/g, ' ')).trim()
+    if (looksLikeToken(query)) {
+      return {
+        statusCode: 422,
+        headers,
+        body: JSON.stringify({ error: 'share_google_unsupported' }),
+      }
+    }
+    // Real place name — try Places Text Search
+    const apiKey = process.env.GOOGLE_PLACES_API_KEY
+    if (apiKey) {
+      try {
+        const place = await fetchPlaceByTextSearch(query, apiKey)
+        if (place) {
+          return { statusCode: 200, headers, body: JSON.stringify(mapNewPlaceToResult(place, null)) }
+        }
+      } catch (e) {
+        console.warn('Text search failed:', e.message)
+      }
+    }
+    // No API key or search failed — fall through to URL-based extraction
   }
 
   try {
