@@ -3,7 +3,7 @@ import { APIProvider } from '@vis.gl/react-google-maps'
 import { get as idbGet, set as idbSet, del as idbDel } from 'idb-keyval'
 import { useAppStore } from './store/appStore.js'
 import { CATEGORIES, ALL_CATEGORY_KEYS, migrateLocations } from './config/categories.js'
-import { getStayById } from './config/stays.js'
+import { getStayById, validateStayHotelIds } from './config/stays.js'
 import { initializeData, initializePlan } from './db/sync.js'
 import { readAllLocations } from './db/locations.js'
 import { readAllPlanEntries, enrichPlanEntries, deletePlanEntry } from './db/plannerDb.js'
@@ -132,6 +132,7 @@ const setPlanEntries   = useAppStore((s) => s.setPlanEntries)
         ])
         const allLocs = migrateLocations(records)
         setLocations(allLocs)
+        validateStayHotelIds(allLocs)
         setPlanEntries(enrichPlanEntries(planRecords, allLocs))
         // Validate saved passphrase against encrypted data
         const savedPass = await idbGet('encPassphrase')

@@ -74,8 +74,24 @@ export function getStayCenter(stay, locations) {
     if (hotel?.lat != null && hotel?.lng != null) {
       return { lat: hotel.lat, lng: hotel.lng }
     }
+    // hotelId present but not found in data — warn so sync issues are caught early
+    console.warn(`[stays] hotelId "${stay.hotelId}" (${stay.label}) not found in locations. Using fallback center.`)
   }
   return stay?.fallbackCenter ?? null
+}
+
+/** Validate that every stay's hotelId resolves in the loaded locations.
+ *  Call once after data loads — logs warnings for any broken mappings. */
+export function validateStayHotelIds(locations) {
+  stays.forEach((stay) => {
+    if (!stay.hotelId) return
+    const found = locations.find((l) => l.id === stay.hotelId)
+    if (!found) {
+      console.warn(`[stays] BROKEN hotelId: "${stay.hotelId}" for stay "${stay.label}" — hotel marker will be missing`)
+    } else if (found.lat == null || found.lng == null) {
+      console.warn(`[stays] hotelId "${stay.hotelId}" found but has no coordinates — hotel marker will be missing`)
+    }
+  })
 }
 
 export function getStayById(id) {
