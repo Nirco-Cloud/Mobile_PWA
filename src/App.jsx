@@ -3,6 +3,7 @@ import { APIProvider } from '@vis.gl/react-google-maps'
 import { get as idbGet, set as idbSet, del as idbDel } from 'idb-keyval'
 import { useAppStore } from './store/appStore.js'
 import { CATEGORIES, ALL_CATEGORY_KEYS, migrateLocations } from './config/categories.js'
+import { getStayById } from './config/stays.js'
 import { initializeData, initializePlan } from './db/sync.js'
 import { readAllLocations } from './db/locations.js'
 import { readAllPlanEntries, enrichPlanEntries, deletePlanEntry } from './db/plannerDb.js'
@@ -291,10 +292,11 @@ async function handleResync() {
 }
 
 function SettingsPanel({ batteryLevel, position, gpsDenied, onResync, onClose, bottomNavHeight, qrConfigReceived, onDismissQrBanner, onSaveTripDates }) {
-  const syncStatus = useAppStore((s) => s.syncStatus)
-  const locations  = useAppStore((s) => s.locations)
-  const demoMode   = useAppStore((s) => s.demoMode)
-  const setDemoMode = useAppStore((s) => s.setDemoMode)
+  const syncStatus     = useAppStore((s) => s.syncStatus)
+  const locations      = useAppStore((s) => s.locations)
+  const demoMode       = useAppStore((s) => s.demoMode)
+  const setDemoMode    = useAppStore((s) => s.setDemoMode)
+  const selectedStay   = useAppStore((s) => s.selectedStay)
   const isDark     = useAppStore((s) => s.isDark)
   const setIsDark  = useAppStore((s) => s.setIsDark)
   const showTripConnectors    = useAppStore((s) => s.showTripConnectors)
@@ -591,7 +593,7 @@ function SettingsPanel({ batteryLevel, position, gpsDenied, onResync, onClose, b
           </h3>
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-600 dark:text-gray-300">
-              Lock GPS to Shinjuku Hotel
+              Simulate GPS at current stay
             </p>
             <button
               onClick={() => setDemoMode(!demoMode)}
@@ -608,7 +610,7 @@ function SettingsPanel({ batteryLevel, position, gpsDenied, onResync, onClose, b
           </div>
           {demoMode && (
             <p className="text-xs text-sky-500">
-              GPS locked to Hotel Sunroute Plaza Shinjuku
+              GPS locked to {getStayById(selectedStay)?.label ?? 'current stay'}
             </p>
           )}
         </section>
