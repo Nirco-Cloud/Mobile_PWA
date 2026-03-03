@@ -145,9 +145,24 @@ function extractNameFromUrl(url) {
 
 // ─── Places API (New) ─────────────────────────────────────────────────────────
 
+// ISO 3166-1 alpha-2 → country name for query enrichment
+const REGION_NAMES = {
+  il: 'Israel', jp: 'Japan', us: 'United States', gb: 'United Kingdom',
+  fr: 'France', de: 'Germany', it: 'Italy', es: 'Spain', au: 'Australia',
+  ca: 'Canada', nl: 'Netherlands', be: 'Belgium', ch: 'Switzerland',
+  at: 'Austria', se: 'Sweden', no: 'Norway', dk: 'Denmark', fi: 'Finland',
+  pt: 'Portugal', gr: 'Greece', tr: 'Turkey', th: 'Thailand', sg: 'Singapore',
+  kr: 'South Korea', cn: 'China', tw: 'Taiwan', hk: 'Hong Kong',
+  in: 'India', ae: 'UAE', mx: 'Mexico', br: 'Brazil', ar: 'Argentina',
+  za: 'South Africa', eg: 'Egypt', ma: 'Morocco',
+}
+
 async function fetchPlaceByTextSearch(query, apiKey, regionCode = null) {
   const fieldMask = 'places.id,places.displayName,places.location,places.formattedAddress,places.internationalPhoneNumber,places.websiteUri,places.rating,places.currentOpeningHours,places.types'
-  const body = { textQuery: query }
+  // Append country name to query for strong geographic anchoring
+  const countryName = regionCode ? REGION_NAMES[regionCode] : null
+  const textQuery = countryName ? `${query} ${countryName}` : query
+  const body = { textQuery }
   if (regionCode) body.regionCode = regionCode
   const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
     method: 'POST',
