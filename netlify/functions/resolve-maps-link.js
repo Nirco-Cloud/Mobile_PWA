@@ -181,50 +181,28 @@ async function geocodePlace(query, apiKey, regionCode = null) {
 
 /**
  * Places Text Search — fallback when Geocoding returns no result.
- * Strategy:
- *  1. Search with regionCode only
- *  2. Validate result is in the right country (check address contains country name)
- *  3. If wrong country → retry with country name appended to query
+ * Always appends country name when regionCode is available to anchor
+ * business name searches geographically (e.g. "Village Steakhouse Israel").
+ * Landmarks are handled upstream by Geocoding before this is called.
  */
 async function fetchPlaceByTextSearch(query, apiKey, regionCode = null) {
   const fieldMask = 'places.id,places.displayName,places.location,places.formattedAddress,places.internationalPhoneNumber,places.websiteUri,places.rating,places.currentOpeningHours,places.types'
-
-  async function doSearch(textQuery, rc) {
-    const body = { textQuery }
-    if (rc) body.regionCode = rc
-    const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Goog-Api-Key': apiKey,
-        'X-Goog-FieldMask': fieldMask,
-      },
-      body: JSON.stringify(body),
-    })
-    if (!res.ok) return null
-    const data = await res.json()
-    return data.places?.[0] ?? null
-  }
-
   const countryName = regionCode ? REGION_NAMES[regionCode] : null
-
-  function isInExpectedCountry(place) {
-    if (!countryName || !place?.formattedAddress) return true
-    return place.formattedAddress.toLowerCase().includes(countryName.toLowerCase())
-  }
-
-  // Attempt 1: plain query + regionCode
-  const place1 = await doSearch(query, regionCode)
-  if (place1 && isInExpectedCountry(place1)) return place1
-
-  // Attempt 2: query + country name (anchors to correct country)
-  if (countryName) {
-    const place2 = await doSearch(`${query} ${countryName}`, regionCode)
-    if (place2 && isInExpectedCountry(place2)) return place2
-  }
-
-  // Return best available
-  return place1 ?? null
+  const textQuery = countryName ? `${query} ${countryName}` : query
+  const body = { textQuery }
+  if (regionCode) body.regionCode = regionCode
+  const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Goog-Api-Key': apiKey,
+      'X-Goog-FieldMask': fieldMask,
+    },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) return null
+  const data = await res.json()
+  return data.places?.[0] ?? null
 }
 
 /**
