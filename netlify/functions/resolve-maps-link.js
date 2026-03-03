@@ -73,19 +73,31 @@ async function fetchUrl(inputUrl) {
 }
 
 /**
- * Extract place name from a share.google response body.
- * Google embeds a /search?q=PLACE+NAME href in the noscript content.
- * e.g. href="/search?q=Tokyo+Tower&emsg=SG_REL&..."
+ * Extract place name + region code from a share.google response body.
+ * Google embeds /search?q=PLACE+NAME&rlz=1C1CHZN_enIL1195IL1195&...
+ * The rlz parameter encodes the sharer's country (e.g. IL = Israel, JP = Japan).
+ * Returns { name, regionCode } — regionCode may be null.
  */
-function extractPlaceNameFromBody(body) {
-  // Look for /search?q= href that Google injects into share.google pages
-  const m = body.match(/href="\/search\?q=([^&"]+)/)
-  if (!m) return null
-  try {
-    return decodeURIComponent(m[1].replace(/\+/g, ' ')).trim() || null
-  } catch {
-    return m[1].replace(/\+/g, ' ').trim() || null
+function extractShareGoogleData(body) {
+  const hrefMatch = body.match(/href="\/search\?([^"]+)"/)
+  if (!hrefMatch) return { name: null, regionCode: null }
+
+  const qs = hrefMatch[1]
+
+  // Extract place name from q=
+  const qMatch = qs.match(/(?:^|&)q=([^&]+)/)
+  let name = null
+  if (qMatch) {
+    try { name = decodeURIComponent(qMatch[1].replace(/\+/g, ' ')).trim() || null }
+    catch { name = qMatch[1].replace(/\+/g, ' ').trim() || null }
   }
+
+  // Extract country code from rlz=..._xxCC... (e.g. enIL → IL, enJP → JP)
+  let regionCode = null
+  const rlzMatch = qs.match(/rlz=[^&]*_[a-z]{2}([A-Z]{2})/)
+  if (rlzMatch) regionCode = rlzMatch[1].toLowerCase()
+
+  return { name, regionCode }
 }
 
 /**
@@ -133,8 +145,10 @@ function extractNameFromUrl(url) {
 
 // ─── Places API (New) ─────────────────────────────────────────────────────────
 
-async function fetchPlaceByTextSearch(query, apiKey) {
+async function fetchPlaceByTextSearch(query, apiKey, regionCode = null) {
   const fieldMask = 'places.id,places.displayName,places.location,places.formattedAddress,places.internationalPhoneNumber,places.websiteUri,places.rating,places.currentOpeningHours,places.types'
+  const body = { textQuery: query }
+  if (regionCode) body.regionCode = regionCode
   const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
     method: 'POST',
     headers: {
@@ -142,7 +156,7 @@ async function fetchPlaceByTextSearch(query, apiKey) {
       'X-Goog-Api-Key': apiKey,
       'X-Goog-FieldMask': fieldMask,
     },
-    body: JSON.stringify({ textQuery: query }),
+    body: JSON.stringify(body),
   })
   if (!res.ok) return null
   const data = await res.json()
@@ -222,10 +236,10 @@ export const handler = async (event) => {
   if (/share\.google/i.test(rawUrl)) {
     try {
       const { body } = await fetchUrl(rawUrl)
-      const placeName = extractPlaceNameFromBody(body)
-      console.log('share.google — extracted place name:', placeName)
+      const { name: placeName, regionCode } = extractShareGoogleData(body)
+      console.log('share.google — name:', placeName, 'region:', regionCode)
       if (placeName && apiKey) {
-        const place = await fetchPlaceByTextSearch(placeName, apiKey)
+        const place = await fetchPlaceByTextSearch(placeName, apiKey, regionCode)
         if (place) {
           return { statusCode: 200, headers, body: JSON.stringify(mapPlaceToResult(place, null)) }
         }
@@ -273,10 +287,10 @@ export const handler = async (event) => {
       if (/^[A-Za-z0-9_-]{8,40}$/.test(query)) {
         try {
           const { body } = await fetchUrl(`https://share.google/${query}`)
-          const placeName = extractPlaceNameFromBody(body)
-          console.log('maps/search token → share.google name:', placeName)
+          const { name: placeName, regionCode } = extractShareGoogleData(body)
+          console.log('maps/search token → share.google name:', placeName, 'region:', regionCode)
           if (placeName) {
-            const place = await fetchPlaceByTextSearch(placeName, apiKey)
+            const place = await fetchPlaceByTextSearch(placeName, apiKey, regionCode)
             if (place) {
               return { statusCode: 200, headers, body: JSON.stringify(mapPlaceToResult(place, null)) }
             }
