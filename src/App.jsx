@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { APIProvider } from '@vis.gl/react-google-maps'
 import { get as idbGet, set as idbSet, del as idbDel } from 'idb-keyval'
 import { useAppStore } from './store/appStore.js'
@@ -49,6 +49,34 @@ const setPlanEntries   = useAppStore((s) => s.setPlanEntries)
   const setGithubLastSync    = useAppStore((s) => s.setGithubLastSync)
   const showNearbyList       = useAppStore((s) => s.showNearbyList)
   const setShowNearbyList    = useAppStore((s) => s.setShowNearbyList)
+
+  // Nearby panel drag-to-resize
+  const [nearbyH, setNearbyH] = useState(55) // percent of map container
+  const nearbyDragRef  = useRef(null)         // { startY, startH }
+  const mapContainerRef = useRef(null)        // parent used for height measurement
+
+  function handleNearbyDragStart(e) {
+    e.preventDefault()
+    const startY = e.touches ? e.touches[0].clientY : e.clientY
+    nearbyDragRef.current = { startY, startH: nearbyH }
+
+    function onMove(ev) {
+      const y = ev.touches ? ev.touches[0].clientY : ev.clientY
+      const containerH = mapContainerRef.current?.clientHeight ?? window.innerHeight
+      const deltaPercent = ((nearbyDragRef.current.startY - y) / containerH) * 100
+      setNearbyH(Math.min(85, Math.max(20, nearbyDragRef.current.startH + deltaPercent)))
+    }
+    function onUp() {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('touchmove', onMove)
+      window.removeEventListener('mouseup', onUp)
+      window.removeEventListener('touchend', onUp)
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('touchmove', onMove, { passive: false })
+    window.addEventListener('mouseup', onUp)
+    window.addEventListener('touchend', onUp)
+  }
 
   // Restore persisted active category filter on mount
   useEffect(() => {
@@ -234,20 +262,24 @@ async function handleResync() {
           <TopBar />
 
           {/* Map + Nearby overlay */}
-          <div className="relative flex-1 overflow-hidden" style={{ minHeight: 0 }}>
+          <div ref={mapContainerRef} className="relative flex-1 overflow-hidden" style={{ minHeight: 0 }}>
             <MapComponent />
 
-            {/* Nearby list — slide-up overlay */}
+            {/* Nearby list — slide-up overlay with draggable handle */}
             {showNearbyList && !isPlannerOpen && (
               <div
                 className="absolute bottom-0 left-0 right-0 flex flex-col bg-white dark:bg-gray-900 rounded-t-2xl shadow-2xl overflow-hidden"
-                style={{ height: '55%' }}
+                style={{ height: `${nearbyH}%` }}
               >
-                {/* Drag handle + close */}
-                <div className="flex-shrink-0 flex items-center justify-between px-4 pt-2 pb-1">
-                  <div className="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-600 mx-auto" />
+                {/* Drag handle — touch/mouse to resize */}
+                <div
+                  className="flex-shrink-0 flex items-center justify-center pt-2 pb-1 cursor-row-resize touch-none select-none"
+                  onMouseDown={handleNearbyDragStart}
+                  onTouchStart={handleNearbyDragStart}
+                >
+                  <div className="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
                   <button
-                    onClick={() => setShowNearbyList(false)}
+                    onClick={() => { setShowNearbyList(false); setNearbyH(55) }}
                     className="absolute right-3 top-2 p-1 text-gray-400 active:text-gray-600"
                     aria-label="Close nearby list"
                   >

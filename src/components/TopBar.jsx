@@ -81,18 +81,20 @@ export default function TopBar() {
 
       {/* Explore | Overview segmented control */}
       <div
-        className="flex rounded-full p-0.5 text-sm gap-0.5"
-        style={{ backgroundColor: '#1F1F1F' }}
+        className="flex rounded-full p-[3px] text-sm"
+        style={{ backgroundColor: '#111111' }}
       >
         {['explore', 'overview'].map((m) => (
           <button
             key={m}
             onClick={() => setMode(m)}
-            className="px-3 py-1 rounded-full font-normal capitalize"
+            className="px-3.5 py-[5px] rounded-full font-medium capitalize tracking-wide"
             style={{
-              transition: 'background-color 150ms',
-              backgroundColor: mode === m ? '#2B3A67' : 'transparent',
-              color: mode === m ? '#EAF0FF' : '#8A94B8',
+              transition: 'background-color 160ms ease, color 160ms ease, box-shadow 160ms ease',
+              backgroundColor: mode === m ? '#ffffff' : 'transparent',
+              color: mode === m ? '#111111' : '#777777',
+              boxShadow: mode === m ? '0 1px 4px rgba(0,0,0,0.25)' : 'none',
+              fontSize: 13,
             }}
           >
             {m}
