@@ -199,8 +199,6 @@ function FullTripView() {
   const todayDay        = getTodayDayNumber()
   const days            = Array.from({ length: tripDays }, (_, i) => i + 1)
   const todayRef        = useRef(null)
-  const plannedCount    = days.filter((d) => planEntries.some((e) => e.day === d)).length
-
   function handleDayPress(day) {
     setPlanFocusDay(day)
     setPlannerView('today')
@@ -214,26 +212,16 @@ function FullTripView() {
 
   return (
     <div className="flex-1 overflow-y-auto relative">
-      {/* Progress bar */}
-      <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-800 flex items-center gap-2">
-        <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-sky-500 rounded-full transition-all"
-            style={{ width: `${(plannedCount / tripDays) * 100}%` }}
-          />
-        </div>
-        <span className="text-[11px] text-gray-400 dark:text-gray-500 whitespace-nowrap">
-          {plannedCount}/{tripDays} days
-        </span>
-        {todayDay >= 1 && todayDay <= tripDays && (
+      {todayDay >= 1 && todayDay <= tripDays && (
+        <div className="px-4 py-1.5 border-b border-gray-100 dark:border-gray-800 flex justify-end">
           <button
             onClick={scrollToToday}
             className="text-[11px] font-semibold text-sky-500 whitespace-nowrap active:text-sky-600 px-2 py-1 rounded-lg active:bg-sky-50 dark:active:bg-sky-900/20"
           >
             Today
           </button>
-        )}
-      </div>
+        </div>
+      )}
       {days.map((day) => {
         const dayEntries = planEntries.filter((e) => e.day === day)
         const count   = dayEntries.length
