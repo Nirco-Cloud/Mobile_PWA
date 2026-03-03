@@ -9,7 +9,7 @@ import { useAppStore } from '../store/appStore.js'
 import { saveUserPoi, getUserPoiByPlaceId } from '../db/userPoisDb.js'
 import { CATEGORIES } from '../config/categories.js'
 
-const RESOLVER_URL = import.meta.env.VITE_NETLIFY_RESOLVER_URL
+const RESOLVER_URL = 'https://deft-lollipop-820a72.netlify.app/.netlify/functions/resolve-maps-link'
 
 function isMapsUrl(str) {
   return /maps\.app\.goo\.gl|google\.[a-z.]+\/maps|goo\.gl\/maps/i.test(str)
