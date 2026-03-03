@@ -206,6 +206,16 @@ export default function ShareConfirmSheet({ onClose, onSaved }) {
                 )}
               </div>
 
+              {/* Hebrew name (read-only, shown above editable name) */}
+              {resolved.nameHe && (
+                <p
+                  className="text-sm font-semibold text-gray-500 dark:text-gray-400 text-right"
+                  dir="rtl"
+                >
+                  {resolved.nameHe}
+                </p>
+              )}
+
               {/* Editable name */}
               <div>
                 <label className="text-xs text-gray-500 dark:text-gray-400 font-medium">Name</label>

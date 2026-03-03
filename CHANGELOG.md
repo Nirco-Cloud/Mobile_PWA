@@ -14,6 +14,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.15.0] — 2026-03-04
+
+### Added
+- **Hebrew name shown in Save Place sheet** — when `nameHe` is returned by the resolver, it appears above the editable English name as a right-aligned RTL secondary line.
+
+---
+
 ## [2.14.0] — 2026-03-04
 
 ### Added
