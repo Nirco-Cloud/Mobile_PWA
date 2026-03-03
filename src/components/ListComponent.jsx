@@ -18,9 +18,10 @@ const CHIP_GROUPS = [
   { id: 'cafe',       label: 'Cafe',        keys: ['קפה/תה/אלכוהול'],                                  color: '#ec4899' },
   { id: 'snacks',     label: 'Snacks',      keys: ['חטיפים ומלוחים'],                                  color: '#eab308' },
   { id: 'shopping',   label: 'Shopping',    keys: ['חנויות'],                                          color: '#10b981' },
-  { id: 'sights',     label: 'Attractions', keys: ['איזורים ואתרים', 'location', 'activity'],          color: '#3b82f6' },
-  { id: 'hotels',     label: 'Hotels',      keys: ['hotel'],                                           color: '#6366f1' },
-  { id: 'other',      label: 'Other',       keys: ['train'],                                           color: '#6b7280' },
+  { id: 'restaurant', label: 'Restaurant',  keys: ['Restaurant'],                                      color: '#f97316' },
+  { id: 'sights',     label: 'Attractions', keys: ['איזורים ואתרים', 'Location', 'Activity'],          color: '#3b82f6' },
+  { id: 'hotels',     label: 'Hotels',      keys: ['Hotel'],                                           color: '#6366f1' },
+  { id: 'other',      label: 'Other',       keys: ['Train'],                                           color: '#6b7280' },
 ]
 
 export default function ListComponent() {
@@ -73,7 +74,7 @@ export default function ListComponent() {
         return haversine(l.lat, l.lng, position.lat, position.lng) <= 1500
       })
     } else if (mapFilter === 'hotels') {
-      list = list.filter((l) => l.category === 'hotel')
+      list = list.filter((l) => l.category === 'Hotel')
     }
 
     // 3. Category filter

@@ -521,7 +521,7 @@ export default function MapComponent() {
         return haversine(poi.lat, poi.lng, position.lat, position.lng) <= 1500
       })
     } else if (mapFilter === 'hotels') {
-      list = list.filter((poi) => poi.category === 'hotel')
+      list = list.filter((poi) => poi.category === 'Hotel')
     }
 
     // 3. Category filter (respects user chip selection)

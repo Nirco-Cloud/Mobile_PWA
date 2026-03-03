@@ -73,7 +73,7 @@ export default function MapMarker({ location, isSelected }) {
   }, [location.id, setSelection, setDetailLocationId])
 
   // Hotel gets its own dominant marker style
-  if (location.category === 'hotel') {
+  if (location.category === 'Hotel') {
     return <HotelMarker location={location} isSelected={isSelected} onClick={handleClick} />
   }
 

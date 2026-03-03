@@ -9,10 +9,11 @@ export const CATEGORIES = [
   { key: 'חטיפים ומלוחים',            label: 'חטיפים',      icon: 'snack.svg' },
   { key: 'חנויות',                    label: 'חנויות',      icon: 'shopping.svg' },
   { key: 'איזורים ואתרים',            label: 'אזורים',      icon: 'area.svg' },
-  { key: 'hotel',                     label: 'Hotel',       icon: 'hotel.svg' },
-  { key: 'train',                     label: 'Train',       icon: 'train.svg' },
-  { key: 'location',                  label: 'Location',    icon: 'custom.svg' },
-  { key: 'activity',                  label: 'Activity',    icon: 'area.svg' },
+  { key: 'Hotel',                     label: 'Hotel',       icon: 'hotel.svg' },
+  { key: 'Train',                     label: 'Train',       icon: 'train.svg' },
+  { key: 'Location',                  label: 'Location',    icon: 'custom.svg' },
+  { key: 'Activity',                  label: 'Activity',    icon: 'area.svg' },
+  { key: 'Restaurant',                label: 'Restaurant',  icon: 'restaurant.svg' },
 ]
 
 export const ALL_CATEGORY_KEYS = CATEGORIES.map((c) => c.key)
@@ -25,9 +26,15 @@ export function getCategoryIcon(category) {
 /** Remap legacy / import category keys to canonical keys. */
 export function migrateCategoryLegacy(category) {
   const MAP = {
-    'מלונות':     'hotel',
-    'custom':     'location',
-    'restaurant': 'מסעדות ואוכל רחוב',
+    // Capitalization migrations — old lowercase keys → new canonical keys
+    'hotel':      'Hotel',
+    'train':      'Train',
+    'location':   'Location',
+    'activity':   'Activity',
+    // Legacy label migrations
+    'מלונות':     'Hotel',
+    'custom':     'Location',
+    'restaurant': 'Restaurant',
     'cafe':       'קפה/תה/אלכוהול',
     'shop':       'חנויות',
     'attraction': 'איזורים ואתרים',

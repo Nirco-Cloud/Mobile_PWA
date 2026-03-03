@@ -49,7 +49,7 @@ export default function LocationDetailSheet() {
                 {location.name}
               </h2>
               <div className="flex flex-wrap items-center gap-2 mt-1">
-                {location.category && location.category !== 'location' && (
+                {location.category && location.category !== 'Location' && (
                   <span className="text-xs bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300 rounded-full px-2 py-0.5 font-medium">
                     {location.category}
                   </span>

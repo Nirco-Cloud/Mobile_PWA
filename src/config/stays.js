@@ -112,7 +112,7 @@ export function computeZoomForStay(stay, locations) {
   if (!center) return stay.regionZoom
 
   const nearby = locations.filter((l) => {
-    if (l.lat == null || l.lng == null || l.category === 'hotel') return false
+    if (l.lat == null || l.lng == null || l.category === 'Hotel') return false
     return haversine(l.lat, l.lng, center.lat, center.lng) <= 700
   })
 

@@ -54,9 +54,12 @@ const CATEGORY_COLORS = {
   'קפה/תה/אלכוהול': '#ec4899',
   'חטיפים ומלוחים': '#eab308',
   'חנויות': '#10b981',
-  'איזורים ואתרים': '#3b82f6', 'location': '#3b82f6', 'activity': '#ec4899',
-  'hotel': '#6366f1',
-  'train': '#6b7280',
+  'איזורים ואתרים': '#3b82f6',
+  'location': '#3b82f6', 'Location': '#3b82f6',
+  'activity': '#ec4899', 'Activity': '#ec4899',
+  'hotel': '#6366f1',    'Hotel': '#6366f1',
+  'train': '#6b7280',    'Train': '#6b7280',
+  'Restaurant': '#f97316',
 }
 
 function LocDot({ category }) {
