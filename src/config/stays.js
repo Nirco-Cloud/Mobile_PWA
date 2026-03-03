@@ -4,7 +4,7 @@ export const stays = [
   {
     id: 'tokyo_start',
     label: 'Tokyo (Shinjuku)',
-    hotelId: 'hotel_sunroute',
+    hotelId: 'hotel-sunroute-plaza-shinjuku',
     fallbackCenter: { lat: 35.6938, lng: 139.7036 },
     radiusKm: 8,
     regionZoom: 13,
@@ -13,7 +13,7 @@ export const stays = [
   {
     id: 'hakone',
     label: 'Hakone',
-    hotelId: 'hotel_hanaori',
+    hotelId: 'hotel-hakone-ashinoko-hanaori',
     fallbackCenter: { lat: 35.2323, lng: 139.1069 },
     radiusKm: 12,
     regionZoom: 12,
@@ -22,7 +22,7 @@ export const stays = [
   {
     id: 'nakatsugawa',
     label: 'Nakatsugawa',
-    hotelId: 'hotel_onn',
+    hotelId: 'hotel-onn-nakatsugawa',
     fallbackCenter: { lat: 35.4888, lng: 137.4999 },
     radiusKm: 15,
     regionZoom: 11,
@@ -31,7 +31,7 @@ export const stays = [
   {
     id: 'takayama',
     label: 'Takayama',
-    hotelId: 'hotel_miyama',
+    hotelId: 'hotel-miyama-ouan-kyoritsu',
     fallbackCenter: { lat: 36.1461, lng: 137.2519 },
     radiusKm: 12,
     regionZoom: 12,
@@ -40,7 +40,7 @@ export const stays = [
   {
     id: 'kanazawa',
     label: 'Kanazawa',
-    hotelId: 'hotel_sanraku',
+    hotelId: 'hotel-sanraku-kanazawa',
     fallbackCenter: { lat: 36.5613, lng: 136.6562 },
     radiusKm: 8,
     regionZoom: 13,
@@ -49,7 +49,7 @@ export const stays = [
   {
     id: 'kyoto',
     label: 'Kyoto',
-    hotelId: 'hotel_cross',
+    hotelId: 'hotel-cross-kyoto',
     fallbackCenter: { lat: 35.0116, lng: 135.7681 },
     radiusKm: 8,
     regionZoom: 13,
@@ -58,7 +58,7 @@ export const stays = [
   {
     id: 'tokyo_final',
     label: 'Tokyo (Daiba)',
-    hotelId: 'hotel_nikko',
+    hotelId: 'hotel-grand-nikko-tokyo-daiba',
     fallbackCenter: { lat: 35.6274, lng: 139.7752 },
     radiusKm: 8,
     regionZoom: 13,
