@@ -31,7 +31,7 @@ function ViewTabs({ view, onSet, tripDays, focusDayLabel }) {
         <button
           key={t.id}
           onClick={() => onSet(t.id)}
-          className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors ${
+          className={`flex-1 py-1.5 text-[13px] font-medium rounded-md transition-colors ${
             view === t.id
               ? 'bg-white dark:bg-gray-700 text-sky-600 dark:text-sky-400 shadow-sm'
               : 'text-gray-500 dark:text-gray-400'
@@ -186,7 +186,7 @@ function TypeBadge({ type }) {
       >
         <path d={def.icon} />
       </svg>
-      <span className="text-[11px] font-semibold" style={{ color: def.accentColor }}>{def.label}</span>
+      <span className="text-[12px] font-semibold" style={{ color: def.accentColor }}>{def.label}</span>
     </div>
   )
 }
@@ -272,12 +272,12 @@ function FullTripView() {
               </div>
               {/* Hotel name or entry summary */}
               {hotelEntry && (
-                <p className="text-[11px] text-violet-500 dark:text-violet-400 truncate mt-0.5">
+                <p className="text-[12px] text-violet-500 dark:text-violet-400 truncate mt-0.5">
                   {hotelEntry.name}
                 </p>
               )}
               {!hotelEntry && hasEntries && (
-                <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
+                <p className="text-[13px] font-medium text-gray-500 dark:text-gray-400 mt-0.5">
                   {count} {count === 1 ? 'entry' : 'entries'}
                 </p>
               )}
