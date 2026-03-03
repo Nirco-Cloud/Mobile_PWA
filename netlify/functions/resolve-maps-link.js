@@ -158,22 +158,29 @@ const REGION_NAMES = {
 }
 
 /**
- * Returns true if any significant word from the query appears in the result name.
- * Used to validate that Text Search returned the right place, not a nearby business
- * that just has the query word in its address.
+ * Geocoding API — converts a place name to a place_id + coordinates.
+ * Much more accurate than Text Search for landmarks and named places
+ * because it matches place names, not addresses or nearby businesses.
+ * Returns { placeId, lat, lng } or null.
  */
-function resultMatchesQuery(resultName, query) {
-  if (!resultName || !query) return false
-  const normalize = (s) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-  const words = normalize(query).split(/\s+/).filter((w) => w.length > 2)
-  const name = normalize(resultName)
-  return words.some((w) => name.includes(w))
+async function geocodePlace(query, apiKey, regionCode = null) {
+  const params = new URLSearchParams({ address: query, key: apiKey })
+  if (regionCode) params.set('region', regionCode)
+  const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?${params}`)
+  if (!res.ok) return null
+  const data = await res.json()
+  if (data.status !== 'OK' || !data.results?.length) return null
+  const r = data.results[0]
+  return {
+    placeId: r.place_id ?? null,
+    lat:     r.geometry?.location?.lat ?? null,
+    lng:     r.geometry?.location?.lng ?? null,
+  }
 }
 
 /**
- * Text Search with smart fallback:
- * 1. Try with just regionCode (no country name) — best for landmarks
- * 2. If result name doesn't match query, retry with country name appended — best for ambiguous business names
+ * Places Text Search — fallback when Geocoding returns no result.
+ * Tries plain query first, then query + country name if result name doesn't match.
  */
 async function fetchPlaceByTextSearch(query, apiKey, regionCode = null) {
   const fieldMask = 'places.id,places.displayName,places.location,places.formattedAddress,places.internationalPhoneNumber,places.websiteUri,places.rating,places.currentOpeningHours,places.types'
@@ -195,19 +202,47 @@ async function fetchPlaceByTextSearch(query, apiKey, regionCode = null) {
     return data.places?.[0] ?? null
   }
 
-  // Attempt 1: plain query + regionCode (finds landmarks correctly)
-  const place1 = await doSearch(query, regionCode)
-  if (place1 && resultMatchesQuery(place1.displayName?.text, query)) return place1
+  const normalize = (s) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  function nameMatchesQuery(resultName) {
+    const words = normalize(query).split(/\s+/).filter((w) => w.length > 2)
+    return words.some((w) => normalize(resultName ?? '').includes(w))
+  }
 
-  // Attempt 2: query + country name (anchors ambiguous business names by country)
+  const place1 = await doSearch(query, regionCode)
+  if (place1 && nameMatchesQuery(place1.displayName?.text)) return place1
+
   const countryName = regionCode ? REGION_NAMES[regionCode] : null
   if (countryName) {
     const place2 = await doSearch(`${query} ${countryName}`, regionCode)
-    if (place2 && resultMatchesQuery(place2.displayName?.text, query)) return place2
+    if (place2 && nameMatchesQuery(place2.displayName?.text)) return place2
   }
 
-  // Return best available result (attempt 1 preferred, then attempt 2)
   return place1 ?? null
+}
+
+/**
+ * Primary lookup: Geocode → Place Details.
+ * Falls back to Text Search if Geocoding fails.
+ */
+async function resolveByName(query, apiKey, regionCode = null) {
+  // 1. Geocoding API — accurate place_id for landmarks and named places
+  try {
+    const geo = await geocodePlace(query, apiKey, regionCode)
+    if (geo?.placeId) {
+      const place = await fetchPlaceDetailsNew(geo.placeId, apiKey)
+      if (place) return place
+    }
+  } catch (e) {
+    console.warn('Geocoding failed:', e.message)
+  }
+
+  // 2. Text Search fallback
+  try {
+    return await fetchPlaceByTextSearch(query, apiKey, regionCode)
+  } catch (e) {
+    console.warn('Text search fallback failed:', e.message)
+    return null
+  }
 }
 
 async function fetchNearbyPlaceNew(lat, lng, apiKey) {
@@ -286,7 +321,7 @@ export const handler = async (event) => {
       const { name: placeName, regionCode } = extractShareGoogleData(body)
       console.log('share.google — name:', placeName, 'region:', regionCode)
       if (placeName && apiKey) {
-        const place = await fetchPlaceByTextSearch(placeName, apiKey, regionCode)
+        const place = await resolveByName(placeName, apiKey, regionCode)
         if (place) {
           return { statusCode: 200, headers, body: JSON.stringify(mapPlaceToResult(place, null)) }
         }
@@ -321,13 +356,13 @@ export const handler = async (event) => {
     const query = decodeURIComponent(searchMatch[1].replace(/\+/g, ' ')).trim()
     if (apiKey) {
       try {
-        // Try direct text search first (works for real place names)
-        const place = await fetchPlaceByTextSearch(query, apiKey)
+        // Try Geocoding → Place Details, fallback to Text Search
+        const place = await resolveByName(query, apiKey)
         if (place) {
           return { statusCode: 200, headers, body: JSON.stringify(mapPlaceToResult(place, null)) }
         }
       } catch (e) {
-        console.warn('Text search failed:', e.message)
+        console.warn('resolveByName failed:', e.message)
       }
 
       // Query might be a token — try resolving via share.google
@@ -337,7 +372,7 @@ export const handler = async (event) => {
           const { name: placeName, regionCode } = extractShareGoogleData(body)
           console.log('maps/search token → share.google name:', placeName, 'region:', regionCode)
           if (placeName) {
-            const place = await fetchPlaceByTextSearch(placeName, apiKey, regionCode)
+            const place = await resolveByName(placeName, apiKey, regionCode)
             if (place) {
               return { statusCode: 200, headers, body: JSON.stringify(mapPlaceToResult(place, null)) }
             }
