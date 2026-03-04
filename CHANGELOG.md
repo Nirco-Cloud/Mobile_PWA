@@ -14,6 +14,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.19.0] — 2026-03-04
+
+### Fixed
+- **`?q=...&ftid=...` link format now resolves correctly** — added name extraction from `q=` query parameter (used by iOS share links with `g_st=iw`)
+- **Wrong coordinates from body `@lat,lng` matching** — moved `og:image center=` and `APP_INITIALIZATION_STATE` body strategies before the generic `@lat,lng` body scan to prevent spurious matches
+
+---
+
 ## [2.18.0] — 2026-03-04
 
 ### Fixed

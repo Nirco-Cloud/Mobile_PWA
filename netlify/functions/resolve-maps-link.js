@@ -116,25 +116,25 @@ function extractCoords(url, body) {
   m = decoded.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/)
   if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) }
 
-  // Strategy 3: @lat,lng in URL — map viewport center (fallback, may be offset)
-  m = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)
-  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) }
-
-  // Strategy 4: @lat,lng in HTML body
-  m = body.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)
-  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) }
-
-  // Strategy 5: ?ll=lat,lng (older goo.gl redirect targets)
+  // Strategy 3: ?ll=lat,lng (older goo.gl redirect targets)
   m = url.match(/[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/)
   if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) }
 
-  // Strategy 6: og:image center=lat%2Clng (Google Maps HTML body — desktop UA)
+  // Strategy 4: @lat,lng in URL — map viewport center (fallback, may be offset)
+  m = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)
+  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) }
+
+  // Strategy 5: og:image center=lat%2Clng (reliable Google Maps HTML body signal)
   m = body.match(/center=(-?\d+\.\d+)%2C(-?\d+\.\d+)/i)
   if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) }
 
-  // Strategy 7: APP_INITIALIZATION_STATE=[[[scale,lng,lat (Google Maps HTML body)
+  // Strategy 6: APP_INITIALIZATION_STATE=[[[scale,lng,lat — format: [scale, lng, lat]
   m = body.match(/APP_INITIALIZATION_STATE=\[\[\[[\d.]+,(-?\d+\.\d+),(-?\d+\.\d+)/)
   if (m) return { lat: parseFloat(m[2]), lng: parseFloat(m[1]) }
+
+  // Strategy 7: @lat,lng in HTML body — last resort, can match spurious URLs
+  m = body.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)
+  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) }
 
   return null
 }
@@ -145,13 +145,25 @@ function extractPlaceId(url) {
 }
 
 function extractNameFromUrl(url) {
+  // /place/NAME/ path (standard place URL)
   const m = url.match(/\/place\/([^/@?]+)/)
-  if (!m) return null
-  try {
-    return decodeURIComponent(m[1].replace(/\+/g, ' ')).trim() || null
-  } catch {
-    return m[1].replace(/\+/g, ' ').trim() || null
+  if (m) {
+    try {
+      return decodeURIComponent(m[1].replace(/\+/g, ' ')).trim() || null
+    } catch {
+      return m[1].replace(/\+/g, ' ').trim() || null
+    }
   }
+  // ?q=NAME query param (?q=...&ftid=... style URLs)
+  const q = url.match(/[?&]q=([^&]+)/)
+  if (q) {
+    try {
+      return decodeURIComponent(q[1].replace(/\+/g, ' ')).trim() || null
+    } catch {
+      return q[1].replace(/\+/g, ' ').trim() || null
+    }
+  }
+  return null
 }
 
 // ─── Places API (New) ─────────────────────────────────────────────────────────
