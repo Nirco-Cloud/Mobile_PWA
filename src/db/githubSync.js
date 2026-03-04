@@ -74,7 +74,7 @@ export async function pullFromGithub(config) {
   if (!data.sha) throw new Error('GitHub response missing file SHA')
   let entries
   try {
-    const decoded = decodeURIComponent(escape(atob(data.content.replace(/\n/g, ''))))
+    const decoded = atob(data.content.replace(/\n/g, ''))
     const parsed = JSON.parse(decoded)
     entries = (parsed.entries ?? []).map(normalizePlanEntry).filter((e) => !!e.id)
   } catch {
@@ -89,7 +89,13 @@ export async function pushToGithub(config, entries, sha) {
     syncedAt: new Date().toISOString(),
     entries,
   }
-  const content = btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2))))
+  // Escape all non-ASCII chars as \uXXXX so btoa() works without encoding tricks
+  // and the old atob()-only pull code can also decode correctly via JSON.parse
+  const jsonStr = JSON.stringify(payload, null, 2).replace(
+    /[^\x00-\x7F]/g,
+    (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`
+  )
+  const content = btoa(jsonStr)
 
   const body = {
     message: `sync ${new Date().toISOString()}`,

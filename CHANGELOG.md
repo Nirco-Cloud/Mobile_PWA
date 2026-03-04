@@ -14,6 +14,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.22.3] — 2026-03-04 13:20
+
+### Fixed
+- **GitHub sync encoding — proper fix** — `pushToGithub` now escapes all non-ASCII characters as `\uXXXX` before base64 encoding. This makes the sync file purely ASCII so `atob()` + `JSON.parse()` decode it correctly on all devices without encoding tricks. Hebrew names, arrows, and other Unicode characters now survive the sync round-trip correctly. GitHub plan.json re-patched with ASCII-safe encoding.
+
+---
+
 ## [2.22.2] — 2026-03-04 13:00
 
 ### Fixed
