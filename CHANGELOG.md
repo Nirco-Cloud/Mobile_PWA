@@ -14,6 +14,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.22.1] — 2026-03-04 12:10
+
+### Fixed
+- **Navigate origin picker in My Bookings** — the Navigate button on booking cards (hotel, activity, etc. with coordinates) now shows the origin picker sheet instead of navigating directly. Day 1 or no previous entries still navigates directly.
+
+---
+
 ## [2.22.0] — 2026-03-04 11:56
 
 ### Added
