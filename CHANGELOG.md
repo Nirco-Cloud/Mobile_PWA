@@ -14,14 +14,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [2.20.1] — 2026-03-04 09:55
+## [2.20.1] — 2026-03-04 11:55
 
 ### Changed
 - **Demo mode on by default** — GPS locked to stay hotel on first launch; toggle off in Settings to use real GPS
 
 ---
 
-## [2.20.0] — 2026-03-04 09:40
+## [2.20.0] — 2026-03-04 11:40
 
 ### Fixed
 - **Share target now shows Day Plan picker** — after saving a place from a shared Google Maps link, a DayPicker sheet appears so you can immediately assign it to a trip day (same flow as manual paste via Plan tab)
@@ -29,7 +29,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [2.19.0] — 2026-03-04 09:25
+## [2.19.0] — 2026-03-04 11:25
 
 ### Fixed
 - **`?q=...&ftid=...` link format now resolves correctly** — added name extraction from `q=` query parameter (used by iOS share links with `g_st=iw`)
@@ -37,14 +37,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [2.18.0] — 2026-03-04 09:10
+## [2.18.0] — 2026-03-04 11:10
 
 ### Fixed
 - **`maps.app.goo.gl` links no longer fail** — added two new coordinate extraction strategies from the HTML body: `og:image center=lat%2Clng` and `APP_INITIALIZATION_STATE=[[[scale,lng,lat`. Also switched to desktop User-Agent for `maps.app.goo.gl` fetches (smaller 168KB body vs 780KB mobile, more reliable coordinate embedding).
 
 ---
 
-## [2.17.0] — 2026-03-04 01:47
+## [2.17.0] — 2026-03-04 03:47
 
 ### Changed
 - **Single source of truth for category colors** — `color` field added to each entry in `categories.js`; `getCategoryColor()` helper exported and used by `ListComponent`, `LocationRow`, and `PlannerOverlay` — no more duplicated color maps
@@ -52,7 +52,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [2.16.0] — 2026-03-04 01:39
+## [2.16.0] — 2026-03-04 03:39
 
 ### Changed
 - **Category chip order** — Restaurant moved to #1, Izakaya to #7, Activity to #12, Hotel to #15
@@ -60,21 +60,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [2.15.0] — 2026-03-04 01:19
+## [2.15.0] — 2026-03-04 03:19
 
 ### Added
 - **Hebrew name shown in Save Place sheet** — when `nameHe` is returned by the resolver, it appears above the editable English name as a right-aligned RTL secondary line.
 
 ---
 
-## [2.14.0] — 2026-03-04 01:12
+## [2.14.0] — 2026-03-04 03:12
 
 ### Added
 - **Hebrew name (`nameHe`)** — resolver now fetches the Hebrew display name in parallel alongside English for every resolved place. Included in the JSON response as `nameHe` (omitted if not available or identical to English name).
 
 ---
 
-## [2.13.0] — 2026-03-04 01:05
+## [2.13.0] — 2026-03-04 03:05
 
 ### Fixed
 - **`maps.app.goo.gl` place name resolution** — when a URL contains both a place name (from `/place/NAME/` path) and exact pin coordinates (`!3d!4d`), now uses Text Search with 500m `locationBias` instead of blind Nearby Search. This fixes cases like "Portobello Two" where Nearby Search was returning the wrong nearby business (e.g. Layla Bakery 30m away).
@@ -256,7 +256,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [1.7.5] — 2026-03-02 01:15
+## [1.7.5] — 2026-03-02 03:15
 
 ### Added
 - **Jump to day** — tap the "Day X" label in TodayView to open a day picker sheet showing all 17 trip days; instant navigation with no toast delay
@@ -282,7 +282,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [1.7.4] — 2026-03-01 16:00
+## [1.7.4] — 2026-03-01 18:00
 
 ### Added
 - **List virtualization** (`@tanstack/react-virtual`) — only visible rows + 5-row overscan are in the DOM; dynamic height measurement handles expanded rows automatically; map→list scroll uses `scrollToIndex` instead of `scrollIntoView`
@@ -297,7 +297,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [1.7.3] — 2026-03-01 15:30
+## [1.7.3] — 2026-03-01 17:30
 
 ### Added
 - **Skeleton loading screens** — list panel shows 8 shimmer placeholder rows while location data loads from IndexedDB (visible during explicit re-sync)
@@ -313,7 +313,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [1.7.2] — 2026-03-01 14:30
+## [1.7.2] — 2026-03-01 16:30
 
 ### Changed
 - Trip Planner panel always opens at **85%** (maximum height) when switching to the Plan tab — regardless of where the user last left it
@@ -321,7 +321,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [1.7.1] — 2026-03-01 13:45
+## [1.7.1] — 2026-03-01 15:45
 
 ### Changed
 - `area.svg` icon replaced: was a generic blue location pin (indistinguishable from Google Maps default); now a Japanese **torii gate** silhouette — distinctive, thematic, clearly marks tourist attractions
@@ -329,7 +329,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [1.7.0] — 2026-03-01 13:20
+## [1.7.0] — 2026-03-01 15:20
 
 ### Changed
 - Plan map markers redesigned (Option A):
