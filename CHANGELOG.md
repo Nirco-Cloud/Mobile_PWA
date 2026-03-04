@@ -14,6 +14,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.21.0] — 2026-03-04 10:40
+
+### Added
+- **DayPicker suggests stay's arrival day** — when adding a location to the plan, the day picker automatically highlights (sky blue, "stay" badge) and scrolls to the first day of the currently selected stay, derived from the hotel booking plan entry for that stay. No manual config — follows the itinerary automatically.
+
+---
+
 ## [2.20.2] — 2026-03-04 10:35
 
 ### Fixed

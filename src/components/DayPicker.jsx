@@ -1,17 +1,41 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAppStore } from '../store/appStore.js'
 import { savePlanEntry } from '../db/plannerDb.js'
 import { useTripConfig } from '../hooks/useTripConfig.js'
+import { getStayById } from '../config/stays.js'
 
 const DAYS_SHORT   = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 export default function DayPicker({ location, onClose, onDone, pickerOnly = false, jumpMode = false, onSkip = null, currentDay = null }) {
-  const planEntries  = useAppStore((s) => s.planEntries)
-  const addPlanEntry = useAppStore((s) => s.addPlanEntry)
+  const planEntries   = useAppStore((s) => s.planEntries)
+  const addPlanEntry  = useAppStore((s) => s.addPlanEntry)
+  const selectedStay  = useAppStore((s) => s.selectedStay)
   const { tripDays, dayToDate, getTodayDayNumber } = useTripConfig()
   const todayDay = getTodayDayNumber()
   const [toast, setToast] = useState(null)
+  const suggestedRef = useRef(null)
+  const gridRef      = useRef(null)
+
+  // Derive suggested day from current stay's hotel booking — only for new additions
+  const suggestedDay = (() => {
+    if (pickerOnly || jumpMode) return null
+    const stay = getStayById(selectedStay)
+    if (!stay?.hotelId) return null
+    const hotelEntry = planEntries.find(
+      (e) => e.type === 'hotel' && e.locationId === stay.hotelId && !e.deletedAt
+    )
+    return hotelEntry?.day ?? null
+  })()
+
+  // Auto-scroll to suggested day when picker opens
+  useEffect(() => {
+    if (suggestedDay && suggestedRef.current && gridRef.current) {
+      setTimeout(() => {
+        suggestedRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+      }, 100)
+    }
+  }, [suggestedDay])
 
   // jumpMode shows all 17 days; otherwise hard-cut to today and future
   const startDay    = (todayDay && !jumpMode) ? todayDay : 1
@@ -19,19 +43,16 @@ export default function DayPicker({ location, onClose, onDone, pickerOnly = fals
 
   async function handleSelectDay(day) {
     if (jumpMode) {
-      // Instant navigation — no toast delay
       navigator.vibrate?.(15)
       onDone ? onDone(day) : onClose()
       return
     }
     if (pickerOnly) {
-      // Just pick a day — no new entry created; caller handles the action
       navigator.vibrate?.(15)
       setToast(day)
       setTimeout(() => { setToast(null); onDone ? onDone(day) : onClose() }, 1200)
       return
     }
-    const dayEntries = planEntries.filter((e) => e.day === day)
     const entry = {
       id: `plan_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
       day,
@@ -96,7 +117,7 @@ export default function DayPicker({ location, onClose, onDone, pickerOnly = fals
         )}
 
         {/* Day grid */}
-        <div className="px-4 pb-2 max-h-64 overflow-y-auto">
+        <div ref={gridRef} className="px-4 pb-2 max-h-64 overflow-y-auto">
           {visibleDays.length === 0 ? (
             <p className="text-center text-sm text-gray-400 dark:text-gray-500 py-6">
               Trip has ended
@@ -104,22 +125,26 @@ export default function DayPicker({ location, onClose, onDone, pickerOnly = fals
           ) : (
             <div className="grid grid-cols-5 gap-2">
               {visibleDays.map((day) => {
-                const date          = dayToDate(day)
-                const isToday       = todayDay === day
-                const isCurrentDay  = currentDay === day
-                const count         = planEntries.filter((e) => e.day === day && !e.deletedAt).length
+                const date           = dayToDate(day)
+                const isToday        = todayDay === day
+                const isCurrentDay   = currentDay === day
+                const isSuggested    = !isCurrentDay && suggestedDay === day
+                const count          = planEntries.filter((e) => e.day === day && !e.deletedAt).length
 
                 return (
                   <button
                     key={day}
+                    ref={isSuggested ? suggestedRef : null}
                     onClick={() => handleSelectDay(day)}
                     disabled={!!toast}
                     className={`relative flex flex-col items-center justify-center rounded-2xl py-2.5 px-1 border transition-all active:scale-95 select-none ${
                       isCurrentDay
                         ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20'
-                        : isToday
-                          ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20'
-                          : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 active:border-sky-400 active:bg-sky-50 dark:active:bg-sky-900/20'
+                        : isSuggested
+                          ? 'border-sky-400 bg-sky-50 dark:bg-sky-900/20'
+                          : isToday
+                            ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20'
+                            : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 active:border-sky-400 active:bg-sky-50 dark:active:bg-sky-900/20'
                     }`}
                   >
                     {/* CURRENT badge */}
@@ -129,23 +154,50 @@ export default function DayPicker({ location, onClose, onDone, pickerOnly = fals
                       </span>
                     )}
 
+                    {/* SUGGESTED badge */}
+                    {isSuggested && (
+                      <span className="absolute top-1.5 left-0 right-0 text-center text-[8px] font-bold text-sky-500 uppercase tracking-wide leading-none">
+                        stay
+                      </span>
+                    )}
+
                     {/* TODAY badge */}
-                    {isToday && !isCurrentDay && (
+                    {isToday && !isCurrentDay && !isSuggested && (
                       <span className="absolute top-1.5 left-0 right-0 text-center text-[8px] font-bold text-amber-500 uppercase tracking-wide leading-none">
                         today
                       </span>
                     )}
 
-                    <span className={`text-[10px] font-semibold ${isCurrentDay ? 'text-indigo-500 dark:text-indigo-400 mt-3' : isToday ? 'text-amber-500 dark:text-amber-400 mt-3' : 'text-gray-400 dark:text-gray-500'}`}>
+                    <span className={`text-[10px] font-semibold ${
+                      isCurrentDay ? 'text-indigo-500 dark:text-indigo-400 mt-3'
+                      : isSuggested ? 'text-sky-500 dark:text-sky-400 mt-3'
+                      : isToday    ? 'text-amber-500 dark:text-amber-400 mt-3'
+                      : 'text-gray-400 dark:text-gray-500'
+                    }`}>
                       {DAYS_SHORT[date.getDay()]}
                     </span>
-                    <span className={`text-sm font-bold leading-tight ${isCurrentDay ? 'text-indigo-700 dark:text-indigo-300' : isToday ? 'text-amber-700 dark:text-amber-300' : 'text-gray-800 dark:text-gray-100'}`}>
+                    <span className={`text-sm font-bold leading-tight ${
+                      isCurrentDay ? 'text-indigo-700 dark:text-indigo-300'
+                      : isSuggested ? 'text-sky-700 dark:text-sky-300'
+                      : isToday    ? 'text-amber-700 dark:text-amber-300'
+                      : 'text-gray-800 dark:text-gray-100'
+                    }`}>
                       {date.getDate()}
                     </span>
-                    <span className={`text-[9px] leading-tight ${isCurrentDay ? 'text-indigo-500 dark:text-indigo-400' : isToday ? 'text-amber-500 dark:text-amber-400' : 'text-gray-400 dark:text-gray-500'}`}>
+                    <span className={`text-[9px] leading-tight ${
+                      isCurrentDay ? 'text-indigo-500 dark:text-indigo-400'
+                      : isSuggested ? 'text-sky-500 dark:text-sky-400'
+                      : isToday    ? 'text-amber-500 dark:text-amber-400'
+                      : 'text-gray-400 dark:text-gray-500'
+                    }`}>
                       {MONTHS_SHORT[date.getMonth()]}
                     </span>
-                    <span className={`text-[9px] font-medium mt-0.5 ${isCurrentDay ? 'text-indigo-600 dark:text-indigo-400' : isToday ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400 dark:text-gray-500'}`}>
+                    <span className={`text-[9px] font-medium mt-0.5 ${
+                      isCurrentDay ? 'text-indigo-600 dark:text-indigo-400'
+                      : isSuggested ? 'text-sky-600 dark:text-sky-400'
+                      : isToday    ? 'text-amber-600 dark:text-amber-400'
+                      : 'text-gray-400 dark:text-gray-500'
+                    }`}>
                       D{day}
                     </span>
 
