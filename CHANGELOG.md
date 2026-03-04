@@ -14,6 +14,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.22.6] — 2026-03-04 18:15
+
+### Fixed
+- **Planner scroll** — Added `min-h-0` to all `flex-1 overflow-y-auto` containers in `PlannerOverlay` (FullTripView and TodayView). Without this, flex children never shrank below their content size, so `overflow-y-auto` never activated and the list couldn't be scrolled.
+
+---
+
 ## [2.22.5] — 2026-03-04 17:45
 
 ### Changed

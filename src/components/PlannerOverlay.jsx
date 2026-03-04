@@ -199,7 +199,7 @@ function FullTripView() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto relative">
+    <div className="flex-1 min-h-0 overflow-y-auto relative">
       {todayDay >= 1 && todayDay <= tripDays && (
         <div className="px-4 py-1.5 border-b border-gray-100 dark:border-gray-800 flex justify-end">
           <button
@@ -635,7 +635,7 @@ const removePlanEntry      = useAppStore((s) => s.removePlanEntry)
           The trip has ended — viewing past itinerary
         </div>
       )}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
         {/* Day navigation */}
         <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100 dark:border-gray-800">
           <button
@@ -759,7 +759,7 @@ const removePlanEntry      = useAppStore((s) => s.removePlanEntry)
         </div>
 
         {/* Stop list */}
-        <div className="flex-1 overflow-y-auto px-4 py-2 space-y-3">
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 py-2 space-y-3">
           {/* My Bookings (private entries) */}
           <BookingsSection dayNumber={activeDay} travelTimes={travelTimes} travelMode={travelMode} transitLegsOpen={transitLegsOpen} />
 
