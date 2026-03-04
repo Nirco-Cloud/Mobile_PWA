@@ -14,6 +14,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.24.0] — 2026-03-04 22:40
+
+### Added
+- **Smart location picker** — "+ Location" now sorts POIs by distance from the day's hotel (walks backwards to find last checked-in hotel, falls back to GPS); hides already-planned locations; shows distance labels (e.g. "Shrine · 850m") and anchor hint below search
+
+---
+
 ## [2.23.0] — 2026-03-04 22:30
 
 ### Added

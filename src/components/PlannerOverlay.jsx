@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback, memo } from 'react'
+import { useEffect, useState, useRef, useCallback, memo, useMemo } from 'react'
 import { useMapsLibrary } from '@vis.gl/react-google-maps'
 import { useAppStore } from '../store/appStore.js'
 import {
@@ -56,15 +56,54 @@ function LocDot({ category }) {
 
 // ─── Location picker sheet ────────────────────────────────────────────────────
 
+function formatDistance(meters) {
+  if (meters < 1000) return `${Math.round(meters)}m`
+  return `${(meters / 1000).toFixed(1)} km`
+}
+
 function LocationPickerSheet({ targetDay, onClose }) {
   const locations    = useAppStore((s) => s.locations)
   const planEntries  = useAppStore((s) => s.planEntries)
   const addPlanEntry = useAppStore((s) => s.addPlanEntry)
+  const position     = useAppStore((s) => s.position)
   const [query, setQuery] = useState('')
 
-  const filtered = locations.filter((l) =>
-    l.name.toLowerCase().includes(query.toLowerCase()),
-  )
+  // Find anchor hotel: check targetDay, then walk backwards
+  const anchor = useMemo(() => {
+    for (let d = targetDay; d >= 1; d--) {
+      const hotel = planEntries.find((e) => e.day === d && e.type === 'hotel' && e.lat && e.lng)
+      if (hotel) return { lat: hotel.lat, lng: hotel.lng, name: hotel.name }
+    }
+    // Fallback to live GPS
+    if (position) return { lat: position.lat, lng: position.lng, name: null }
+    return null
+  }, [planEntries, targetDay, position])
+
+  // IDs of locations already planned for this day
+  const plannedIds = useMemo(() => {
+    const ids = new Set()
+    for (const e of planEntries) {
+      if (e.day === targetDay && e.locationId) ids.add(e.locationId)
+    }
+    return ids
+  }, [planEntries, targetDay])
+
+  const filtered = useMemo(() => {
+    const q = query.toLowerCase()
+    let list = locations
+      .filter((l) => l.name.toLowerCase().includes(q) && !plannedIds.has(l.id))
+    if (anchor) {
+      list = list.map((l) => ({
+        ...l,
+        _dist: (l.lat && l.lng) ? haversineDistance(anchor, { lat: l.lat, lng: l.lng }) : Infinity,
+      })).sort((a, b) => a._dist - b._dist)
+    }
+    return list
+  }, [locations, query, plannedIds, anchor])
+
+  // Check if query matched only already-planned locations
+  const allMatchesPlanned = filtered.length === 0 && query.length > 0 &&
+    locations.some((l) => l.name.toLowerCase().includes(query.toLowerCase()) && plannedIds.has(l.id))
 
   async function handlePick(loc) {
     const dayEntries = planEntries.filter((e) => e.day === targetDay)
@@ -114,12 +153,17 @@ function LocationPickerSheet({ targetDay, onClose }) {
             placeholder="Search locations…"
             className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
           />
+          {anchor && (
+            <p className="mt-1.5 text-[11px] text-gray-400 dark:text-gray-500">
+              📍 Nearby {anchor.name || 'current location'}
+            </p>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800">
           {filtered.length === 0 && (
             <p className="px-4 py-4 text-sm text-gray-500 dark:text-gray-400 text-center">
-              No locations found
+              {allMatchesPlanned ? 'All matches are already in your itinerary' : 'No locations found'}
             </p>
           )}
           {filtered.map((loc) => (
@@ -133,11 +177,10 @@ function LocationPickerSheet({ targetDay, onClose }) {
                 <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">
                   {loc.name}
                 </p>
-                {loc.category && (
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                    {CATEGORIES.find((c) => c.key === loc.category)?.label ?? loc.category}
-                  </p>
-                )}
+                <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                  {CATEGORIES.find((c) => c.key === loc.category)?.label ?? loc.category}
+                  {loc._dist != null && loc._dist !== Infinity && ` · ${formatDistance(loc._dist)}`}
+                </p>
               </div>
             </button>
           ))}
