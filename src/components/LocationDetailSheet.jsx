@@ -5,6 +5,7 @@ import DayPicker from './DayPicker.jsx'
 
 export default function LocationDetailSheet() {
   const locations          = useAppStore((s) => s.locations)
+  const userPois           = useAppStore((s) => s.userPois)
   const detailLocationId   = useAppStore((s) => s.detailLocationId)
   const clearDetailLocation = useAppStore((s) => s.clearDetailLocation)
   const position           = useAppStore((s) => s.position)
@@ -12,6 +13,7 @@ export default function LocationDetailSheet() {
   const [openingHoursOpen, setOpeningHoursOpen] = useState(false)
 
   const location = locations.find((l) => l.id === detailLocationId)
+    ?? userPois.find((p) => p.id === detailLocationId)
 
   if (!location) return null
 

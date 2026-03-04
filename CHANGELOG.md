@@ -14,6 +14,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.20.0] — 2026-03-04
+
+### Fixed
+- **Share target now shows Day Plan picker** — after saving a place from a shared Google Maps link, a DayPicker sheet appears so you can immediately assign it to a trip day (same flow as manual paste via Plan tab)
+- **Imported place markers now interactive** — tapping a saved place marker on the map opens the detail sheet with Open Maps / Share / + Plan buttons; `LocationDetailSheet` now searches both built-in locations and user POIs
+
+---
+
 ## [2.19.0] — 2026-03-04
 
 ### Fixed

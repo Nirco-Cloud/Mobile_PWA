@@ -26,6 +26,7 @@ import BottomNav, { BOTTOM_NAV_HEIGHT } from './components/BottomNav.jsx'
 import PlannerOverlay from './components/PlannerOverlay.jsx'
 import LocationDetailSheet from './components/LocationDetailSheet.jsx'
 import ShareConfirmSheet from './components/ShareConfirmSheet.jsx'
+import DayPicker from './components/DayPicker.jsx'
 import OfflineToast from './components/OfflineToast.jsx'
 
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
@@ -55,6 +56,7 @@ const setPlanEntries   = useAppStore((s) => s.setPlanEntries)
   const shareTargetPayload   = useAppStore((s) => s.shareTargetPayload)
   const setShareTargetPayload = useAppStore((s) => s.setShareTargetPayload)
   const [showShareSheet, setShowShareSheet] = useState(false)
+  const [shareTargetPoi, setShareTargetPoi] = useState(null)
 
   // Nearby panel drag-to-resize
   const [nearbyH, setNearbyH] = useState(55) // percent of map container
@@ -347,7 +349,19 @@ async function handleResync() {
       <LocationDetailSheet />
 
       {showShareSheet && (
-        <ShareConfirmSheet onClose={() => setShowShareSheet(false)} />
+        <ShareConfirmSheet
+          onClose={() => setShowShareSheet(false)}
+          onSaved={(poi) => { setShowShareSheet(false); setShareTargetPoi(poi) }}
+        />
+      )}
+
+      {shareTargetPoi && (
+        <DayPicker
+          location={shareTargetPoi}
+          onClose={() => setShareTargetPoi(null)}
+          onDone={() => setShareTargetPoi(null)}
+          onSkip={() => setShareTargetPoi(null)}
+        />
       )}
 
 <BottomNav activeTab={showSettings ? 'settings' : activeTab} onTabChange={handleTabChange} />
