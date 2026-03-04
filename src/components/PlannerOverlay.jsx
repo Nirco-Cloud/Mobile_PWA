@@ -187,22 +187,25 @@ function LocationPickerSheet({ targetDay, onClose }) {
             >
               All
             </button>
-            {availableCategories.map((cat) => (
-              <button
-                key={cat.key}
-                onClick={() => setActiveFilter(activeFilter === cat.key ? null : cat.key)}
-                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] rounded-full text-xs font-semibold border transition-colors"
-                style={activeFilter === cat.key
-                  ? { backgroundColor: cat.color, borderColor: cat.color, color: '#fff' }
-                  : { backgroundColor: 'transparent', borderColor: '#d1d5db', color: '#6b7280' }
-                }
-              >
-                {activeFilter === cat.key && (
+            {availableCategories.map((cat) => {
+              const isActive = activeFilter === cat.key
+              return (
+                <button
+                  key={cat.key}
+                  onClick={() => setActiveFilter(isActive ? null : cat.key)}
+                  className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] rounded-full text-xs font-semibold border transition-colors"
+                  style={{
+                    backgroundColor: cat.color,
+                    borderColor: cat.color,
+                    color: '#fff',
+                    opacity: !activeFilter || isActive ? 1 : 0.4,
+                  }}
+                >
                   <span className="w-1.5 h-1.5 rounded-full bg-white/80 shrink-0" />
-                )}
-                {cat.label}
-              </button>
-            ))}
+                  {cat.label}
+                </button>
+              )
+            })}
           </div>
         )}
 
