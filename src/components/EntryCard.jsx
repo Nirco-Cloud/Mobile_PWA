@@ -532,6 +532,7 @@ export default function EntryCard({
         <DayPicker
           location={{ name: entry.name }}
           pickerOnly
+          currentDay={entry.day}
           onClose={() => setShowDayPicker(false)}
           onDone={(day) => { setShowDayPicker(false); if (onMoveToDay) onMoveToDay(day) }}
         />

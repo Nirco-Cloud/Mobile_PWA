@@ -14,6 +14,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.20.2] — 2026-03-04 10:35
+
+### Fixed
+- **DayPicker highlights current day** — when moving an entry to a different day, the entry's current day is marked with an indigo border and "here" badge so the user knows where they're moving from
+
+---
+
 ## [2.20.1] — 2026-03-04 09:55
 
 ### Changed

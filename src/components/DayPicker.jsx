@@ -6,7 +6,7 @@ import { useTripConfig } from '../hooks/useTripConfig.js'
 const DAYS_SHORT   = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-export default function DayPicker({ location, onClose, onDone, pickerOnly = false, jumpMode = false, onSkip = null }) {
+export default function DayPicker({ location, onClose, onDone, pickerOnly = false, jumpMode = false, onSkip = null, currentDay = null }) {
   const planEntries  = useAppStore((s) => s.planEntries)
   const addPlanEntry = useAppStore((s) => s.addPlanEntry)
   const { tripDays, dayToDate, getTodayDayNumber } = useTripConfig()
@@ -104,9 +104,10 @@ export default function DayPicker({ location, onClose, onDone, pickerOnly = fals
           ) : (
             <div className="grid grid-cols-5 gap-2">
               {visibleDays.map((day) => {
-                const date    = dayToDate(day)
-                const isToday = todayDay === day
-                const count   = planEntries.filter((e) => e.day === day && !e.deletedAt).length
+                const date          = dayToDate(day)
+                const isToday       = todayDay === day
+                const isCurrentDay  = currentDay === day
+                const count         = planEntries.filter((e) => e.day === day && !e.deletedAt).length
 
                 return (
                   <button
@@ -114,28 +115,37 @@ export default function DayPicker({ location, onClose, onDone, pickerOnly = fals
                     onClick={() => handleSelectDay(day)}
                     disabled={!!toast}
                     className={`relative flex flex-col items-center justify-center rounded-2xl py-2.5 px-1 border transition-all active:scale-95 select-none ${
-                      isToday
-                        ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20'
-                        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 active:border-sky-400 active:bg-sky-50 dark:active:bg-sky-900/20'
+                      isCurrentDay
+                        ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20'
+                        : isToday
+                          ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20'
+                          : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 active:border-sky-400 active:bg-sky-50 dark:active:bg-sky-900/20'
                     }`}
                   >
+                    {/* CURRENT badge */}
+                    {isCurrentDay && (
+                      <span className="absolute top-1.5 left-0 right-0 text-center text-[8px] font-bold text-indigo-500 uppercase tracking-wide leading-none">
+                        here
+                      </span>
+                    )}
+
                     {/* TODAY badge */}
-                    {isToday && (
+                    {isToday && !isCurrentDay && (
                       <span className="absolute top-1.5 left-0 right-0 text-center text-[8px] font-bold text-amber-500 uppercase tracking-wide leading-none">
                         today
                       </span>
                     )}
 
-                    <span className={`text-[10px] font-semibold ${isToday ? 'text-amber-500 dark:text-amber-400 mt-3' : 'text-gray-400 dark:text-gray-500'}`}>
+                    <span className={`text-[10px] font-semibold ${isCurrentDay ? 'text-indigo-500 dark:text-indigo-400 mt-3' : isToday ? 'text-amber-500 dark:text-amber-400 mt-3' : 'text-gray-400 dark:text-gray-500'}`}>
                       {DAYS_SHORT[date.getDay()]}
                     </span>
-                    <span className={`text-sm font-bold leading-tight ${isToday ? 'text-amber-700 dark:text-amber-300' : 'text-gray-800 dark:text-gray-100'}`}>
+                    <span className={`text-sm font-bold leading-tight ${isCurrentDay ? 'text-indigo-700 dark:text-indigo-300' : isToday ? 'text-amber-700 dark:text-amber-300' : 'text-gray-800 dark:text-gray-100'}`}>
                       {date.getDate()}
                     </span>
-                    <span className={`text-[9px] leading-tight ${isToday ? 'text-amber-500 dark:text-amber-400' : 'text-gray-400 dark:text-gray-500'}`}>
+                    <span className={`text-[9px] leading-tight ${isCurrentDay ? 'text-indigo-500 dark:text-indigo-400' : isToday ? 'text-amber-500 dark:text-amber-400' : 'text-gray-400 dark:text-gray-500'}`}>
                       {MONTHS_SHORT[date.getMonth()]}
                     </span>
-                    <span className={`text-[9px] font-medium mt-0.5 ${isToday ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400 dark:text-gray-500'}`}>
+                    <span className={`text-[9px] font-medium mt-0.5 ${isCurrentDay ? 'text-indigo-600 dark:text-indigo-400' : isToday ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400 dark:text-gray-500'}`}>
                       D{day}
                     </span>
 
