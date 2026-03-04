@@ -14,6 +14,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.22.8] — 2026-03-04 22:15
+
+### Fixed
+- **Planner drag performance** — Bypass React state during drag by mutating DOM height directly; add `will-change: height` GPU hint during drag; wrap FullTripView and TodayView in `React.memo`; add CSS `contain: layout style` to panel
+
+---
+
 ## [2.22.7] - 2026-03-04 Israel Time
 
 ### Fixed

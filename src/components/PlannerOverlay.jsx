@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef, useCallback, memo } from 'react'
 import { useMapsLibrary } from '@vis.gl/react-google-maps'
 import { useAppStore } from '../store/appStore.js'
 import {
@@ -179,7 +179,7 @@ function TypeBadge({ type }) {
   )
 }
 
-function FullTripView() {
+const FullTripView = memo(function FullTripView() {
   const { tripDays, formatDayLabel, getTodayDayNumber } = useTripConfig()
   const planEntries     = useVisiblePlanEntries()
   const setPlanFocusDay = useAppStore((s) => s.setPlanFocusDay)
@@ -301,7 +301,7 @@ function FullTripView() {
       })}
     </div>
   )
-}
+})
 
 // ─── Today view ──────────────────────────────────────────────────────────────
 
@@ -324,7 +324,7 @@ function haversineDistance(a, b) {
   return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h))
 }
 
-function TodayView() {
+const TodayView = memo(function TodayView() {
   const { tripDays, formatDayLabel, getTodayDayNumber } = useTripConfig()
   const todayCalendarDay = getTodayDayNumber()
   const routesLib            = useMapsLibrary('routes')
@@ -870,7 +870,7 @@ const removePlanEntry      = useAppStore((s) => s.removePlanEntry)
 
     </>
   )
-}
+})
 
 // ─── Main overlay ────────────────────────────────────────────────────────────
 
@@ -929,7 +929,9 @@ export default function PlannerOverlay() {
     if (rafRef.current) return
     rafRef.current = requestAnimationFrame(() => {
       rafRef.current = null
-      setPanelH(pendingPanelH.current)
+      if (panelRef.current) {
+        panelRef.current.style.height = `${pendingPanelH.current}dvh`
+      }
     })
   }, [])
 
@@ -949,16 +951,15 @@ export default function PlannerOverlay() {
         return snapped
       })
     } else {
-      setPanelH((h) => {
-        const snapped = snapPanelTo(h)
-        setStorePlannerH(snapped)
-        return snapped
-      })
+      const snapped = snapPanelTo(pendingPanelH.current)
+      setStorePlannerH(snapped)
+      setPanelH(snapped)
     }
 
     didMove.current = false
     if (panelRef.current) panelRef.current.style.transition = 'height 200ms ease-out'
     if (panelRef.current) panelRef.current.style.touchAction = ''
+    if (panelRef.current) panelRef.current.style.willChange = ''
     window.removeEventListener('pointermove',   plannerMoveHandler)
     window.removeEventListener('pointerup',     stablePlannerUp)
     window.removeEventListener('pointercancel', stablePlannerUp)
@@ -972,6 +973,7 @@ export default function PlannerOverlay() {
     // Disable transition so panel follows finger instantly during drag
     if (panelRef.current) panelRef.current.style.transition = 'none'
     if (panelRef.current) panelRef.current.style.touchAction = 'none'
+    if (panelRef.current) panelRef.current.style.willChange = 'height'
     window.addEventListener('pointermove',   plannerMoveHandler)
     window.addEventListener('pointerup',     stablePlannerUp)
     window.addEventListener('pointercancel', stablePlannerUp)
@@ -994,6 +996,7 @@ export default function PlannerOverlay() {
       style={{
         height: `${panelH}dvh`,
         paddingBottom: `calc(${BOTTOM_NAV_HEIGHT}px + env(safe-area-inset-bottom))`,
+        contain: 'layout style',
       }}
     >
       {/* Drag handle — 48px hit target, tap cycles snap points */}
