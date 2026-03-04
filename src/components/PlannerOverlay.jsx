@@ -171,15 +171,18 @@ function LocationPickerSheet({ targetDay, onClose }) {
           )}
         </div>
 
-        {/* Category filter chips */}
+        {/* Category filter chips — matches ListComponent chip style */}
         {availableCategories.length > 1 && (
-          <div className="flex gap-1.5 px-4 pb-2 overflow-x-auto shrink-0 no-scrollbar">
+          <div
+            className="flex gap-2 px-4 pb-2 shrink-0"
+            style={{ overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
+          >
             <button
               onClick={() => setActiveFilter(null)}
-              className={`px-2.5 py-1 text-[11px] font-medium rounded-full whitespace-nowrap shrink-0 ${
+              className={`shrink-0 px-3 py-1.5 min-h-[36px] rounded-full text-xs font-semibold border transition-colors ${
                 !activeFilter
-                  ? 'bg-gray-800 text-white dark:bg-gray-100 dark:text-gray-900'
-                  : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                  ? 'bg-sky-500 text-white border-sky-500'
+                  : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-300 dark:border-gray-600'
               }`}
             >
               All
@@ -188,12 +191,15 @@ function LocationPickerSheet({ targetDay, onClose }) {
               <button
                 key={cat.key}
                 onClick={() => setActiveFilter(activeFilter === cat.key ? null : cat.key)}
-                className="px-2.5 py-1 text-[11px] font-medium rounded-full whitespace-nowrap shrink-0"
+                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] rounded-full text-xs font-semibold border transition-colors"
                 style={activeFilter === cat.key
-                  ? { backgroundColor: cat.color, color: '#fff' }
-                  : { backgroundColor: cat.color + '18', color: cat.color }
+                  ? { backgroundColor: cat.color, borderColor: cat.color, color: '#fff' }
+                  : { backgroundColor: 'transparent', borderColor: '#d1d5db', color: '#6b7280' }
                 }
               >
+                {activeFilter === cat.key && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-white/80 shrink-0" />
+                )}
                 {cat.label}
               </button>
             ))}
