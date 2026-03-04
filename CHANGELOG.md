@@ -14,6 +14,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.22.2] — 2026-03-04 13:00
+
+### Fixed
+- **GitHub sync encoding bug** — non-ASCII characters (Hebrew, arrows) were garbled on devices that pulled data from GitHub. `pullFromGithub` now uses `decodeURIComponent(escape(atob(...)))` to correctly reverse the `btoa(unescape(encodeURIComponent(...)))` push encoding. After syncing on mobile, all Hebrew location names will display correctly.
+
+---
+
 ## [2.22.1] — 2026-03-04 12:10
 
 ### Fixed

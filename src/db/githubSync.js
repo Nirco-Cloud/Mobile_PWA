@@ -74,7 +74,7 @@ export async function pullFromGithub(config) {
   if (!data.sha) throw new Error('GitHub response missing file SHA')
   let entries
   try {
-    const decoded = atob(data.content.replace(/\n/g, ''))
+    const decoded = decodeURIComponent(escape(atob(data.content.replace(/\n/g, ''))))
     const parsed = JSON.parse(decoded)
     entries = (parsed.entries ?? []).map(normalizePlanEntry).filter((e) => !!e.id)
   } catch {
