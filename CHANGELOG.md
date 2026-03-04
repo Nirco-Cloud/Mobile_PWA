@@ -14,6 +14,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.22.9] — 2026-03-04 22:20
+
+### Fixed
+- **SplitLayout drag performance** — Bypass React state during drag by mutating DOM height directly; add `will-change: height` GPU hint; snap from `pendingPct.current` on drag end instead of stale React state
+
+---
+
 ## [2.22.8] — 2026-03-04 22:15
 
 ### Fixed

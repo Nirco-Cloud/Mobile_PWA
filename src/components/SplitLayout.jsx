@@ -35,7 +35,9 @@ export default function SplitLayout({ mapSlot, listSlot, bottomNavHeight = 56 })
     if (rafRef.current) return
     rafRef.current = requestAnimationFrame(() => {
       rafRef.current = null
-      setMapPercent(pendingPct.current)
+      if (mapPanelRef.current) {
+        mapPanelRef.current.style.height = `${pendingPct.current}%`
+      }
     })
   }, [])
 
@@ -58,11 +60,14 @@ export default function SplitLayout({ mapSlot, listSlot, bottomNavHeight = 56 })
         return SNAP_POINTS[(idx + 1) % SNAP_POINTS.length]
       })
     } else {
-      setMapPercent((h) => snapTo(h))
+      const snapped = snapTo(pendingPct.current)
+      setMapPercent(snapped)
+      if (mapPanelRef.current) mapPanelRef.current.style.height = `${snapped}%`
     }
 
     didMove.current = false
     if (containerRef.current) containerRef.current.style.touchAction = ''
+    if (mapPanelRef.current) mapPanelRef.current.style.willChange = ''
     window.removeEventListener('pointermove', moveHandler)
     window.removeEventListener('pointerup',     stableUpHandler)
     window.removeEventListener('pointercancel', stableUpHandler)
@@ -75,6 +80,7 @@ export default function SplitLayout({ mapSlot, listSlot, bottomNavHeight = 56 })
     e.stopPropagation()
     // Disable transition so panel follows finger instantly during drag
     if (mapPanelRef.current) mapPanelRef.current.style.transition = 'none'
+    if (mapPanelRef.current) mapPanelRef.current.style.willChange = 'height'
     // Block scroll on the whole container while dragging
     if (containerRef.current) containerRef.current.style.touchAction = 'none'
     window.addEventListener('pointermove',   moveHandler)
