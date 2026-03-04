@@ -126,8 +126,8 @@ export const useAppStore = create(
       })),
 
     // ── V2: Stay-based navigation ─────────────────────────────────────────────
-    selectedStay: 'tokyo_start',
-    setSelectedStay: (selectedStay) => set({ selectedStay }),
+    selectedStay: localStorage.getItem('selectedStay') || 'tokyo_start',
+    setSelectedStay: (selectedStay) => { localStorage.setItem('selectedStay', selectedStay); set({ selectedStay }) },
 
     // View mode: 'explore' | 'overview'
     mode: 'explore',

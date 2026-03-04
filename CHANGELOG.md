@@ -14,6 +14,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.23.0] — 2026-03-04 22:30
+
+### Added
+- **Persist selected stay** — Region dropdown selection survives app reload/crash via localStorage
+
+---
+
 ## [2.22.9] — 2026-03-04 22:20
 
 ### Fixed
