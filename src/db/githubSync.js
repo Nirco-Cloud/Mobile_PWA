@@ -43,6 +43,33 @@ async function setLastSyncTime(ts) {
   await idbSet(KEYS.GITHUB_LAST_SYNC, ts, kvStore)
 }
 
+// ── Encoding repair ──────────────────────────────────────────────────────────
+// Older push code encoded non-ASCII via btoa(unescape(encodeURIComponent(...))),
+// producing double- (or more) encoded UTF-8 bytes stored as Latin-1 code points.
+// This function detects and reverses that garbling iteratively.
+function fixGarbledString(s) {
+  if (!s || typeof s !== 'string') return s
+  let result = s
+  for (let i = 0; i < 6; i++) {
+    // If any char is outside Latin-1 range (e.g. Hebrew U+05xx, CJK U+3xxx),
+    // the string is already correctly decoded — stop.
+    if ([...result].some((c) => c.codePointAt(0) > 0xff)) break
+    // Treat each code point as a raw byte and attempt UTF-8 decode.
+    const bytes = Uint8Array.from([...result], (c) => c.codePointAt(0))
+    const fixed = new TextDecoder('utf-8', { fatal: false }).decode(bytes)
+    // Stop if no improvement or replacement chars appeared (not valid UTF-8).
+    if (fixed === result || fixed.includes('\ufffd')) break
+    result = fixed
+  }
+  return result
+}
+
+function fixEntryEncoding(e) {
+  if (!e) return e
+  const fix = fixGarbledString
+  return { ...e, name: fix(e.name), nameHe: fix(e.nameHe), note: fix(e.note) }
+}
+
 // ── GitHub API helpers ───────────────────────────────────────────────────────
 
 function apiUrl(config) {
@@ -76,7 +103,7 @@ export async function pullFromGithub(config) {
   try {
     const decoded = atob(data.content.replace(/\n/g, ''))
     const parsed = JSON.parse(decoded)
-    entries = (parsed.entries ?? []).map(normalizePlanEntry).filter((e) => !!e.id)
+    entries = (parsed.entries ?? []).map(normalizePlanEntry).map(fixEntryEncoding).filter((e) => !!e.id)
   } catch {
     throw new Error('GitHub sync file is corrupted or unreadable')
   }

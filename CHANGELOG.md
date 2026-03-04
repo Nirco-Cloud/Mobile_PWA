@@ -14,6 +14,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.22.4] — 2026-03-04 17:30
+
+### Fixed
+- **GitHub sync — pull-side encoding repair** — Added `fixGarbledString()` applied to every entry pulled from GitHub. Detects and reverses multi-level UTF-8 double-encoding (caused by old push code) so that Hebrew, Japanese, and other non-ASCII names are always decoded correctly regardless of how they were encoded when pushed. Prevents garbled names on mobile even if an old service worker on desktop pushes incorrectly encoded data.
+
+---
+
 ## [2.22.3] — 2026-03-04 13:20
 
 ### Fixed
