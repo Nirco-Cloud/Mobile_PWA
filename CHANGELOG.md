@@ -14,6 +14,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.20.1] — 2026-03-04 09:55
+
+### Changed
+- **Demo mode on by default** — GPS locked to stay hotel on first launch; toggle off in Settings to use real GPS
+
+---
+
 ## [2.20.0] — 2026-03-04 09:40
 
 ### Fixed
