@@ -14,6 +14,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.24.1] — 2026-03-04 22:50
+
+### Fixed
+- **Always-visible "+ Location" button** — Added persistent "+ Location" button alongside "+ Entry" at the bottom of TodayView, so users can add locations even when the day already has entries
+
+---
+
 ## [2.24.0] — 2026-03-04 22:40
 
 ### Added

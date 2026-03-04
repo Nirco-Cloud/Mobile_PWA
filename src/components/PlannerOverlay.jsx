@@ -879,13 +879,21 @@ const removePlanEntry      = useAppStore((s) => s.removePlanEntry)
             )
           })}
 
-          {/* Add entry button */}
-          <button
-            onClick={() => setEntryCreatorOpen(true)}
-            className="w-full py-3 text-sm font-medium text-violet-500 border border-dashed border-violet-300 dark:border-violet-700 rounded-xl active:bg-violet-50 dark:active:bg-violet-900/20"
-          >
-            + Entry (flight, hotel, train…)
-          </button>
+          {/* Add buttons */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setLocationPickerOpen(true)}
+              className="flex-1 py-3 text-sm font-medium text-sky-500 border border-dashed border-sky-300 dark:border-sky-700 rounded-xl active:bg-sky-50 dark:active:bg-sky-900/20"
+            >
+              + Location
+            </button>
+            <button
+              onClick={() => setEntryCreatorOpen(true)}
+              className="flex-1 py-3 text-sm font-medium text-violet-500 border border-dashed border-violet-300 dark:border-violet-700 rounded-xl active:bg-violet-50 dark:active:bg-violet-900/20"
+            >
+              + Entry
+            </button>
+          </div>
         </div>
       </div>
 
