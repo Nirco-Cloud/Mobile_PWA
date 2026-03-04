@@ -14,7 +14,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [2.20.0] — 2026-03-04
+## [2.20.0] — 2026-03-04 09:40
 
 ### Fixed
 - **Share target now shows Day Plan picker** — after saving a place from a shared Google Maps link, a DayPicker sheet appears so you can immediately assign it to a trip day (same flow as manual paste via Plan tab)
@@ -22,7 +22,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [2.19.0] — 2026-03-04
+## [2.19.0] — 2026-03-04 09:25
 
 ### Fixed
 - **`?q=...&ftid=...` link format now resolves correctly** — added name extraction from `q=` query parameter (used by iOS share links with `g_st=iw`)
@@ -30,14 +30,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [2.18.0] — 2026-03-04
+## [2.18.0] — 2026-03-04 09:10
 
 ### Fixed
 - **`maps.app.goo.gl` links no longer fail** — added two new coordinate extraction strategies from the HTML body: `og:image center=lat%2Clng` and `APP_INITIALIZATION_STATE=[[[scale,lng,lat`. Also switched to desktop User-Agent for `maps.app.goo.gl` fetches (smaller 168KB body vs 780KB mobile, more reliable coordinate embedding).
 
 ---
 
-## [2.17.0] — 2026-03-04
+## [2.17.0] — 2026-03-04 01:47
 
 ### Changed
 - **Single source of truth for category colors** — `color` field added to each entry in `categories.js`; `getCategoryColor()` helper exported and used by `ListComponent`, `LocationRow`, and `PlannerOverlay` — no more duplicated color maps
@@ -45,7 +45,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [2.16.0] — 2026-03-04
+## [2.16.0] — 2026-03-04 01:39
 
 ### Changed
 - **Category chip order** — Restaurant moved to #1, Izakaya to #7, Activity to #12, Hotel to #15
@@ -53,21 +53,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [2.15.0] — 2026-03-04
+## [2.15.0] — 2026-03-04 01:19
 
 ### Added
 - **Hebrew name shown in Save Place sheet** — when `nameHe` is returned by the resolver, it appears above the editable English name as a right-aligned RTL secondary line.
 
 ---
 
-## [2.14.0] — 2026-03-04
+## [2.14.0] — 2026-03-04 01:12
 
 ### Added
 - **Hebrew name (`nameHe`)** — resolver now fetches the Hebrew display name in parallel alongside English for every resolved place. Included in the JSON response as `nameHe` (omitted if not available or identical to English name).
 
 ---
 
-## [2.13.0] — 2026-03-04
+## [2.13.0] — 2026-03-04 01:05
 
 ### Fixed
 - **`maps.app.goo.gl` place name resolution** — when a URL contains both a place name (from `/place/NAME/` path) and exact pin coordinates (`!3d!4d`), now uses Text Search with 500m `locationBias` instead of blind Nearby Search. This fixes cases like "Portobello Two" where Nearby Search was returning the wrong nearby business (e.g. Layla Bakery 30m away).
