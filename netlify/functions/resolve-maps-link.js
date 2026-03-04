@@ -19,6 +19,7 @@
  */
 
 const MOBILE_UA = 'Mozilla/5.0 (Linux; Android 12; SM-G998B) AppleWebKit/537.36 Chrome/112.0.0.0 Mobile Safari/537.36'
+const DESKTOP_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
 // Google Place type → app category mapping
 const TYPE_TO_CATEGORY = {
@@ -58,12 +59,13 @@ function mapTypes(types = []) {
 
 /**
  * Follow redirects and return final URL + HTML body.
+ * useDesktop=true sends a desktop UA (smaller body, easier coord extraction).
  */
-async function fetchUrl(inputUrl) {
+async function fetchUrl(inputUrl, useDesktop = false) {
   const res = await fetch(inputUrl, {
     redirect: 'follow',
     headers: {
-      'User-Agent': MOBILE_UA,
+      'User-Agent': useDesktop ? DESKTOP_UA : MOBILE_UA,
       'Accept-Language': 'en-US,en;q=0.9',
     },
   })
@@ -125,6 +127,14 @@ function extractCoords(url, body) {
   // Strategy 5: ?ll=lat,lng (older goo.gl redirect targets)
   m = url.match(/[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/)
   if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) }
+
+  // Strategy 6: og:image center=lat%2Clng (Google Maps HTML body — desktop UA)
+  m = body.match(/center=(-?\d+\.\d+)%2C(-?\d+\.\d+)/i)
+  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) }
+
+  // Strategy 7: APP_INITIALIZATION_STATE=[[[scale,lng,lat (Google Maps HTML body)
+  m = body.match(/APP_INITIALIZATION_STATE=\[\[\[[\d.]+,(-?\d+\.\d+),(-?\d+\.\d+)/)
+  if (m) return { lat: parseFloat(m[2]), lng: parseFloat(m[1]) }
 
   return null
 }
@@ -450,8 +460,11 @@ export const handler = async (event) => {
 
   // ── Strategy C: Standard URL resolution ────────────────────────────────────
   // Follow HTTP redirects, extract coords/placeId, enrich via Places API.
+  // Use desktop UA for maps.app.goo.gl — produces smaller body (168KB vs 780KB)
+  // and more reliably embeds coordinates in og:image/APP_INITIALIZATION_STATE.
   try {
-    const { finalUrl, body } = await fetchUrl(rawUrl)
+    const useDesktop = /maps\.app\.goo\.gl/i.test(rawUrl)
+    const { finalUrl, body } = await fetchUrl(rawUrl, useDesktop)
 
     const coords  = extractCoords(finalUrl, body)
     const placeId = extractPlaceId(finalUrl) || extractPlaceId(body)

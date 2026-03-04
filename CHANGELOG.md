@@ -14,6 +14,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.18.0] — 2026-03-04
+
+### Fixed
+- **`maps.app.goo.gl` links no longer fail** — added two new coordinate extraction strategies from the HTML body: `og:image center=lat%2Clng` and `APP_INITIALIZATION_STATE=[[[scale,lng,lat`. Also switched to desktop User-Agent for `maps.app.goo.gl` fetches (smaller 168KB body vs 780KB mobile, more reliable coordinate embedding).
+
+---
+
 ## [2.17.0] — 2026-03-04
 
 ### Changed
