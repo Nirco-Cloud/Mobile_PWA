@@ -14,6 +14,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.24.2] — 2026-03-04 22:55
+
+### Added
+- **Category filter chips** in LocationPickerSheet — horizontal scrolling chip row to filter by category (Restaurant, Shrine, etc.); tap to toggle, only shows categories with available locations
+
+---
+
 ## [2.24.1] — 2026-03-04 22:50
 
 ### Fixed

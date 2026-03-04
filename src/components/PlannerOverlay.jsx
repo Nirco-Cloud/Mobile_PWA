@@ -67,6 +67,7 @@ function LocationPickerSheet({ targetDay, onClose }) {
   const addPlanEntry = useAppStore((s) => s.addPlanEntry)
   const position     = useAppStore((s) => s.position)
   const [query, setQuery] = useState('')
+  const [activeFilter, setActiveFilter] = useState(null)
 
   // Find anchor hotel: check targetDay, then walk backwards
   const anchor = useMemo(() => {
@@ -88,10 +89,20 @@ function LocationPickerSheet({ targetDay, onClose }) {
     return ids
   }, [planEntries, targetDay])
 
+  // Categories present in the (non-planned) location set — for chips
+  const availableCategories = useMemo(() => {
+    const keys = new Set()
+    for (const l of locations) {
+      if (!plannedIds.has(l.id) && l.category) keys.add(l.category)
+    }
+    return CATEGORIES.filter((c) => keys.has(c.key))
+  }, [locations, plannedIds])
+
   const filtered = useMemo(() => {
     const q = query.toLowerCase()
     let list = locations
-      .filter((l) => l.name.toLowerCase().includes(q) && !plannedIds.has(l.id))
+      .filter((l) => l.name.toLowerCase().includes(q) && !plannedIds.has(l.id)
+        && (!activeFilter || l.category === activeFilter))
     if (anchor) {
       list = list.map((l) => ({
         ...l,
@@ -99,7 +110,7 @@ function LocationPickerSheet({ targetDay, onClose }) {
       })).sort((a, b) => a._dist - b._dist)
     }
     return list
-  }, [locations, query, plannedIds, anchor])
+  }, [locations, query, plannedIds, anchor, activeFilter])
 
   // Check if query matched only already-planned locations
   const allMatchesPlanned = filtered.length === 0 && query.length > 0 &&
@@ -159,6 +170,35 @@ function LocationPickerSheet({ targetDay, onClose }) {
             </p>
           )}
         </div>
+
+        {/* Category filter chips */}
+        {availableCategories.length > 1 && (
+          <div className="flex gap-1.5 px-4 pb-2 overflow-x-auto shrink-0 no-scrollbar">
+            <button
+              onClick={() => setActiveFilter(null)}
+              className={`px-2.5 py-1 text-[11px] font-medium rounded-full whitespace-nowrap shrink-0 ${
+                !activeFilter
+                  ? 'bg-gray-800 text-white dark:bg-gray-100 dark:text-gray-900'
+                  : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+              }`}
+            >
+              All
+            </button>
+            {availableCategories.map((cat) => (
+              <button
+                key={cat.key}
+                onClick={() => setActiveFilter(activeFilter === cat.key ? null : cat.key)}
+                className="px-2.5 py-1 text-[11px] font-medium rounded-full whitespace-nowrap shrink-0"
+                style={activeFilter === cat.key
+                  ? { backgroundColor: cat.color, color: '#fff' }
+                  : { backgroundColor: cat.color + '18', color: cat.color }
+                }
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="flex-1 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800">
           {filtered.length === 0 && (
