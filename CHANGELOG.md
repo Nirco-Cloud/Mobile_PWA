@@ -14,6 +14,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.22.5] — 2026-03-04 17:45
+
+### Changed
+- **DayPicker cell redesign** — D# moves to the top as a bold solid pill (accent color per state: indigo/sky/amber/gray). Date number remains the dominant element below. Day name and month are smaller muted supporting text. Removed old absolute-positioned text badges (HERE/STAY/TODAY) — cell color communicates the state.
+
+---
+
 ## [2.22.4] — 2026-03-04 17:30
 
 ### Fixed

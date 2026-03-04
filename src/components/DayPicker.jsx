@@ -147,35 +147,27 @@ export default function DayPicker({ location, onClose, onDone, pickerOnly = fals
                             : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 active:border-sky-400 active:bg-sky-50 dark:active:bg-sky-900/20'
                     }`}
                   >
-                    {/* CURRENT badge */}
-                    {isCurrentDay && (
-                      <span className="absolute top-1.5 left-0 right-0 text-center text-[8px] font-bold text-indigo-500 uppercase tracking-wide leading-none">
-                        here
-                      </span>
-                    )}
+                    {/* D# pill — top, bold, accent color */}
+                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full mb-1.5 leading-none ${
+                      isCurrentDay ? 'bg-indigo-500 text-white'
+                      : isSuggested ? 'bg-sky-500 text-white'
+                      : isToday    ? 'bg-amber-500 text-white'
+                      : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                    }`}>
+                      D{day}
+                    </span>
 
-                    {/* SUGGESTED badge */}
-                    {isSuggested && (
-                      <span className="absolute top-1.5 left-0 right-0 text-center text-[8px] font-bold text-sky-500 uppercase tracking-wide leading-none">
-                        stay
-                      </span>
-                    )}
-
-                    {/* TODAY badge */}
-                    {isToday && !isCurrentDay && !isSuggested && (
-                      <span className="absolute top-1.5 left-0 right-0 text-center text-[8px] font-bold text-amber-500 uppercase tracking-wide leading-none">
-                        today
-                      </span>
-                    )}
-
-                    <span className={`text-[10px] font-semibold ${
-                      isCurrentDay ? 'text-indigo-500 dark:text-indigo-400 mt-3'
-                      : isSuggested ? 'text-sky-500 dark:text-sky-400 mt-3'
-                      : isToday    ? 'text-amber-500 dark:text-amber-400 mt-3'
+                    {/* Day name */}
+                    <span className={`text-[10px] font-medium leading-none mb-0.5 ${
+                      isCurrentDay ? 'text-indigo-500 dark:text-indigo-400'
+                      : isSuggested ? 'text-sky-500 dark:text-sky-400'
+                      : isToday    ? 'text-amber-500 dark:text-amber-400'
                       : 'text-gray-400 dark:text-gray-500'
                     }`}>
                       {DAYS_SHORT[date.getDay()]}
                     </span>
+
+                    {/* Date number — dominant */}
                     <span className={`text-sm font-bold leading-tight ${
                       isCurrentDay ? 'text-indigo-700 dark:text-indigo-300'
                       : isSuggested ? 'text-sky-700 dark:text-sky-300'
@@ -184,21 +176,15 @@ export default function DayPicker({ location, onClose, onDone, pickerOnly = fals
                     }`}>
                       {date.getDate()}
                     </span>
-                    <span className={`text-[9px] leading-tight ${
-                      isCurrentDay ? 'text-indigo-500 dark:text-indigo-400'
-                      : isSuggested ? 'text-sky-500 dark:text-sky-400'
-                      : isToday    ? 'text-amber-500 dark:text-amber-400'
+
+                    {/* Month */}
+                    <span className={`text-[9px] leading-none mt-0.5 ${
+                      isCurrentDay ? 'text-indigo-400 dark:text-indigo-500'
+                      : isSuggested ? 'text-sky-400 dark:text-sky-500'
+                      : isToday    ? 'text-amber-400 dark:text-amber-500'
                       : 'text-gray-400 dark:text-gray-500'
                     }`}>
                       {MONTHS_SHORT[date.getMonth()]}
-                    </span>
-                    <span className={`text-[9px] font-medium mt-0.5 ${
-                      isCurrentDay ? 'text-indigo-600 dark:text-indigo-400'
-                      : isSuggested ? 'text-sky-600 dark:text-sky-400'
-                      : isToday    ? 'text-amber-600 dark:text-amber-400'
-                      : 'text-gray-400 dark:text-gray-500'
-                    }`}>
-                      D{day}
                     </span>
 
                     {/* Green dot — already has entries */}
