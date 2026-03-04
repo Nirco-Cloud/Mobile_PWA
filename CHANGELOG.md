@@ -14,10 +14,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [2.24.4] — 2026-03-04 23:10
+## [2.24.5] — 2026-03-04 23:15
 
 ### Fixed
-- **Category filter chips** in LocationPickerSheet — chips now always show category color + white text + white dot matching ListComponent; unselected chips dim to 40% opacity when a filter is active
+- **Category filter chips** in LocationPickerSheet — show all categories in same order as ListComponent (was only showing categories with available locations); colored fill + white dot matching ListComponent
 
 ---
 

@@ -89,15 +89,6 @@ function LocationPickerSheet({ targetDay, onClose }) {
     return ids
   }, [planEntries, targetDay])
 
-  // Categories present in the (non-planned) location set — for chips
-  const availableCategories = useMemo(() => {
-    const keys = new Set()
-    for (const l of locations) {
-      if (!plannedIds.has(l.id) && l.category) keys.add(l.category)
-    }
-    return CATEGORIES.filter((c) => keys.has(c.key))
-  }, [locations, plannedIds])
-
   const filtered = useMemo(() => {
     const q = query.toLowerCase()
     let list = locations
@@ -172,7 +163,7 @@ function LocationPickerSheet({ targetDay, onClose }) {
         </div>
 
         {/* Category filter chips — matches ListComponent chip style */}
-        {availableCategories.length > 1 && (
+        {CATEGORIES.length > 1 && (
           <div
             className="flex gap-2 px-4 pb-2 shrink-0"
             style={{ overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
@@ -187,7 +178,7 @@ function LocationPickerSheet({ targetDay, onClose }) {
             >
               All
             </button>
-            {availableCategories.map((cat) => {
+            {CATEGORIES.map((cat) => {
               const isActive = activeFilter === cat.key
               return (
                 <button
