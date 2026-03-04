@@ -14,6 +14,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.21.1] — 2026-03-04 11:41
+
+### Added
+- **Stay dropdown auto-navigates Trip Planner** — switching stays in the dropdown (e.g. Tokyo → Kyoto) automatically updates `planFocusDay` to the hotel's arrival day, so the planner jumps to the correct day without manual scrolling.
+
+---
+
 ## [2.21.0] — 2026-03-04 10:40
 
 ### Added

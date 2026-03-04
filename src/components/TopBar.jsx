@@ -12,6 +12,8 @@ export default function TopBar() {
   const demoMode        = useAppStore((s) => s.demoMode)
   const setPosition     = useAppStore((s) => s.setPosition)
   const locations       = useAppStore((s) => s.locations)
+  const planEntries     = useAppStore((s) => s.planEntries)
+  const setPlanFocusDay = useAppStore((s) => s.setPlanFocusDay)
   const [dropdownOpen, setDropdownOpen] = useState(false)
 
   const currentStay = stays.find((s) => s.id === selectedStay) ?? stays[0]
@@ -54,6 +56,12 @@ export default function TopBar() {
                     if (demoMode) {
                       const center = getStayCenter(stay, locations)
                       if (center) setPosition(center)
+                    }
+                    if (stay.hotelId) {
+                      const hotelEntry = planEntries.find(
+                        (e) => e.type === 'hotel' && e.locationId === stay.hotelId && !e.deletedAt
+                      )
+                      if (hotelEntry?.day) setPlanFocusDay(hotelEntry.day)
                     }
                     setDropdownOpen(false)
                   }}
