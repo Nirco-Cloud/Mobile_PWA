@@ -14,6 +14,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.22.7] - 2026-03-04 Israel Time
+
+### Fixed
+- Tapping "Day #" label in TodayView header no longer opens the DayPicker; label converted to non-interactive span
+
+---
+
 ## [2.22.6] — 2026-03-04 18:15
 
 ### Fixed

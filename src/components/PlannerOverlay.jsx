@@ -649,13 +649,9 @@ const removePlanEntry      = useAppStore((s) => s.removePlanEntry)
             </svg>
           </button>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowDayJumper(true)}
-              className="text-sm font-bold text-gray-800 dark:text-gray-100 py-1 px-2 rounded-lg active:bg-gray-100 dark:active:bg-gray-800"
-              aria-label="Jump to day"
-            >
+            <span className="text-sm font-bold text-gray-800 dark:text-gray-100 py-1 px-2">
               Day {activeDay}
-            </button>
+            </span>
             <button
               onClick={() => {
                 if (planRecapMode === 'single' && planRecapDay === activeDay) {
