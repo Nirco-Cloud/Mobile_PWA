@@ -14,6 +14,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.24.7] — 2026-03-05 10:30
+
+### Fixed
+- **Open Maps button** — now opens location in Google Maps instead of starting navigation
+
+---
+
 ## [2.24.6] — 2026-03-05 10:25
 
 ### Fixed

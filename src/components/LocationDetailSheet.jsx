@@ -160,7 +160,7 @@ export default function LocationDetailSheet() {
         {/* Action buttons */}
         <div className="px-4 pt-3 pb-2 border-t border-gray-100 dark:border-gray-800 shrink-0 flex gap-2">
           <a
-            href={hasCoords ? `https://www.google.com/maps/dir/?api=1${position ? `&origin=${position.lat},${position.lng}` : ''}&destination=${location.lat},${location.lng}` : undefined}
+            href={hasCoords ? `https://www.google.com/maps/search/?api=1&query=${location.lat},${location.lng}` : undefined}
             target={hasCoords ? '_blank' : undefined}
             rel="noreferrer"
             className={`flex-1 text-center py-3 text-sm font-semibold bg-sky-500 text-white rounded-xl active:bg-sky-600 ${!hasCoords ? 'opacity-50 pointer-events-none' : ''}`}
