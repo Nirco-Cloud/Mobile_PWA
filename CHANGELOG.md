@@ -14,6 +14,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.24.8] — 2026-03-05 10:35
+
+### Fixed
+- **Open Maps button** — search by place name instead of coordinates so Google Maps shows full place details (ratings, photos, reviews)
+
+---
+
 ## [2.24.7] — 2026-03-05 10:30
 
 ### Fixed
