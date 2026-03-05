@@ -9,6 +9,8 @@ export default function LocationDetailSheet() {
   const detailLocationId   = useAppStore((s) => s.detailLocationId)
   const clearDetailLocation = useAppStore((s) => s.clearDetailLocation)
   const position           = useAppStore((s) => s.position)
+  const favorites            = useAppStore((s) => s.favorites)
+  const toggleFavorite       = useAppStore((s) => s.toggleFavorite)
   const [showDayPicker, setShowDayPicker]   = useState(false)
   const [openingHoursOpen, setOpeningHoursOpen] = useState(false)
 
@@ -66,12 +68,22 @@ export default function LocationDetailSheet() {
                 )}
               </div>
             </div>
-            <button
-              onClick={clearDetailLocation}
-              className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-lg leading-none mt-0.5"
-            >
-              ×
-            </button>
+            <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
+              <button
+                onClick={() => toggleFavorite(location.id)}
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 active:scale-110 transition-transform"
+              >
+                <svg viewBox="0 0 24 24" className="w-5 h-5" stroke={favorites.has(location.id) ? '#ef4444' : '#9ca3af'} strokeWidth="2" fill={favorites.has(location.id) ? '#ef4444' : 'none'}>
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+              </button>
+              <button
+                onClick={clearDetailLocation}
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-lg leading-none"
+              >
+                ×
+              </button>
+            </div>
           </div>
 
           {/* Body */}

@@ -66,8 +66,10 @@ function LocationPickerSheet({ targetDay, onClose }) {
   const planEntries  = useAppStore((s) => s.planEntries)
   const addPlanEntry = useAppStore((s) => s.addPlanEntry)
   const position     = useAppStore((s) => s.position)
+  const favorites    = useAppStore((s) => s.favorites)
   const [query, setQuery] = useState('')
   const [activeFilter, setActiveFilter] = useState(null)
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
 
   // Find anchor hotel: check targetDay, then walk backwards
   const anchor = useMemo(() => {
@@ -93,7 +95,8 @@ function LocationPickerSheet({ targetDay, onClose }) {
     const q = query.toLowerCase()
     let list = locations
       .filter((l) => l.name.toLowerCase().includes(q) && !plannedIds.has(l.id)
-        && (!activeFilter || l.category === activeFilter))
+        && (!activeFilter || l.category === activeFilter)
+        && (!showFavoritesOnly || favorites.has(l.id)))
     if (anchor) {
       list = list.map((l) => ({
         ...l,
@@ -101,7 +104,7 @@ function LocationPickerSheet({ targetDay, onClose }) {
       })).sort((a, b) => a._dist - b._dist)
     }
     return list
-  }, [locations, query, plannedIds, anchor, activeFilter])
+  }, [locations, query, plannedIds, anchor, activeFilter, showFavoritesOnly, favorites])
 
   // Check if query matched only already-planned locations
   const allMatchesPlanned = filtered.length === 0 && query.length > 0 &&
@@ -169,15 +172,31 @@ function LocationPickerSheet({ targetDay, onClose }) {
             style={{ overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
           >
             <button
-              onClick={() => setActiveFilter(null)}
+              onClick={() => { setActiveFilter(null); setShowFavoritesOnly(false) }}
               className={`shrink-0 px-3 py-1.5 min-h-[36px] rounded-full text-xs font-semibold border transition-colors ${
-                !activeFilter
+                !activeFilter && !showFavoritesOnly
                   ? 'bg-sky-500 text-white border-sky-500'
                   : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-300 dark:border-gray-600'
               }`}
             >
               All
             </button>
+            {favorites.size > 0 && (
+              <button
+                onClick={() => setShowFavoritesOnly((v) => !v)}
+                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] rounded-full text-xs font-semibold border transition-colors"
+                style={
+                  showFavoritesOnly
+                    ? { backgroundColor: '#ef4444', borderColor: '#ef4444', color: '#fff' }
+                    : { backgroundColor: 'transparent', borderColor: '#d1d5db', color: '#6b7280' }
+                }
+              >
+                <svg viewBox="0 0 24 24" className="w-3 h-3" fill={showFavoritesOnly ? '#fff' : '#ef4444'} stroke="none">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+                Favorites
+              </button>
+            )}
             {CATEGORIES.map((cat) => {
               const isActive = activeFilter === cat.key
               return (

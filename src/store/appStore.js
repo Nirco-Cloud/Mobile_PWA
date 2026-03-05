@@ -142,6 +142,16 @@ export const useAppStore = create(
     showNearbyList: false,
     setShowNearbyList: (showNearbyList) => set({ showNearbyList }),
 
+    // Favorites
+    favorites: new Set(),
+    setFavorites: (fav) => set({ favorites: fav instanceof Set ? fav : new Set(fav) }),
+    toggleFavorite: (id) =>
+      set((s) => {
+        const next = new Set(s.favorites)
+        if (next.has(id)) next.delete(id); else next.add(id)
+        return { favorites: next }
+      }),
+
     // User-added POIs (personal saved places from Google Maps links)
     userPois: [],
     setUserPois: (userPois) => set({ userPois }),

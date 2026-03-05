@@ -41,12 +41,14 @@ let _notifyPanStateChange = null // (isCentered: bool) => void
 // ── MapMarkers ─────────────────────────────────────────────────────────────────
 function MapMarkers({ locations, selectedLocationId }) {
   const map = useMap()
+  const favorites = useAppStore((s) => s.favorites)
   if (!map) return null
   return locations.map((loc) => (
     <MapMarker
       key={loc.id}
       location={loc}
       isSelected={selectedLocationId === loc.id}
+      isFavorite={favorites.has(loc.id)}
     />
   ))
 }

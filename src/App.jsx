@@ -53,6 +53,7 @@ const setPlanEntries   = useAppStore((s) => s.setPlanEntries)
   const showNearbyList       = useAppStore((s) => s.showNearbyList)
   const setShowNearbyList    = useAppStore((s) => s.setShowNearbyList)
   const setUserPois          = useAppStore((s) => s.setUserPois)
+  const setFavorites         = useAppStore((s) => s.setFavorites)
   const shareTargetPayload   = useAppStore((s) => s.shareTargetPayload)
   const setShareTargetPayload = useAppStore((s) => s.setShareTargetPayload)
   const [showShareSheet, setShowShareSheet] = useState(false)
@@ -186,6 +187,9 @@ const setPlanEntries   = useAppStore((s) => s.setPlanEntries)
         validateStayHotelIds(allLocs)
         setPlanEntries(enrichPlanEntries(planRecords, allLocs))
         setUserPois(userPoisRecords)
+        // Load favorites
+        const savedFavs = await idbGet('favorites')
+        if (savedFavs) setFavorites(new Set(savedFavs))
         // Validate saved passphrase against encrypted data
         const savedPass = await idbGet('encPassphrase')
         if (savedPass) {
@@ -233,7 +237,16 @@ const setPlanEntries   = useAppStore((s) => s.setPlanEntries)
       setTimeout(() => setShowSplash(false), remaining)
     }
     boot()
-  }, [setLocations, setSyncStatus, setPlanEntries, setUserPois])
+  }, [setLocations, setSyncStatus, setPlanEntries, setUserPois, setFavorites])
+
+  // Persist favorites to IDB whenever they change
+  useEffect(() => {
+    const unsub = useAppStore.subscribe(
+      (s) => s.favorites,
+      (fav) => idbSet('favorites', [...fav]),
+    )
+    return unsub
+  }, [])
 
   function handleTabChange(tab) {
     if (tab === 'plan') {

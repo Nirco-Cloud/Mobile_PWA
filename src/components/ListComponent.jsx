@@ -26,8 +26,10 @@ export default function ListComponent() {
   const selectedStay        = useAppStore((s) => s.selectedStay)
   const mapFilter           = useAppStore((s) => s.mapFilter)
   const userPois            = useAppStore((s) => s.userPois)
+  const favorites           = useAppStore((s) => s.favorites)
   const [query, setQuery]   = useState('')
   const [expandedId, setExpandedId] = useState(null)
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
   const containerRef        = useRef(null)
 
   // Stable ref to sorted list — used inside subscription without stale closure
@@ -73,6 +75,11 @@ export default function ListComponent() {
     // 3. Category filter
     list = list.filter((l) => activeCategories.includes(l.category))
 
+    // 4. Favorites filter
+    if (showFavoritesOnly) {
+      list = list.filter((l) => favorites.has(l.id))
+    }
+
     const q = query.trim().toLowerCase()
     if (q) {
       list = list.filter(
@@ -82,9 +89,10 @@ export default function ListComponent() {
           (l.notes && l.notes.toLowerCase().includes(q)),
       )
     }
-    // Merge user-added POIs (always included, filtered by query only)
+    // Merge user-added POIs (always included, filtered by query + favorites)
     const userPoisFiltered = userPois
       .filter((p) => {
+        if (showFavoritesOnly && !favorites.has(p.id)) return false
         if (!q) return true
         return (
           p.name.toLowerCase().includes(q) ||
@@ -102,7 +110,7 @@ export default function ListComponent() {
         .sort((a, b) => a._dist - b._dist)
     }
     return combined
-  }, [locations, position, query, activeCategories, selectedStay, mapFilter, userPois])
+  }, [locations, position, query, activeCategories, selectedStay, mapFilter, userPois, showFavoritesOnly, favorites])
 
   // Keep stable ref in sync
   useEffect(() => {
@@ -158,15 +166,33 @@ export default function ListComponent() {
       >
         {/* All chip */}
         <button
-          onClick={() => setActiveCategories(ALL_CATEGORY_KEYS)}
+          onClick={() => { setActiveCategories(ALL_CATEGORY_KEYS); setShowFavoritesOnly(false) }}
           className={`shrink-0 px-3 py-1.5 min-h-[44px] rounded-full text-sm font-semibold border transition-colors ${
-            isAllActive
+            isAllActive && !showFavoritesOnly
               ? 'bg-sky-500 text-white border-sky-500'
               : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-300 dark:border-gray-600'
           }`}
         >
           All
         </button>
+
+        {/* Favorites chip */}
+        {favorites.size > 0 && (
+          <button
+            onClick={() => setShowFavoritesOnly((v) => !v)}
+            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] rounded-full text-sm font-semibold border transition-colors"
+            style={
+              showFavoritesOnly
+                ? { backgroundColor: '#ef4444', borderColor: '#ef4444', color: '#fff' }
+                : { backgroundColor: 'transparent', borderColor: '#d1d5db', color: '#6b7280' }
+            }
+          >
+            <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill={showFavoritesOnly ? '#fff' : '#ef4444'} stroke="none">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+            </svg>
+            Favorites
+          </button>
+        )}
 
         {CHIP_GROUPS.map((group) => {
           const isActive = group.keys.every((k) => activeCategories.includes(k))

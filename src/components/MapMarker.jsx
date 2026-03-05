@@ -63,7 +63,7 @@ function HotelMarker({ location, isSelected, onClick }) {
   )
 }
 
-export default function MapMarker({ location, isSelected }) {
+export default function MapMarker({ location, isSelected, isFavorite }) {
   const setSelection        = useAppStore((s) => s.setSelection)
   const setDetailLocationId = useAppStore((s) => s.setDetailLocationId)
 
@@ -107,8 +107,29 @@ export default function MapMarker({ location, isSelected }) {
             transition: 'width 0.15s, height 0.15s, filter 0.15s',
           }}
         />
-        {/* User-saved badge — small gold star on top-right */}
-        {location.isUserPoi && (
+        {/* Favorite badge — red heart on top-right */}
+        {isFavorite && (
+          <div style={{
+            position: 'absolute',
+            top: -(size / 2) - 6,
+            left: size / 2 - 6,
+            width: 16,
+            height: 16,
+            borderRadius: '50%',
+            backgroundColor: '#ef4444',
+            border: '1.5px solid white',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.35)',
+          }}>
+            <svg viewBox="0 0 24 24" fill="white" stroke="none" style={{ width: 9, height: 9 }}>
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+            </svg>
+          </div>
+        )}
+        {/* User-saved badge — small gold star (shown if not favorite, to avoid overlap) */}
+        {location.isUserPoi && !isFavorite && (
           <div style={{
             position: 'absolute',
             top: -(size / 2) - 6,

@@ -14,6 +14,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.26.0] — 2026-03-05 11:00
+
+### Added
+- **Favorites** — tap the red heart in location detail to favorite/unfavorite any place
+- **Favorites filter chip** — red heart chip in both Nearby list and Planner location picker to filter to favorites only
+- **Map badge** — favorited locations show a red heart badge on their map marker
+- Favorites persist in IndexedDB across sessions
+
+---
+
 ## [2.25.1] — 2026-03-05 10:50
 
 ### Changed
