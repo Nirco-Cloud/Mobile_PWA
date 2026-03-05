@@ -125,7 +125,7 @@ const LocationRow = forwardRef(function LocationRow({ location, distance, isSele
                 return (
                   <>
                     <a
-                      href={hasCoords ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location.name)}` : undefined}
+                      href={hasCoords ? `https://www.google.com/maps/search/${encodeURIComponent(location.name)}/@${location.lat},${location.lng},17z` : undefined}
                       target={hasCoords ? '_blank' : undefined}
                       rel="noreferrer"
                       className={`flex-1 text-center py-2 px-2 text-sm font-medium bg-sky-500 text-white rounded active:bg-sky-600 ${!hasCoords ? 'opacity-50 pointer-events-none' : ''}`}

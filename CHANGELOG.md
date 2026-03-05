@@ -14,6 +14,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.24.9] — 2026-03-05 10:40
+
+### Fixed
+- **Open Maps button** — anchor search to known coordinates (@lat,lng,17z) so Google Maps finds the exact nearby place, not a similarly-named one far away
+
+---
+
 ## [2.24.8] — 2026-03-05 10:35
 
 ### Fixed
