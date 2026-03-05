@@ -14,6 +14,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.24.6] — 2026-03-05 10:25
+
+### Fixed
+- **Bottom nav active pill** — reduced pill height so it no longer overlaps the "Map" text label
+
+---
+
 ## [2.24.5] — 2026-03-04 23:15
 
 ### Fixed
