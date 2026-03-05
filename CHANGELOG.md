@@ -14,6 +14,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.25.0] — 2026-03-05 10:45
+
+### Changed
+- **Trip planner "Navigate" button** → renamed to "Open in Maps" — now opens Google Maps place page (with ratings, photos) instead of starting navigation. Updated in both EntryCard and BookingsSection.
+
+---
+
 ## [2.24.9] — 2026-03-05 10:40
 
 ### Fixed

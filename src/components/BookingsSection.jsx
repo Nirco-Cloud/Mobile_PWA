@@ -209,15 +209,17 @@ function BookingCard({ entry, onDelete, travelTime }) {
                 <CopyBadge value={meta.confirmationNumber} />
               )}
               {hasCoords && (
-                <button
-                  onClick={() => setShowNavigateSheet(true)}
+                <a
+                  href={`https://www.google.com/maps/search/${encodeURIComponent(entry.name)}/@${entry.lat},${entry.lng},17z`}
+                  target="_blank"
+                  rel="noreferrer"
                   className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-sky-500 text-white text-[12px] font-semibold shadow-sm active:bg-sky-600 transition-colors min-h-[36px]"
                 >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
-                    <polygon points="3 11 22 2 13 21 11 13 3 11" />
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+                    <path d="M9 20l-5.447-2.724A1 1 0 0 1 3 16.382V5.618a1 1 0 0 1 1.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0 0 21 18.382V7.618a1 1 0 0 0-1.447-.894L15 9m0 8V9m0 0L9 7" />
                   </svg>
-                  Navigate
-                </button>
+                  Open in Maps
+                </a>
               )}
             </div>
           )}
