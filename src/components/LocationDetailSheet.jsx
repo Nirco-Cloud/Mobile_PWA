@@ -165,7 +165,7 @@ export default function LocationDetailSheet() {
             rel="noreferrer"
             className={`flex-1 text-center py-3 text-sm font-semibold bg-sky-500 text-white rounded-xl active:bg-sky-600 ${!hasCoords ? 'opacity-50 pointer-events-none' : ''}`}
           >
-            Open Maps
+            Maps
           </a>
           <a
             href={hasCoords ? `https://wa.me/?text=${encodeURIComponent(`${location.name}\nhttps://www.google.com/maps?q=${location.lat},${location.lng}`)}` : undefined}

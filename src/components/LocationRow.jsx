@@ -131,7 +131,7 @@ const LocationRow = forwardRef(function LocationRow({ location, distance, isSele
                       className={`flex-1 text-center py-2 px-2 text-sm font-medium bg-sky-500 text-white rounded active:bg-sky-600 ${!hasCoords ? 'opacity-50 pointer-events-none' : ''}`}
                       onClick={(e) => e.stopPropagation()}
                     >
-                      Open in Maps
+                      Maps
                     </a>
                     <a
                       href={hasCoords ? `https://wa.me/?text=${encodeURIComponent(`${location.name}\nhttps://www.google.com/maps?q=${location.lat},${location.lng}`)}` : undefined}
