@@ -29,6 +29,7 @@ jobs:
         env:
           VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
           VITE_GOOGLE_MAPS_MAP_ID: ${{ secrets.VITE_GOOGLE_MAPS_MAP_ID }}
+          VITE_PIN_HASH: ${{ secrets.VITE_PIN_HASH }}
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4

@@ -14,6 +14,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.30.0] — 2026-03-09 22:50
+
+### Added
+- **PIN lock screen** — full-screen keypad gate on first launch. PIN is hashed (SHA-256) client-side and compared against a build-time secret injected via GitHub Actions (`VITE_PIN_HASH`). The actual PIN never appears in source code or the repository. Auth state stored in `localStorage` — enter once per device
+
+---
+
 ## [2.29.0] — 2026-03-09 22:30
 
 ### Changed

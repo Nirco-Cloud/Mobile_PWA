@@ -17,6 +17,7 @@ import { useGPS } from './hooks/useGPS.js'
 import { useBattery } from './hooks/useBattery.js'
 import { useDarkMode } from './hooks/useDarkMode.js'
 import { useServiceWorker } from './workers/swRegistration.js'
+import PinLock, { isUnlocked } from './components/PinLock.jsx'
 import SplashScreen from './components/SplashScreen.jsx'
 import MapComponent from './components/MapComponent.jsx'
 import ListComponent from './components/ListComponent.jsx'
@@ -32,6 +33,7 @@ import OfflineToast from './components/OfflineToast.jsx'
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 
 export default function App() {
+  const [unlocked, setUnlocked] = useState(isUnlocked)
   const [showSplash, setShowSplash] = useState(true)
   const [activeTab, setActiveTab] = useState('map')
   const [showSettings, setShowSettings] = useState(false)
@@ -437,6 +439,8 @@ function SettingsPanel({ batteryLevel, position, gpsDenied, onResync, onClose, b
     setDateError('')
     onSaveTripDates(s, e)
   }
+
+  if (!unlocked) return <PinLock onUnlock={() => setUnlocked(true)} />
 
   return (
     <div
