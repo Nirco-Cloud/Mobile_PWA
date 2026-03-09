@@ -372,8 +372,12 @@ export async function onRequest(context) {
 
   // ── Strategy A: share.google/TOKEN ─────────────────────────────────────────
   if (/share\.google/i.test(rawUrl)) {
+    const isDebug = new URL(request.url).searchParams.get('debug') === '1'
     try {
-      const { body } = await fetchUrl(rawUrl)
+      const { body, finalUrl: shareGoogleFinalUrl } = await fetchUrl(rawUrl)
+      if (isDebug) {
+        return new Response(JSON.stringify({ finalUrl: shareGoogleFinalUrl, bodySnippet: body.substring(0, 3000) }), { status: 200, headers })
+      }
       const { name: placeName, regionCode } = extractShareGoogleData(body)
       console.log('share.google — name:', placeName, 'region:', regionCode)
       if (placeName && apiKey) {
