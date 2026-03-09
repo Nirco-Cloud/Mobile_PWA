@@ -372,12 +372,62 @@ export async function onRequest(context) {
 
   // ── Strategy A: share.google/TOKEN ─────────────────────────────────────────
   if (/share\.google/i.test(rawUrl)) {
-    const isDebug = new URL(request.url).searchParams.get('debug') === '1'
     try {
-      const { body, finalUrl: shareGoogleFinalUrl } = await fetchUrl(rawUrl)
+      // Step 1: Try manual redirect first to capture the Location header.
+      // Google blocks server-side fetches to share.google by following to /error,
+      // but the first 302 redirect often points to maps.app.goo.gl which we can resolve.
+      const manualRes = await fetch(rawUrl, {
+        redirect: 'manual',
+        headers: {
+          'User-Agent': MOBILE_UA,
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        },
+      })
+      const location = manualRes.headers.get('location')
+      const isDebug = new URL(request.url).searchParams.get('debug') === '1'
+      console.log('share.google manual redirect → status:', manualRes.status, 'location:', location)
       if (isDebug) {
-        return new Response(JSON.stringify({ finalUrl: shareGoogleFinalUrl, bodySnippet: body.substring(0, 3000) }), { status: 200, headers })
+        return new Response(JSON.stringify({ manualStatus: manualRes.status, location, allHeaders: Object.fromEntries(manualRes.headers) }), { status: 200, headers })
       }
+
+      if (location && /maps\.app\.goo\.gl|maps\.google\.|google\.[a-z.]+\/maps/i.test(location)) {
+        // Redirect points to a resolvable maps URL — fall through to Strategy C
+        const useDesktop = /maps\.app\.goo\.gl/i.test(location)
+        const { finalUrl, body } = await fetchUrl(location, useDesktop)
+        const coords  = extractCoords(finalUrl, body)
+        const placeId = extractPlaceId(finalUrl) || extractPlaceId(body)
+        const urlName = extractNameFromUrl(finalUrl) || extractNameFromUrl(location)
+        if (coords || placeId) {
+          let place = null
+          if (apiKey) {
+            try {
+              let resolvedPlaceId = placeId
+              if (!resolvedPlaceId && urlName && coords) {
+                place = await fetchPlaceByNameAndCoords(urlName, coords.lat, coords.lng, apiKey)
+              }
+              if (!place && !resolvedPlaceId && coords) {
+                resolvedPlaceId = await fetchNearbyPlaceNew(coords.lat, coords.lng, apiKey)
+              }
+              if (!place && resolvedPlaceId) {
+                place = await fetchPlaceDetailsNew(resolvedPlaceId, apiKey)
+              }
+            } catch (apiErr) {
+              console.warn('Places API enrichment failed:', apiErr.message)
+            }
+          }
+          const result = place
+            ? mapPlaceToResult(place, coords)
+            : { name: urlName ?? 'Unnamed Place', lat: coords?.lat ?? null, lng: coords?.lng ?? null,
+                address: null, category: 'Location', placeId: placeId ?? null,
+                phone: null, website: null, rating: null, openingHours: [] }
+          return new Response(JSON.stringify(result), { status: 200, headers })
+        }
+      }
+
+      // Step 2: Follow redirect and try to parse the HTML body for place name
+      const { body, finalUrl: shareGoogleFinalUrl } = await fetchUrl(rawUrl)
+      console.log('share.google followed → finalUrl:', shareGoogleFinalUrl)
       const { name: placeName, regionCode } = extractShareGoogleData(body)
       console.log('share.google — name:', placeName, 'region:', regionCode)
       if (placeName && apiKey) {
