@@ -291,6 +291,8 @@ async function handleResync() {
     }
   }
 
+  if (!unlocked) return <PinLock onUnlock={() => setUnlocked(true)} />
+
   return (
     <APIProvider apiKey={API_KEY} libraries={['marker']}>
       <SplashScreen visible={showSplash} />
@@ -439,8 +441,6 @@ function SettingsPanel({ batteryLevel, position, gpsDenied, onResync, onClose, b
     setDateError('')
     onSaveTripDates(s, e)
   }
-
-  if (!unlocked) return <PinLock onUnlock={() => setUnlocked(true)} />
 
   return (
     <div
