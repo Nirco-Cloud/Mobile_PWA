@@ -41,8 +41,16 @@ let _notifyPanStateChange = null // (isCentered: bool) => void
 // ── MapMarkers ─────────────────────────────────────────────────────────────────
 function MapMarkers({ locations, selectedLocationId }) {
   const map = useMap()
+  const [mapReady, setMapReady] = useState(false)
   const favorites = useAppStore((s) => s.favorites)
-  if (!map) return null
+
+  useEffect(() => {
+    if (!map) return
+    const listener = map.addListener('idle', () => setMapReady(true))
+    return () => listener.remove()
+  }, [map])
+
+  if (!map || !mapReady) return null
   return locations.map((loc) => (
     <MapMarker
       key={loc.id}
