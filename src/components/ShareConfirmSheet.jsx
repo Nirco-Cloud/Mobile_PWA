@@ -15,9 +15,6 @@ function isMapsUrl(str) {
   return /maps\.app\.goo\.gl|maps\.google\.|google\.[a-z.]+\/maps|goo\.gl\/maps|share\.google/i.test(str)
 }
 
-function isShareGoogleUrl(str) {
-  return /^https?:\/\/share\.google\//i.test(str)
-}
 
 function extractUrlFromText(text) {
   if (!text) return null
@@ -63,11 +60,6 @@ export default function ShareConfirmSheet({ onClose, onSaved }) {
   async function resolveUrl(url) {
     const trimmed = url?.trim()
     if (!trimmed) return
-    if (isShareGoogleUrl(trimmed)) {
-      setErrorMsg('Android share links (share.google) can\'t be resolved automatically. In Google Maps: tap ··· → Share → Copy link, then paste that URL here.')
-      setStatus('error')
-      return
-    }
     setStatus('resolving')
     setErrorMsg('')
     try {

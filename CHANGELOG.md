@@ -14,11 +14,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [2.28.0] — 2026-03-09 21:55
+## [2.28.0] — 2026-03-09 22:15
 
 ### Fixed
-- **`share.google` link detection**: Android native share links (`share.google/TOKEN`) are now detected on the frontend before calling the resolver. Since Cloudflare's IPs are blocked by Google's `share.google` service, the app immediately shows a clear, actionable message telling the user to use "Copy link" from Google Maps instead
-- **Resolver cleanup**: Removed debug/temp code from the Cloudflare Pages Function; simplified `share.google` handling to still attempt a manual redirect check for future cases where it might resolve to a maps URL
+- **`share.google` URL resolution**: The resolver now uses `redirect: 'manual'` first to capture the redirect Location header from `share.google` tokens. If the Location points to a maps URL, it resolves through that directly. This is more robust for fresh tokens (expired tokens show an error in any context, including the browser itself)
+- **Removed debug code** from the Cloudflare Pages Function
 
 ---
 
