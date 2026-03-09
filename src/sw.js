@@ -16,7 +16,7 @@ cleanupOutdatedCaches()
 
 // SPA navigation fallback — serves index.html for all navigations including
 // the share-target path (/share-target?url=...)
-registerRoute(new NavigationRoute(createHandlerBoundToURL('/index.html')))
+registerRoute(new NavigationRoute(createHandlerBoundToURL('/Mobile_PWA/index.html')))
 
 // Cache images at runtime (CacheFirst, 90 days, 500 entries)
 registerRoute(

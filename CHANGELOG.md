@@ -14,6 +14,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.29.0] — 2026-03-09 22:30
+
+### Changed
+- **Reverted to GitHub Pages + Netlify** — Cloudflare Pages migration rolled back. Cloudflare IPs are blocked by Google's `share.google` service making it unsuitable as a standalone solution. GitHub Pages hosts the frontend, Netlify hosts the resolver function (which handles all share.google links natively via AWS IPs)
+- Resolver URL in `ShareConfirmSheet` restored to Netlify endpoint
+- `base` path restored to `/Mobile_PWA/`
+- GitHub Actions workflow restored to deploy to `gh-pages` branch on push to `main`
+
+---
+
 ## [2.28.0] — 2026-03-09 22:15
 
 ### Fixed
