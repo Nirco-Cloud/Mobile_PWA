@@ -387,17 +387,39 @@ export async function onRequest(context) {
       const location = manualRes.headers.get('location')
       const isDebug = new URL(request.url).searchParams.get('debug') === '1'
       console.log('share.google manual redirect → status:', manualRes.status, 'location:', location)
-      if (isDebug) {
-        return new Response(JSON.stringify({ manualStatus: manualRes.status, location, allHeaders: Object.fromEntries(manualRes.headers) }), { status: 200, headers })
+
+      // If location is www.google.com/share.google?q=TOKEN, try one more level with desktop UA
+      let resolvedLocation = location
+      if (location && /google\.com\/share\.google\?q=/i.test(location)) {
+        try {
+          const r2 = await fetch(location, {
+            redirect: 'manual',
+            headers: {
+              'User-Agent': DESKTOP_UA,
+              'Accept-Language': 'en-US,en;q=0.9',
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+              'Referer': 'https://www.google.com/',
+            },
+          })
+          const loc2 = r2.headers.get('location')
+          console.log('share.google step2 → status:', r2.status, 'location:', loc2)
+          if (loc2 && !/share\.google\/error/i.test(loc2)) resolvedLocation = loc2
+        } catch (e2) {
+          console.warn('share.google step2 failed:', e2.message)
+        }
       }
 
-      if (location && /maps\.app\.goo\.gl|maps\.google\.|google\.[a-z.]+\/maps/i.test(location)) {
+      if (isDebug) {
+        return new Response(JSON.stringify({ manualStatus: manualRes.status, location, resolvedLocation }), { status: 200, headers })
+      }
+
+      if (resolvedLocation && /maps\.app\.goo\.gl|maps\.google\.|google\.[a-z.]+\/maps/i.test(resolvedLocation)) {
         // Redirect points to a resolvable maps URL — fall through to Strategy C
-        const useDesktop = /maps\.app\.goo\.gl/i.test(location)
-        const { finalUrl, body } = await fetchUrl(location, useDesktop)
+        const useDesktop = /maps\.app\.goo\.gl/i.test(resolvedLocation)
+        const { finalUrl, body } = await fetchUrl(resolvedLocation, useDesktop)
         const coords  = extractCoords(finalUrl, body)
         const placeId = extractPlaceId(finalUrl) || extractPlaceId(body)
-        const urlName = extractNameFromUrl(finalUrl) || extractNameFromUrl(location)
+        const urlName = extractNameFromUrl(finalUrl) || extractNameFromUrl(resolvedLocation)
         if (coords || placeId) {
           let place = null
           if (apiKey) {
