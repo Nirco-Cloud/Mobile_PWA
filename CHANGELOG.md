@@ -14,6 +14,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.27.0] — 2026-03-09 19:45
+
+### Changed
+- **Migrated to Cloudflare Pages** — app now hosted at `mobile-pwa.pages.dev` (replaces GitHub Pages)
+- **Maps link resolver** migrated from Netlify Function to Cloudflare Pages Function at `/api/resolve-maps-link` (same origin, no separate deployment needed)
+- Updated `vite.config.js` base path from `/Mobile_PWA/` to `/` for root deployment
+- Updated PWA manifest `start_url`, `scope`, icon paths, and share target action to use root paths
+- Updated service worker `NavigationRoute` to use `/index.html` instead of `/Mobile_PWA/index.html`
+- GitHub Actions workflow simplified to build-only CI (Cloudflare Pages handles deployment automatically)
+
+---
+
 ## [2.26.0] — 2026-03-05 11:00
 
 ### Added

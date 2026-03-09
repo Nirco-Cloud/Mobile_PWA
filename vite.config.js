@@ -7,7 +7,7 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
   },
-  base: '/Mobile_PWA/',
+  base: '/',
   plugins: [
     react(),
     VitePWA({
@@ -26,28 +26,28 @@ export default defineConfig({
         background_color: '#38bdf8',
         display: 'standalone',
         orientation: 'portrait',
-        start_url: '/Mobile_PWA/',
-        scope: '/Mobile_PWA/',
+        start_url: '/',
+        scope: '/',
         icons: [
           {
-            src: '/Mobile_PWA/icons/icon-192.png',
+            src: '/icons/icon-192.png',
             sizes: '192x192',
             type: 'image/png',
           },
           {
-            src: '/Mobile_PWA/icons/icon-512.png',
+            src: '/icons/icon-512.png',
             sizes: '512x512',
             type: 'image/png',
           },
           {
-            src: '/Mobile_PWA/icons/icon-maskable-512.png',
+            src: '/icons/icon-maskable-512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',
           },
         ],
         share_target: {
-          action: '/Mobile_PWA/share-target',
+          action: '/share-target',
           method: 'GET',
           params: {
             url:   'url',
